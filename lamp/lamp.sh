@@ -35,8 +35,6 @@ elif [[ $(grep 'Debian' $DEB_VERSION) ]]; then
     DISTRIBUICION="debian"
 fi
 
-echo $DISTRIBUICION
-
 exit 1
 versionubuntu=$(cat /etc/issue | grep Ubuntu | awk '{print $2}' | cut -f 1 -d '.')
 if [ "${versionubuntu}" -lt "20" ]; then
