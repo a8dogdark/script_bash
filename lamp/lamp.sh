@@ -31,7 +31,7 @@ DIRECTORIO=$HOME
 
 if [[ $(grep 'Ubuntu' $DEB_VERSION) ]]; then
     DISTRIBUICION="ubuntu"
-elif [[ $(grep 'Ubuntu' $DEB_VERSION) ]]; then
+elif [[ $(grep 'Debian' $DEB_VERSION) ]]; then
     DISTRIBUICION="debian"
 fi
 
