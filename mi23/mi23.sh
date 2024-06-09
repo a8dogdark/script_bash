@@ -244,7 +244,7 @@ echo "********************************"
 sleep 2
 
 git clone https://github.com/a8dogdark/crud.git
-
+sudo mv crud /var/www/html/crud
 
 echo "fin instalacion reinicie sistema"
 exit 1
