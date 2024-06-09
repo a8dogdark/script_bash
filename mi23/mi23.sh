@@ -177,6 +177,8 @@ sleep 1
 echo "agregando rewrite"
 sudo a2enmod rewrite
 sudo service apache2 restart
+sudo systemctl daemon-reload
+
 
 echo "******************************************"
 echo "* Pasamos password vacia a root de mysql *"
