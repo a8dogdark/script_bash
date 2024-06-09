@@ -292,6 +292,9 @@ sudo service apache2 restart
 
 sed -i 's/localhost/crud.test/' /var/www/html/crud/.env
 
+cd /var/www/html/crud/
+php artisan migrate
+
 echo -e "fin creando crud\n
         abre tu navegador con la siguiente url\n
         la carpeta de trabajo es /var/www/html/crud\n
