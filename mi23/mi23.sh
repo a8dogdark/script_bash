@@ -1,4 +1,4 @@
-#! /bin/bash
+ #! /bin/bash
 clear
 echo "*********************************"
 echo "* Instalador de servicio lamp y *"
@@ -174,6 +174,7 @@ echo "**************************************"
 echo "* Agregamos modulo rewrite a apache2 *"
 echo "**************************************"
 sleep 2
+echo "agregando rewrite"
 sudo a2enmod rewrite
 sudo service apache2 restart
 
