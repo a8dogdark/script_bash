@@ -10,6 +10,15 @@ echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] http
 curl -fsSL https://deb.nodesource.com/setup_21.x | sudo -E bash -
 
 clear
+echo "****************************************************"
+echo "* Descargamos algunos paquetes para la instalación *"
+echo "****************************************************"
+sleep 2
+wget https://raw.githubusercontent.com/a8dogdark/script_bash/main/laravel11/new_proyect.sh
+sudo chmod +x new_proyect.sh
+wget https://files.phpmyadmin.net/phpMyAdmin/5.2.1/phpMyAdmin-5.2.1-all-languages.zip
+
+clear
 echo "***************************"
 echo "* actualizamos el sistema *"
 echo "***************************"
@@ -173,12 +182,6 @@ echo "* Pasamos password vacia a root de mysql *"
 echo "******************************************"
 sleep 2
 sudo mysql --execute="ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '';"
-
-echo "**************************"
-echo "* DESCARGAMOS PHPMYADMIN *"
-echo "**************************"
-sleep 2
-wget https://files.phpmyadmin.net/phpMyAdmin/5.2.1/phpMyAdmin-5.2.1-all-languages.zip
 
 echo "*****************************"
 echo "* DESCOMPRIMIMOS PHPMYADMIN *"
