@@ -289,6 +289,7 @@ sudo chmod 777 -R /var/www/html/crud
 
 sudo a2ensite crud.test.conf
 sudo service apache2 restart
+sudo systemctl daemon-reload
 
 sed -i 's/localhost/crud.test/' /var/www/html/crud/.env
 
