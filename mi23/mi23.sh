@@ -19,11 +19,6 @@ sudo apt upgrade -y
 sudo apt update -y
 
 clear
-echo "**********************************************"
-echo "* Agregamos librerías importantes al sistema *"
-echo "**********************************************"
-sleep 2
-
 echo "**************************"
 echo "* INSTALAMOS lsb-release *"
 echo "**************************"
