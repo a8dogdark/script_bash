@@ -232,5 +232,13 @@ echo "*************************"
 sleep 2
 composer global require laravel/installer
 
+echo "********************************"
+echo "* Clonamos el repositorio crud *"
+echo "********************************"
+sleep 2
+
+git clone https://github.com/a8dogdark/crud.git
+
+
 echo "fin instalacion reinicie sistema"
 exit 1
