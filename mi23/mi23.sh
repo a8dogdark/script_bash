@@ -136,9 +136,9 @@ echo "********************"
 sleep 2
 sudo apt install gdebi -y
 
-echo "*********************"
+echo "*************************"
 echo "* INSTALAMOS obs-studio *"
-echo "*********************"
+echo "*************************"
 sleep 2
 sudo apt install obs-studio -y
 
