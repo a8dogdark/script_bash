@@ -183,11 +183,13 @@ echo "* Pasamos password vacia a root de mysql *"
 echo "******************************************"
 sleep 2
 sudo mysql --execute="ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '';"
-#echo "*********************************"
-#echo "* Creamos la base de datos crud *"
-#echo "*********************************"
-#sleep 2
-#sudo mysql --execute="create database crud;"
+echo "*********************************"
+echo "* Creamos la base de datos crud *"
+echo "*********************************"
+sleep 2
+sudo mysql --execute="CREATE DATABASE crud CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish2_ci;"
+sudo mysql --execute="USE crud;"
+sudo mysql --execute="CREATE TABLE cache (  ) ;"
 
 
 echo "*****************************"
