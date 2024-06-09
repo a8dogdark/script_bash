@@ -182,6 +182,12 @@ echo "* Pasamos password vacia a root de mysql *"
 echo "******************************************"
 sleep 2
 sudo mysql --execute="ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '';"
+echo "*********************************"
+echo "* Creamos la base de datos crud *"
+echo "*********************************"
+sleep 2
+sudo mysql --execute="create database crud;"
+
 
 echo "*****************************"
 echo "* DESCOMPRIMIMOS PHPMYADMIN *"
