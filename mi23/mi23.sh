@@ -227,8 +227,10 @@ php -r "unlink('composer-setup.php');"
 
 sudo mv composer.phar /usr/local/bin/composer
 
-echo "#Agregando configuración bashrc"
-sleep 1
+echo "**********************************"
+echo "* Agregando configuración bashrc *"
+echo "**********************************"
+sleep 2
 sudo echo 'export PATH="~/.config/composer/vendor/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 
@@ -245,6 +247,8 @@ sleep 2
 
 git clone https://github.com/a8dogdark/crud.git
 sudo cp -r crud /var/www/html/crud
+sudo chmod 777 -R /var/www/html/crud
+
 sudo rm -r crud
 
 echo "fin instalacion reinicie sistema"
