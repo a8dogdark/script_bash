@@ -248,8 +248,53 @@ sleep 2
 git clone https://github.com/a8dogdark/crud.git
 sudo cp -r crud /var/www/html/crud
 sudo chmod 777 -R /var/www/html/crud
-
 sudo rm -r crud
+
+echo "*********************************"
+echo "* creamos el nuevo dominio crud *"
+echo "*********************************"
+sleep 2
+sudo touch /etc/apache2/sites-available/crud.test.conf
+
+sudo chmod 777 /etc/apache2/sites-available/crud.test.conf
+sudo echo -e '<VirtualHost *:80>\n
+ServerName crud.test
+ServerAlias www.crud.test
+ServerAdmin crud@localhost\n
+DocumentRoot /var/www/html/crud/public\n
+\n
+ErrorLog ${APACHE_LOG_DIR}/error.log\n
+CustomLog ${APACHE_LOG_DIR}/access.log combined\n
+\n
+<Directory /var/www/html/crud/public>\n
+Options Indexes FollowSymLinks MultiViews\n
+AllowOverride All\n
+Order allow,deny\n
+allow from all\n
+</Directory>\n
+</VirtualHost>' >> /etc/apache2/sites-available/crud.test.conf
+sudo chmod 644 /etc/apache2/sites-available/crud.test.conf
+
+echo "agregamos el dominio crud.test a hosts"
+sleep 1
+sudo chmod 777 /etc/hosts
+sudo echo -e '\n127.0.0.1      crud.test' >> /etc/hosts
+sudo chmod 644 /etc/hosts
+
+echo "cambiamos los permisos a la carpeta crud para escritura"
+sudo chmod 755 -R /var/www/html
+sudo chmod 777 -R /var/www/html/crud
+
+sudo a2ensite crud.test.conf
+sudo service apache2 restart
+
+sed -i 's/localhost/crud.test/' /var/www/html/crud/.env
+
+echo -e "fin creando crud\n
+        abre tu navegador con la siguiente url\n
+        la carpeta de trabajo es /var/www/html/crud\n
+        http://crud.test
+"
 
 echo "fin instalacion reinicie sistema"
 exit 1
