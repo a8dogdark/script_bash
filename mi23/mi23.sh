@@ -189,8 +189,6 @@ echo "*********************************"
 sleep 2
 sudo mysql --execute="CREATE DATABASE crud CHARACTER SET utf8mb4 COLLATE utf8mb4_spanish2_ci;"
 sudo mysql --execute="USE crud;"
-sudo mysql --execute="CREATE TABLE cache (  ) ;"
-
 
 echo "*****************************"
 echo "* DESCOMPRIMIMOS PHPMYADMIN *"
