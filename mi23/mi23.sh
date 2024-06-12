@@ -5,8 +5,8 @@ echo "* Instalador de servicio lamp y *"
 echo "*          laravel 11           *"
 echo "*********************************"
 sudo apt install curl -y
-sudo curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
-echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main"|sudo tee /etc/apt/sources.list.d/brave-browser-release.list
+#sudo curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
+#echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main"|sudo tee /etc/apt/sources.list.d/brave-browser-release.list
 curl -fsSL https://deb.nodesource.com/setup_21.x | sudo -E bash -
 
 clear
@@ -142,11 +142,11 @@ echo "*************************"
 sleep 1
 sudo apt install obs-studio -y
 
-echo "********************"
-echo "* INSTALAMOS brave *"
-echo "********************"
-sleep 1
-sudo apt install brave-browser -y
+#echo "********************"
+#echo "* INSTALAMOS brave *"
+#echo "********************"
+#sleep 1
+#sudo apt install brave-browser -y
 
 echo "*********************************"
 echo "* INSTALAMOS Visual Studio Code *"
