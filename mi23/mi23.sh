@@ -152,6 +152,12 @@ sudo apt update -y
 sudo systemctl daemon-reload
 sudo apt install wine32:i386 -y
 
+echo "***********************"
+echo "* INSTALAMOS Atari800 *"
+echo "***********************"
+sleep 1
+sudo apt install atari800 -y
+
 #echo "********************"
 #echo "* INSTALAMOS brave *"
 #echo "********************"
