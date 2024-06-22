@@ -142,6 +142,16 @@ echo "*************************"
 sleep 1
 sudo apt install obs-studio -y
 
+echo "*******************"
+echo "* INSTALAMOS wine *"
+echo "*******************"
+sleep 1
+sudo apt install wine64 -y
+sudo dpkg --add-architecture i386
+sudo apt update -y
+sudo systemctl daemon-reload
+sudo apt install wine32:i386 -y
+
 #echo "********************"
 #echo "* INSTALAMOS brave *"
 #echo "********************"
