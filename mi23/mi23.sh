@@ -136,11 +136,23 @@ echo "********************"
 sleep 1
 sudo apt install gdebi -y
 
+#echo "*************************"
+#echo "* INSTALAMOS obs-studio *"
+#echo "*************************"
+#sleep 1
+#sudo apt install obs-studio -y
+
 echo "*************************"
-echo "* INSTALAMOS obs-studio *"
+echo "* INSTALAMOS vokoscreen *"
 echo "*************************"
 sleep 1
-sudo apt install obs-studio -y
+sudo apt install vokoscreen-ng -y
+
+echo "******************"
+echo "* INSTALAMOS vlc *"
+echo "******************"
+sleep 1
+sudo apt install vlc -y
 
 echo "*******************"
 echo "* INSTALAMOS wine *"
@@ -157,12 +169,6 @@ echo "* INSTALAMOS Atari800 *"
 echo "***********************"
 sleep 1
 sudo apt install atari800 -y
-
-#echo "********************"
-#echo "* INSTALAMOS brave *"
-#echo "********************"
-#sleep 1
-#sudo apt install brave-browser -y
 
 echo "*********************************"
 echo "* INSTALAMOS Visual Studio Code *"
