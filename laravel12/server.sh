@@ -64,6 +64,8 @@ sudo apt install curl unzip wget gpg lsb-release ca-certificates apt-transport-h
 sudo a2enmod rewrite
 reiniciar_apache
 
+sudo chmod 777 -R /var/www
+
 
 echo "Pasamos password vacia a root de mysql"
 sleep 1
@@ -91,7 +93,9 @@ sleep 1
 sudo echo 'export PATH="~/.config/composer/vendor/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
 
-echo "#Instalando Laravel 11"
+echo "*************************"
+echo "* Instalando Laravel 12 *"
+echo "*************************"
 sleep 1
 composer global require laravel/installer
 
