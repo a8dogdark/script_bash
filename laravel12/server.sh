@@ -71,7 +71,7 @@ sudo mysql --execute='ALTER USER "root"@"localhost" IDENTIFIED WITH caching_sha2
 
 echo "Usuatio root Mysql";
 echo "User->root";
-echo "Password->12345;
+echo "Password->12345";
 sleep 1
 
 echo "************************"
