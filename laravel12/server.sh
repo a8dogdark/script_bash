@@ -67,7 +67,7 @@ reiniciar_apache
 
 echo "Pasamos password vacia a root de mysql"
 sleep 1
-sudo mysql --execute="ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '12345';"
+sudo mysql --execute='ALTER USER "root"@"localhost" IDENTIFIED WITH caching_sha2_password BY "12345";'
 
 echo "Usuatio root Mysql";
 echo "User->root";
@@ -86,7 +86,7 @@ php -r 'unlink("composer-setup.php");'
 
 sudo mv composer.phar /usr/local/bin/composer
 
-echo "#Agregando configuración bashrc"
+echo "Agregando configuración bashrc"
 sleep 1
 sudo echo 'export PATH="~/.config/composer/vendor/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
