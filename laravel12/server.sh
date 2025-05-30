@@ -58,7 +58,7 @@ echo "* INSTALAMOS PHPMYADMIN *"
 echo "*************************"
 sleep 2
 
-sudo apt install curl unzip wget gpg lsb-release ca-certificates apt-transport-https software-properties-common git sed apache2 mysql-server php8.4 php8.4-{cli,xml,curl,mbstring,mysql,zip,mysqlnd,opcache,pdo,xml,bz2,calendar,ctype,curl,dom,exif,ffi,fileinfo,ftp,gd,gettext,iconv,mbstring,mcrypt,mysqli,phar,posix,readline,shmop,simplexml,sockets,sysvmsg,tokenizer,xmlreader,xmlwriter,xsl,zip,bcmath} phpmyadmin vsftpd -y
+sudo apt install curl unzip wget gpg lsb-release ca-certificates apt-transport-https software-properties-common git sed gdebi apache2 mysql-server php8.4 php8.4-{cli,xml,curl,mbstring,mysql,zip,mysqlnd,opcache,pdo,xml,bz2,calendar,ctype,curl,dom,exif,ffi,fileinfo,ftp,gd,gettext,iconv,mbstring,mcrypt,mysqli,phar,posix,readline,shmop,simplexml,sockets,sysvmsg,tokenizer,xmlreader,xmlwriter,xsl,zip,bcmath} phpmyadmin vsftpd -y
 
 #agregamos modulo rewrite a apache2
 sudo a2enmod rewrite
