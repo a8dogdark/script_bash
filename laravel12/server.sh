@@ -36,27 +36,31 @@ echo "*    INICIANDO EL INSTALADOR.    *"
 echo "* VERSION DE LA DISTRO UBUNTU ${UbuntuCheck} *"
 echo "* Ingrese su password de usuario *"
 echo "**********************************"
+echo "Actualizamos el sistema"
+echo "**********************************"
+sleep 1
+actualizar
+echo "*******************************************"
 echo "Agregamos librerías importantes al sistema"
+echo "*******************************************"
 sleep 1
 sudo apt install curl wget unzip -y
-
 curl -fsSL https://deb.nodesource.com/setup_23.x -o nodesource_setup.sh
+sudo add-apt-repository ppa:ondrej/php -y
 
+echo "****************"
 echo "Instalamos node";
+echo "****************"
 sleep 1
 sudo -E bash nodesource_setup.sh
-
 sudo apt-get install -y nodejs
-
-
-actualizar
 echo "*************************"
 echo "* INSTALAMOS APACHE2    *"
 echo "* INSTALAMOS PHP 8.3    *"
 echo "* INSTALAMOS MYSQL      *"
 echo "* INSTALAMOS PHPMYADMIN *"
 echo "*************************"
-sleep 2
+sleep 1
 
 sudo apt install curl unzip wget gpg lsb-release ca-certificates apt-transport-https software-properties-common git sed gdebi apache2 mysql-server php8.4 php8.4-{cli,xml,curl,mbstring,mysql,zip,mysqlnd,opcache,pdo,xml,bz2,calendar,ctype,curl,dom,exif,ffi,fileinfo,ftp,gd,gettext,iconv,mbstring,mcrypt,mysqli,phar,posix,readline,shmop,simplexml,sockets,sysvmsg,tokenizer,xmlreader,xmlwriter,xsl,zip,bcmath} phpmyadmin vsftpd -y
 
@@ -66,15 +70,11 @@ reiniciar_apache
 
 sudo chmod 777 -R /var/www
 
-
-echo "Pasamos password vacia a root de mysql"
+echo "*********************************"
+echo "Pasamos password a root de mysql"
+echo "*********************************"
 sleep 1
 sudo mysql --execute='ALTER USER "root"@"localhost" IDENTIFIED WITH caching_sha2_password BY "12345";'
-
-echo "Usuatio root Mysql";
-echo "User->root";
-echo "Password->12345";
-sleep 1
 
 echo "************************"
 echo "* DESCARGAMOS COMPOSER *"
@@ -98,5 +98,13 @@ echo "* Instalando Laravel 12 *"
 echo "*************************"
 sleep 1
 composer global require laravel/installer
+
+echo "*******************"
+echo "phpmyadmin"
+echo "url" 
+echo "http://localhost/phpmyadmin"
+echo "Usuario: root "
+echo "Password->12345"
+echo "*******************"
 
 echo "Fin instalación";
