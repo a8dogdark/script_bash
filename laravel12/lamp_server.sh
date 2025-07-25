@@ -18,8 +18,7 @@ if [ -f "/etc/redhat-release" ]; then
 fi
 # verificamos que el usuario sea root
 if [ "$(id -u)" -eq 0 ]; then
-  echo "exito estas como root"
-  exit 1
+    echo "Comenzamos con la instalación"
 else
   echo "El programa debes ejecutarlo como root"
   echo "Para ingresar como root"
@@ -35,11 +34,13 @@ if [ -f "/etc/os-release" ]; then
     
     if [ "$ID" = "ubuntu" ]; then
         DISTRO = "UBUNTU"
+    elif [ "$ID" = "anduino" ]; then
+        DISTRO = "UBUNTU"    
     elif [ "$ID" = "debian" ]; then
         DISTRO = "DEBIAN"
     fi
 else 
-    echo "Hay error al econtrar la distribuición, no la reconoce el programa"
+    echo "Hay error al encontrar la distribuición, no la reconoce el programa"
     exit 1
 fi
 
