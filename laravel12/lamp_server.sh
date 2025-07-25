@@ -59,9 +59,24 @@ else
    apt install -y -q dialog >>/dev/null 2>&1
 fi
 
-dialog --title "LAMP" \
-        --text="\nBienvenidos al instalador Lamp\n\nEl sistema será preparado para instalar\nun sistema Lamp y laravel 12 de forma autómatica" 10 50
+dialog --title "Dogdark" \
+        --msgbox "\nBienvenidos al instalador Lamp\n\nEl sistema será preparado para instalar\nun sistema Lamp y laravel 12 de forma autómatica" 10 50
 
+dialog --title "Dogdark" \
+       --yesno "¿Desea Continuar?" 10 30
+if [ $? -eq 0 ]; then
+   clear
+else
+   clear
+   echo "Salimos del instalador"
+   echo "Bye"
+   exit 1
+fi
+
+proyecto=$(dialog --title "Dogdark" \
+           --stdout \
+           --inputbox "Cual será el nombre de tu proyecto laravel" 10 50)
+clear
 
 
 # Captura la versión de Ubuntu en la variable 'ubuntu_version'
