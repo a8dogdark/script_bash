@@ -33,9 +33,9 @@ if [ -f "/etc/os-release" ]; then
     . /etc/os-release                             # Esto "carga" las variables del archivo en el entorno actual del script
     
     if [ "$ID" = "ubuntu" ]; then
-        DISTRO = "UBUNTU"
+        DISTRO="UBUNTU"
     elif [ "$ID" = "debian" ]; then
-        DISTRO = "DEBIAN"
+        DISTRO="DEBIAN"
     fi
 else 
     echo "Hay error al encontrar la distribuición, no la reconoce el programa"
