@@ -34,8 +34,6 @@ if [ -f "/etc/os-release" ]; then
     
     if [ "$ID" = "ubuntu" ]; then
         DISTRO = "UBUNTU"
-    elif [ "$ID" = "anduino" ]; then
-        DISTRO = "UBUNTU"    
     elif [ "$ID" = "debian" ]; then
         DISTRO = "DEBIAN"
     fi
