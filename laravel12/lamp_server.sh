@@ -4,6 +4,12 @@
 # el sistema solo soporta ubuntu  derivados
 # solo se permite sistema de 64 bits
 clear
+
+actualizar(){
+    apt update -y -q >> /dev/null 2>&1
+    apt upgrade -y -q >> /dev/null 2>&1
+}
+
 is64bit=$(getconf LONG_BIT)
 if [ "${is64bit}" != '64' ]; then
     echo "El sistema solo debe ser de 64 bits"
@@ -43,17 +49,20 @@ else
     exit 1
 fi
 
+actualizar
+
 dialog --version &>/dev/null
 if [ $? -eq 0 ]; then
    clear
 else
-   apt update -y -q >>/dev/null
-   apt upgrade -y -q >>/dev/null
-   apt install -y -q dialog >>/dev/null
+   actualizar
+   apt install -y -q dialog >>/dev/null 2>&1
 fi
 
 dialog --title "LAMP" \
-        --text="Bienvenidos al instalador de lamp local"
+        --text="\nBienvenidos al instalador Lamp\n\nEl sistema será preparado para instalar\nun sistema Lamp y laravel 12 de forma autómatica" 10 50
+
+
 
 # Captura la versión de Ubuntu en la variable 'ubuntu_version'
 #ubuntu_version=$(lsb_release -rs)
