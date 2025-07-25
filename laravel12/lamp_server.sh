@@ -76,7 +76,15 @@ fi
 proyecto=$(dialog --title "Dogdark" \
            --stdout \
            --inputbox "Cual será el nombre de tu proyecto laravel" 10 50)
-clear
+
+userphpmyadmin=$(dialog --title "Dogdark" \
+           --stdout \
+           --inputbox "Ingresa una contraseña para el usuario de phpmyadmin:" 10 50)
+
+userroot=$(dialog --title "Dogdark" \
+           --stdout \
+           --inputbox "Ingresa una contraseña para el usuario root de mysql:" 10 50)
+
 
 
 # Captura la versión de Ubuntu en la variable 'ubuntu_version'
