@@ -85,6 +85,16 @@ userroot=$(dialog --title "Dogdark" \
            --stdout \
            --inputbox "Ingresa una contraseña para el usuario root de mysql:" 10 50)
 
+programas=$(dialog --title "Dogdark" \
+                   --stdout \
+                   --checklist "Selecciona las opción:" 0 0 5 \
+                               1 Lamp_Laravel on\
+                               2 Visual_studio off\
+                               3 Sublime_text off
+                               4 Brave off
+                               5 Chrome off)
+
+
 
 
 # Captura la versión de Ubuntu en la variable 'ubuntu_version'
