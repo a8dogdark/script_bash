@@ -3,6 +3,7 @@
 # validaciones
 # el sistema solo soporta ubuntu  derivados
 # solo se permite sistema de 64 bits
+clear
 is64bit=$(getconf LONG_BIT)
 if [ "${is64bit}" != '64' ]; then
     echo "El sistema solo debe ser de 64 bits"
@@ -42,18 +43,17 @@ else
     exit 1
 fi
 
-zenity --version &>/dev/null
+dialog --version &>/dev/null
 if [ $? -eq 0 ]; then
    clear
 else
-   apt update -yq >/dev/null
-   apt upgrade -yq >/dev/null
-   apt install -yq >zenity >dev/null
+   apt update -y -q >>/dev/null
+   apt upgrade -y -q >>/dev/null
+   apt install -y -q dialog >>/dev/null
 fi
 
-zenity --info --text="Bienvenidos al instalador de lamp local"
-
-
+dialog --title "LAMP" \
+        --text="Bienvenidos al instalador de lamp local"
 
 # Captura la versión de Ubuntu en la variable 'ubuntu_version'
 #ubuntu_version=$(lsb_release -rs)
