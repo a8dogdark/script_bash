@@ -51,6 +51,7 @@ else
    apt install -yq >zenity >dev/null
 fi
 
+zenity --info --text="Bienvenidos al instalador de lamp local"
 
 
 
