@@ -42,7 +42,17 @@ else
     exit 1
 fi
 
-echo $DISTRO
+zenity --version &>/dev/null
+if [ $? -eq 0 ]; then
+   clear
+else
+   apt update -yq >/dev/null
+   apt upgrade -yq >/dev/null
+   apt install -yq >zenity >dev/null
+fi
+
+
+
 
 # Captura la versión de Ubuntu en la variable 'ubuntu_version'
 #ubuntu_version=$(lsb_release -rs)
