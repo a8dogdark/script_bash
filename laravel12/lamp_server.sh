@@ -68,7 +68,6 @@ dialog --version &>/dev/null
 if [ $? -eq 0 ]; then
    clear
 else
-   actualizar
    apt install -y -q dialog >>/dev/null 2>&1
 fi
 #verficamos si el sistema es de 64bits
@@ -120,6 +119,9 @@ carpeta_trabajo_temporal="${temp}/temporal"
 
 #ingresamos a la carpeta temporal para trabajar
 cd $carpeta_trabajo_temporal
+
+
+
 
 #damos la bienvenida
 mensaje="\nBienvenidos al instalador Lamp\n\nEl sistema será preparado para instalar\nun sistema Lamp y laravel 12 de forma autómatica.\nInstalará los siguientes paquetes:\nApache2\nPhp 8.4\n${MYSQL}\nPhpmyadmin\nComposer\nNodeJs 24\nInstalador Laravel\nProyecto Nuevo\n¿Desea Continuar?"
