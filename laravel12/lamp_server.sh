@@ -8,11 +8,6 @@ mensaje=""
 name=""
 temp="/tmp"
 #funciones del sistema
-actualizar(){
-	#actualizamos el sistema en segundo plano
-    	apt update -y -q >> /dev/null 2>&1
-    	apt upgrade -y -q >> /dev/null 2>&1
-}
 mensaje_dialog(){
 	dialog --title "Dogdark" \
 	--msgbox "${mensaje}" 0 0
@@ -190,10 +185,15 @@ IFS=' ' read -r -a TEMP_PROGRAMAS <<< $programas
 #instalando lamp
 
 #actualizamos el sistema
-porcentaje="0"
+porcentaje="40"
 mensaje="Actualizamos el sistema"
 progress_dialog
-actualizar
+sudo apt update -y -q >> /dev/null 2>&1
+
+porcentaje="80"
+mensaje="Upgrade al sistema"
+progress_dialog
+sudo apt upgrade -y -q >> /dev/null 2>&1
 
 if [ ${DISTRO} == "UBUNTU" ]; then
 	porcentaje="2"
@@ -224,7 +224,7 @@ if [ ${DISTRO} == "UBUNTU" ]; then
 	porcentaje="8"
 	mensaje="Actualizamos el sistema"
 	progress_dialog
-	actualizar
+	sudo apt update -y -q >> /dev/null 2>&1
 else
 	#debian
 	porcentaje="2"
@@ -246,7 +246,7 @@ else
 	porcentaje="8"
 	mensaje="Actualizando sistema"
 	progress_dialog
-	actualizar
+	sudo apt update -y -q >> /dev/null 2>&1
 fi
 
 #instalacion de lamp
