@@ -195,6 +195,11 @@ mensaje="Upgrade al sistema"
 progress_dialog
 sudo apt upgrade -y -q >> /dev/null 2>&1
 
+porcentaje="100"
+mensaje="Fin actualización"
+progress_dialog
+sleep 2
+
 if [ ${DISTRO} == "UBUNTU" ]; then
 	porcentaje="2"
 	mensaje="Respaldamos versión de php en el sistema"
