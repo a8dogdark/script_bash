@@ -219,7 +219,6 @@ if [ ${DISTRO} == "UBUNTU" ]; then
 		apt install -y software-properties-common
 		sudo add-apt-repository -y ppa:ondrej/php
         apt update
-    else
     fi
 ) & disown
 
