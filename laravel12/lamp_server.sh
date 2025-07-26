@@ -6,6 +6,7 @@
 #varables del sistema
 mensaje=""
 name=""
+temp="/tmp"
 #funciones del sistema
 actualizar(){
 	#actualizamos el sistema en segundo plano
@@ -44,7 +45,14 @@ progress_dialog()
 }
 instalar_paquetes()
 {
-	apt install -y -q ${paquete} >>/dev/null 2>&1
+	#validamos si ya existe el paquete
+	if ! dpkg -s ${paquete} &> /dev/null; then
+		apt install -y -q ${paquete} >>/dev/null 2>&1
+	else
+		mensaje="${paquete} esta en su versión más reciente"
+		progress_dialog
+		sleep 1
+	fi
 }
 #limpimamos la pantalla
 clear
@@ -73,7 +81,6 @@ if [ "${is64bit}" != '64' ]; then
     	mensaje="El sistema solo debe ser de 64 bits"
 	mensaje_dialog
 	exit 1
-    exit 1
 fi
 # validamos si es centos o almalinux, si es así no se instala
 if [ -f "/etc/redhat-release" ]; then
@@ -100,9 +107,25 @@ else
     echo "Hay error al encontrar la distribuición, no la reconoce el programa"
     exit 1
 fi
+#validamos si existe la carpeta tmp
+if [ ! -d "${temp}" ]; then
+	#creamos la carpeta tmp
+	echo "no existe la carpeta tmp"
+fi
+
+#validamos si existe la carpeta temporal
+if [ ! -d "${temp}/temporal" ]; then
+	#creamos la carpeta tmp
+	mkdir ${temp}/temporal
+fi
+
+carpeta_trabajo_temporal="${temp}/temporal"
+
+#ingresamos a la carpeta temporal para trabajar
+cd $carpeta_trabajo_temporal
 
 #damos la bienvenida
-mensaje="\nBienvenidos al instalador Lamp\n\nEl sistema será preparado para instalar\nun sistema Lamp y laravel 12 de forma autómatica.\nInstalará los siguientes paquetes:\nApache2\nPhp 8.3\n${MYSQL}\nPhpmyadmin\nComposer\nNodeJs 24\nInstalador Laravel\nProyecto Nuevo\n¿Desea Continuar?"
+mensaje="\nBienvenidos al instalador Lamp\n\nEl sistema será preparado para instalar\nun sistema Lamp y laravel 12 de forma autómatica.\nInstalará los siguientes paquetes:\nApache2\nPhp 8.4\n${MYSQL}\nPhpmyadmin\nComposer\nNodeJs 24\nInstalador Laravel\nProyecto Nuevo\n¿Desea Continuar?"
 mensaje_yesno
 
 clear
@@ -183,7 +206,7 @@ if [ ${DISTRO} == "UBUNTU" ]; then
 
 	porcentaje="4"
 	mensaje="Agregamos Dependencias para Ondrej Php"
-	paquete="apt-transport-https ca-certificates"
+	paquete="lsb-release ca-certificates apt-transport-https software-properties-common"
 	progress_dialog
 	instalar_paquetes
 
@@ -220,59 +243,286 @@ else
 	actualizar
 fi
 
+#instalacion de lamp
+porcentaje="10"
+mensaje="Instalando Paquetes adicionales"
+progress_dialog
+sleep 1
 
+#instalando curl
+porcentaje="12"
+mensaje="Instalando Curl"
+progress_dialog
+paquete="curl"
+instalar_paquetes
 
+#instalando Unzip
+porcentaje="14"
+mensaje="Instalando Unzip"
+progress_dialog
+paquete="unzip"
+instalar_paquetes
 
+#instalando Wget
+porcentaje="16"
+mensaje="Instalando Wget"
+progress_dialog
+paquete="wget"
+instalar_paquetes
 
+#instalando git
+porcentaje="18"
+mensaje="Instalando Git"
+progress_dialog
+paquete="git"
+instalar_paquetes
 
+#instalando Sed
+porcentaje="20"
+mensaje="Instalando Sed"
+progress_dialog
+paquete="sed"
+instalar_paquetes
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#agregamos la libreria de ondrej para php 8.3
-
-
-
-porcentaje="2"
+#instalando Apache
+porcentaje="30"
 mensaje="Instalando Apache"
+progress_dialog
 paquete="apache2"
-progress_dialog
+instalar_paquetes
 
-sleep 5
-porcentaje="5"
-mensaje="Instalando phpmyadmin"
+#instalando Apache
+porcentaje="34"
+mensaje="Habilitando url Dinamicas Apache"
 progress_dialog
-sleep 5
-clear
+a2enmod rewrite
+
+#instalando Apache
+porcentaje="38"
+mensaje="Reiniciando Apache"
+progress_dialog
+service apache2 restart
+
+#instalando Mysql
+porcentaje="40"
+mensaje="Instalando ${MYSQL}"
+progress_dialog
+paquete="${MYSQL}"
+instalar_paquetes
+#instalando PHP 8.4
+porcentaje="50"
+mensaje="Instalando PHP 8.4"
+progress_dialog
+paquete="php8.4"
+instalar_paquetes
+
+#instalando PHP 8.4
+porcentaje="51"
+mensaje="Instalando librerías PHP 8.4 Cli"
+progress_dialog
+paquete="php8.4-{cli}"
+instalar_paquetes
+
+porcentaje="52"
+mensaje="Instalando librerías PHP 8.4 xml"
+progress_dialog
+paquete="php8.4-{xml}"
+instalar_paquetes
+
+porcentaje="53"
+mensaje="Instalando librerías PHP 8.4 curl"
+progress_dialog
+paquete="php8.4-{curl}"
+instalar_paquetes
+
+porcentaje="54"
+mensaje="Instalando librerías PHP 8.4 mbstring"
+progress_dialog
+paquete="php8.4-{mbstring}"
+instalar_paquetes
+
+porcentaje="55"
+mensaje="Instalando librerías PHP 8.4 Mysql"
+progress_dialog
+paquete="php8.4-{mysql}"
+instalar_paquetes
+
+porcentaje="56"
+mensaje="Instalando librerías PHP 8.4 Zip"
+progress_dialog
+paquete="php8.4-{zip}"
+instalar_paquetes
+
+porcentaje="57"
+mensaje="Instalando librerías PHP 8.4 Mysqlnd"
+progress_dialog
+paquete="php8.4-{mysqlnd}"
+instalar_paquetes
+
+porcentaje="58"
+mensaje="Instalando librerías PHP 8.4 Opcache"
+progress_dialog
+paquete="php8.4-{opcache}"
+instalar_paquetes
+
+porcentaje="59"
+mensaje="Instalando librerías PHP 8.4 Pdo"
+progress_dialog
+paquete="php8.4-{pdo}"
+instalar_paquetes
+
+porcentaje="60"
+mensaje="Instalando librerías PHP 8.4 Bz2"
+progress_dialog
+paquete="php8.4-{bz2}"
+instalar_paquetes
+
+porcentaje="61"
+mensaje="Instalando librerías PHP 8.4 Calendar"
+progress_dialog
+paquete="php8.4-{calendar}"
+instalar_paquetes
+
+porcentaje="62"
+mensaje="Instalando librerías PHP 8.4 Ctype"
+progress_dialog
+paquete="php8.4-{ctype}"
+instalar_paquetes
+
+porcentaje="63"
+mensaje="Instalando librerías PHP 8.4 Dom"
+progress_dialog
+paquete="php8.4-{dom}"
+instalar_paquetes
+
+porcentaje="64"
+mensaje="Instalando librerías PHP 8.4 Exif"
+progress_dialog
+paquete="php8.4-{exif}"
+instalar_paquetes
+
+porcentaje="65"
+mensaje="Instalando librerías PHP 8.4 Ffi"
+progress_dialog
+paquete="php8.4-{ffi}"
+instalar_paquetes
+
+porcentaje="66"
+mensaje="Instalando librerías PHP 8.4 Fileinfo"
+progress_dialog
+paquete="php8.4-{fileinfo}"
+instalar_paquetes
+
+porcentaje="67"
+mensaje="Instalando librerías PHP 8.4 ftp"
+progress_dialog
+paquete="php8.4-{ftp}"
+instalar_paquetes
+
+porcentaje="68"
+mensaje="Instalando librerías PHP 8.4 Gd"
+progress_dialog
+paquete="php8.4-{gd}"
+instalar_paquetes
+
+porcentaje="69"
+mensaje="Instalando librerías PHP 8.4 Gettext"
+progress_dialog
+paquete="php8.4-{gettext}"
+instalar_paquetes
+
+porcentaje="70"
+mensaje="Instalando librerías PHP 8.4 Iconv"
+progress_dialog
+paquete="php8.4-{iconv}"
+instalar_paquetes
+
+
+porcentaje="71"
+mensaje="Instalando librerías PHP 8.4 Mcrypt"
+progress_dialog
+paquete="php8.4-{mcrypt}"
+instalar_paquetes
+
+porcentaje="72"
+mensaje="Instalando librerías PHP 8.4 Mysqli"
+progress_dialog
+paquete="php8.4-{mysqli}"
+instalar_paquetes
+
+porcentaje="73"
+mensaje="Instalando librerías PHP 8.4 Phar"
+progress_dialog
+paquete="php8.4-{phar}"
+instalar_paquetes
+
+porcentaje="74"
+mensaje="Instalando librerías PHP 8.4 Posix"
+progress_dialog
+paquete="php8.4-{posix}"
+instalar_paquetes
+
+porcentaje="75"
+mensaje="Instalando librerías PHP 8.4 Readline"
+progress_dialog
+paquete="php8.4-{readline}"
+instalar_paquetes
+
+porcentaje="76"
+mensaje="Instalando librerías PHP 8.4 Shmop"
+progress_dialog
+paquete="php8.4-{shmop}"
+instalar_paquetes
+
+porcentaje="77"
+mensaje="Instalando librerías PHP 8.4 Simplexml"
+progress_dialog
+paquete="php8.4-{simplexml}"
+instalar_paquetes
+
+porcentaje="78"
+mensaje="Instalando librerías PHP 8.4 Sockets"
+progress_dialog
+paquete="php8.4-{sockets}"
+instalar_paquetes
+
+porcentaje="79"
+mensaje="Instalando librerías PHP 8.4 Sysvmsg"
+progress_dialog
+paquete="php8.4-{sysvmsg}"
+instalar_paquetes
+
+porcentaje="80"
+mensaje="Instalando librerías PHP 8.4 Tokenizer"
+progress_dialog
+paquete="php8.4-{tokenizer}"
+instalar_paquetes
+
+porcentaje="81"
+mensaje="Instalando librerías PHP 8.4 Xmlreader"
+progress_dialog
+paquete="php8.4-{xmlreader}"
+instalar_paquetes
+
+porcentaje="82"
+mensaje="Instalando librerías PHP 8.4 Xmlwriter"
+progress_dialog
+paquete="php8.4-{xmlwriter}"
+instalar_paquetes
+
+porcentaje="83"
+mensaje="Instalando librerías PHP 8.4 Xsl"
+progress_dialog
+paquete="php8.4-{xsl}"
+instalar_paquetes
+
+porcentaje="84"
+mensaje="Instalando librerías PHP 8.4 Bcmath"
+progress_dialog
+paquete="php8.4-{bcmath}"
+instalar_paquetes
+
+
+
+
 exit 1
