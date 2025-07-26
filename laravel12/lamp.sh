@@ -1,5 +1,5 @@
 #! /bin/bash
-
+temp="/tmp"
 #limpimamos la pantalla
 clear
 #verificamos que el sistema este en root
