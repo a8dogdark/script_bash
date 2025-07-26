@@ -213,11 +213,17 @@ if [ ${DISTRO} == "UBUNTU" ]; then
 	porcentaje="6"
 	mensaje="Agregamos Repositorio Ondrej Php"
 	progress_dialog
-	(
-		apt install -y software-properties-common && \
-		add-apt-repository -y ppa:ondrej/php && \
-		apt update
-	) disown
+	
+(
+    # Actualiza la lista de paquetes
+    apt update && \
+    # Instala software-properties-common (necesario para add-apt-repository)
+    apt install -y software-properties-common && \
+    # Agrega el repositorio de Ondrej para PHP
+    add-apt-repository -y ppa:ondrej/php && \
+    # Actualiza la lista de paquetes para incluir los del nuevo repositorio
+    apt update
+) disown
 
 	porcentaje="8"
 	mensaje="Actualizamos el sistema"
