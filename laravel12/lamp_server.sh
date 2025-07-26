@@ -41,8 +41,10 @@ if [ -f "/etc/os-release" ]; then
     
     if [ "$ID" = "ubuntu" ]; then
         DISTRO="UBUNTU"
+        MYSQL=mysql-server
     elif [ "$ID" = "debian" ]; then
         DISTRO="DEBIAN"
+        MYSQL="mariadb-server"
     fi
 else 
     echo "Hay error al encontrar la distribuición, no la reconoce el programa"
@@ -60,7 +62,7 @@ else
 fi
 
 dialog --title "Dogdark" \
-        --msgbox "\nBienvenidos al instalador Lamp\n\nEl sistema será preparado para instalar\nun sistema Lamp y laravel 12 de forma autómatica" 10 50
+        --msgbox "\nBienvenidos al instalador Lamp\n\nEl sistema será preparado para instalar\nun sistema Lamp y laravel 12 de forma autómatica.\nInstalará los siguientes paquetes:\nApache2\nPhp 8.3\n${MYSQL}\nPhpmyadmin\nComposer\nNodeJS 24\nInstalador Laravel\nProyecto Nuevo" 0 0
 
 dialog --title "Dogdark" \
        --yesno "¿Desea Continuar?" 10 30
