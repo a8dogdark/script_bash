@@ -573,24 +573,6 @@ progress_dialog
     fi
 ) & disown
 
-#instalando composer
-porcentaje="82"
-mensaje="Instalando Composer"
-progress_dialog
-(
-	wget -q -O composer.phar https://getcomposer.org/composer.phar && mv composer.phar /usr/local/bin/composer &
-	echo 'export PATH="~/.config/composer/vendor/bin:$PATH"' >> ~/.bashrc 
-	source ~/.bashrc
-) disown
-
-#instalando Node Js
-porcentaje="84"
-mensaje="Instalando Node Js"
-progress_dialog
-(
-    curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
-	apt install -y -q nodejs
-) disown
 
 porcentaje="100"
 mensaje="Fin instalacion"
