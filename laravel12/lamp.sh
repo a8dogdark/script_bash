@@ -85,6 +85,26 @@ passmyadmin=$(dialog --title "Dogdark" \
 passroot=$(dialog --title "Dogdark" \
            --stdout \
            --inputbox "Password para Root" 10 50 )
+#opciones para instalar software adicional
+OPCIONES_SOFTWARES=(
+	1 "Visual Studio" off
+	2 "Sublime text" off
+	3 "Brave" off
+	4 "Chrome" off
+)
+programas=$(dialog --title "Dogdark" \
+	--stdout \
+       	--checklist "Selecciona el software deseado:" 0 0 4 \
+       	"${OPCIONES_SOFTWARES[@]}" \
+       	)       
+
+#eliminar las comillas dobles de salida
+programas=$(echo "$programas" | tr -d '"')
+
+#contamos cuantos registros existen
+cuantos_programas=$(echo "$programas" | wc -w)
+
+IFS=' ' read -r -a TEMP_PROGRAMAS <<< $programas
 
 
 
