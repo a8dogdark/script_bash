@@ -78,7 +78,13 @@ dialog --title "Dogdark" \
 	fi
 proyecto=$(dialog --title "Dogdark" \
            --stdout \
-           --inputbox "Nombre del Proyecto" 10 50 )
+           --inputbox "Nombre del Proyecto Laravel:" 10 50 )
+passmyadmin=$(dialog --title "Dogdark" \
+           --stdout \
+           --inputbox "Password para Phpmyadmin" 10 50 )
+passroot=$(dialog --title "Dogdark" \
+           --stdout \
+           --inputbox "Password para Root" 10 50 )
 
 
 
