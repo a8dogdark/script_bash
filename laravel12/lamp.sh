@@ -74,7 +74,9 @@ dialog --title "Dogdark" \
            echo "Saliendo del Instalador";
 	   exit 1
 	fi
-
+proyecto=$(dialog --title "Dogdark" \
+           --stdout \
+           --inputbox "Nombre del Proyecto" 10 50 )
 
 
 
