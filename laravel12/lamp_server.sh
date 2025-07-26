@@ -303,225 +303,230 @@ mensaje="Reiniciando Apache"
 progress_dialog
 service apache2 restart
 
-#instalando Mysql
-porcentaje="40"
-mensaje="Instalando ${MYSQL}"
-progress_dialog
-paquete="${MYSQL}"
-instalar_paquetes
 #instalando PHP 8.4
-porcentaje="50"
+porcentaje="40"
 mensaje="Instalando PHP 8.4"
 progress_dialog
 paquete="php8.4"
 instalar_paquetes
 
 #instalando PHP 8.4
-porcentaje="51"
+porcentaje="41"
 mensaje="Instalando librerías PHP 8.4 Cli"
 progress_dialog
 paquete="php8.4-{cli}"
 instalar_paquetes
 
-porcentaje="52"
+porcentaje="42"
 mensaje="Instalando librerías PHP 8.4 xml"
 progress_dialog
 paquete="php8.4-{xml}"
 instalar_paquetes
 
-porcentaje="53"
+porcentaje="43"
 mensaje="Instalando librerías PHP 8.4 curl"
 progress_dialog
 paquete="php8.4-{curl}"
 instalar_paquetes
 
-porcentaje="54"
+porcentaje="44"
 mensaje="Instalando librerías PHP 8.4 mbstring"
 progress_dialog
 paquete="php8.4-{mbstring}"
 instalar_paquetes
 
-porcentaje="55"
+porcentaje="45"
 mensaje="Instalando librerías PHP 8.4 Mysql"
 progress_dialog
 paquete="php8.4-{mysql}"
 instalar_paquetes
 
-porcentaje="56"
+porcentaje="46"
 mensaje="Instalando librerías PHP 8.4 Zip"
 progress_dialog
 paquete="php8.4-{zip}"
 instalar_paquetes
 
-porcentaje="57"
+porcentaje="47"
 mensaje="Instalando librerías PHP 8.4 Mysqlnd"
 progress_dialog
 paquete="php8.4-{mysqlnd}"
 instalar_paquetes
 
-porcentaje="58"
+porcentaje="48"
 mensaje="Instalando librerías PHP 8.4 Opcache"
 progress_dialog
 paquete="php8.4-{opcache}"
 instalar_paquetes
 
-porcentaje="59"
+porcentaje="49"
 mensaje="Instalando librerías PHP 8.4 Pdo"
 progress_dialog
 paquete="php8.4-{pdo}"
 instalar_paquetes
 
-porcentaje="60"
+porcentaje="50"
 mensaje="Instalando librerías PHP 8.4 Bz2"
 progress_dialog
 paquete="php8.4-{bz2}"
 instalar_paquetes
 
-porcentaje="61"
+porcentaje="51"
 mensaje="Instalando librerías PHP 8.4 Calendar"
 progress_dialog
 paquete="php8.4-{calendar}"
 instalar_paquetes
 
-porcentaje="62"
+porcentaje="52"
 mensaje="Instalando librerías PHP 8.4 Ctype"
 progress_dialog
 paquete="php8.4-{ctype}"
 instalar_paquetes
 
-porcentaje="63"
+porcentaje="53"
 mensaje="Instalando librerías PHP 8.4 Dom"
 progress_dialog
 paquete="php8.4-{dom}"
 instalar_paquetes
 
-porcentaje="64"
+porcentaje="54"
 mensaje="Instalando librerías PHP 8.4 Exif"
 progress_dialog
 paquete="php8.4-{exif}"
 instalar_paquetes
 
-porcentaje="65"
+porcentaje="55"
 mensaje="Instalando librerías PHP 8.4 Ffi"
 progress_dialog
 paquete="php8.4-{ffi}"
 instalar_paquetes
 
-porcentaje="66"
+porcentaje="56"
 mensaje="Instalando librerías PHP 8.4 Fileinfo"
 progress_dialog
 paquete="php8.4-{fileinfo}"
 instalar_paquetes
 
-porcentaje="67"
+porcentaje="57"
 mensaje="Instalando librerías PHP 8.4 ftp"
 progress_dialog
 paquete="php8.4-{ftp}"
 instalar_paquetes
 
-porcentaje="68"
+porcentaje="58"
 mensaje="Instalando librerías PHP 8.4 Gd"
 progress_dialog
 paquete="php8.4-{gd}"
 instalar_paquetes
 
-porcentaje="69"
+porcentaje="59"
 mensaje="Instalando librerías PHP 8.4 Gettext"
 progress_dialog
 paquete="php8.4-{gettext}"
 instalar_paquetes
 
-porcentaje="70"
+porcentaje="60"
 mensaje="Instalando librerías PHP 8.4 Iconv"
 progress_dialog
 paquete="php8.4-{iconv}"
 instalar_paquetes
 
-
-porcentaje="71"
+porcentaje="61"
 mensaje="Instalando librerías PHP 8.4 Mcrypt"
 progress_dialog
 paquete="php8.4-{mcrypt}"
 instalar_paquetes
 
-porcentaje="72"
+porcentaje="62"
 mensaje="Instalando librerías PHP 8.4 Mysqli"
 progress_dialog
 paquete="php8.4-{mysqli}"
 instalar_paquetes
 
-porcentaje="73"
+porcentaje="63"
 mensaje="Instalando librerías PHP 8.4 Phar"
 progress_dialog
 paquete="php8.4-{phar}"
 instalar_paquetes
 
-porcentaje="74"
+porcentaje="64"
 mensaje="Instalando librerías PHP 8.4 Posix"
 progress_dialog
 paquete="php8.4-{posix}"
 instalar_paquetes
 
-porcentaje="75"
+porcentaje="65"
 mensaje="Instalando librerías PHP 8.4 Readline"
 progress_dialog
 paquete="php8.4-{readline}"
 instalar_paquetes
 
-porcentaje="76"
+porcentaje="66"
 mensaje="Instalando librerías PHP 8.4 Shmop"
 progress_dialog
 paquete="php8.4-{shmop}"
 instalar_paquetes
 
-porcentaje="77"
+porcentaje="67"
 mensaje="Instalando librerías PHP 8.4 Simplexml"
 progress_dialog
 paquete="php8.4-{simplexml}"
 instalar_paquetes
 
-porcentaje="78"
+porcentaje="68"
 mensaje="Instalando librerías PHP 8.4 Sockets"
 progress_dialog
 paquete="php8.4-{sockets}"
 instalar_paquetes
 
-porcentaje="79"
+porcentaje="69"
 mensaje="Instalando librerías PHP 8.4 Sysvmsg"
 progress_dialog
 paquete="php8.4-{sysvmsg}"
 instalar_paquetes
 
-porcentaje="80"
+porcentaje="70"
 mensaje="Instalando librerías PHP 8.4 Tokenizer"
 progress_dialog
 paquete="php8.4-{tokenizer}"
 instalar_paquetes
 
-porcentaje="81"
+porcentaje="71"
 mensaje="Instalando librerías PHP 8.4 Xmlreader"
 progress_dialog
 paquete="php8.4-{xmlreader}"
 instalar_paquetes
 
-porcentaje="82"
+porcentaje="72"
 mensaje="Instalando librerías PHP 8.4 Xmlwriter"
 progress_dialog
 paquete="php8.4-{xmlwriter}"
 instalar_paquetes
 
-porcentaje="83"
+porcentaje="73"
 mensaje="Instalando librerías PHP 8.4 Xsl"
 progress_dialog
 paquete="php8.4-{xsl}"
 instalar_paquetes
 
-porcentaje="84"
+porcentaje="74"
 mensaje="Instalando librerías PHP 8.4 Bcmath"
 progress_dialog
 paquete="php8.4-{bcmath}"
 instalar_paquetes
 
+porcentaje="75"
+mensaje="Instalando librerías PHP 8.4 Json"
+progress_dialog
+paquete="php8.4-{json}"
+instalar_paquetes
+
+#instalando Mysql
+porcentaje="80"
+mensaje="Instalando ${MYSQL}"
+progress_dialog
+paquete="${MYSQL}"
+instalar_paquetes
 
 
 
