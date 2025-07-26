@@ -20,10 +20,8 @@ mensaje_dialog(){
 mensaje_yesno(){
 	dialog --title "Dogdark" \
 	--yesno "${mensaje}" 0 0
-	if [ $? -eq 0 ]; then
-		clear
-	else
-		clear
+	if [ ! $? -eq 0 ]; then
+		#nada p
 		mensaje="Saliendo del Instalador"
 		mensaje_dialog
 		clear
@@ -51,7 +49,6 @@ instalar_paquetes()
 	else
 		mensaje="${paquete} esta en su versión más reciente"
 		progress_dialog
-		sleep 1
 	fi
 }
 #limpimamos la pantalla
@@ -552,18 +549,29 @@ porcentaje="90"
 mensaje="Instalando Phpmyadmin"
 progress_dialog
 (
-    # Preconfigurar las respuestas para phpMyAdmin
-    # Reemplaza 'TU_CONTRASEÑA_PHPMYADMIN' con una contraseña segura para el usuario 'phpmyadmin'
-    echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | sudo debconf-set-selections
-    echo "phpmyadmin phpmyadmin/app-password-confirm password ${passphpmyadmin}" | sudo debconf-set-selections
-    echo "phpmyadmin phpmyadmin/mysql/app-pass password ${passphpmyadmin}" | sudo debconf-set-selections
-    echo "phpmyadmin phpmyadmin/mysql/admin-pass password ${passroot}" | sudo debconf-set-selections
-    echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | sudo debconf-set-selections
+    # Validar si phpMyAdmin NO está instalado
+    if ! dpkg -s phpmyadmin &> /dev/null; then
 
-    # Instalar phpMyAdmin y las extensiones PHP necesarias
-	apt install -y -q phpmyadmin
-    systemctl reload apache2
-) disown
+        # Preconfigurar las respuestas para phpMyAdmin
+        # ¡IMPORTANTE! Las variables '${passphpmyadmin}' y '${passroot}' deben estar definidas
+        # en tu entorno antes de ejecutar este script, o reemplázalas directamente
+        # con tus contraseñas reales y seguras.
+        echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | sudo debconf-set-selections
+        echo "phpmyadmin phpmyadmin/app-password-confirm password ${passphpmyadmin}" | sudo debconf-set-selections
+        echo "phpmyadmin phpmyadmin/mysql/app-pass password ${passphpmyadmin}" | sudo debconf-set-selections
+        echo "phpmyadmin phpmyadmin/mysql/admin-pass password ${passroot}" | sudo debconf-set-selections
+        echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | sudo debconf-set-selections
+
+        # Instalar phpMyAdmin y las extensiones PHP necesarias (esenciales para su correcto funcionamiento)
+        sudo apt install -y phpmyadmin
+        # Habilitar los módulos PHP (por si no lo están ya)
+        sudo phpenmod mbstring
+        sudo phpenmod zip
+        sudo phpenmod gd
+        # Recargar Apache para aplicar los cambios en la configuración y los módulos PHP
+        sudo systemctl reload apache2
+    fi
+) & disown
 
 #instalando composer
 porcentaje="82"
