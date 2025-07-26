@@ -284,6 +284,13 @@ progress_dialog
 paquete="sed"
 instalar_paquetes
 
+#instalando Sed
+porcentaje="25"
+mensaje="Instalando Debconf-utils"
+progress_dialog
+paquete="debconf-utils"
+instalar_paquetes
+
 #instalando Apache
 porcentaje="30"
 mensaje="Instalando Apache"
@@ -528,6 +535,63 @@ progress_dialog
 paquete="${MYSQL}"
 instalar_paquetes
 
+porcentaje="80"
+mensaje="Agregando la password a Root de mysql "
+progress_dialog
+mysql --execute="ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${passroot}';" >>/dev/null 2>&1
 
+#instalando phpmyadmin
+porcentaje="90"
+mensaje="Instalando Phpmyadmin"
+progress_dialog
+(
+    # Preconfigurar las respuestas para phpMyAdmin
+    # Reemplaza 'TU_CONTRASEÑA_PHPMYADMIN' con una contraseña segura para el usuario 'phpmyadmin'
+    echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | sudo debconf-set-selections
+    echo "phpmyadmin phpmyadmin/app-password-confirm password ${passphpmyadmin}" | sudo debconf-set-selections
+    echo "phpmyadmin phpmyadmin/mysql/app-pass password ${passphpmyadmin}" | sudo debconf-set-selections
+    echo "phpmyadmin phpmyadmin/mysql/admin-pass password ${passroot}" | sudo debconf-set-selections
+    echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | sudo debconf-set-selections
+
+    # Instalar phpMyAdmin y las extensiones PHP necesarias
+	paquete="phpmyadmin"
+	instalar_paquetes
+
+    # Reiniciar Apache para aplicar los cambios de PHP
+    systemctl reload apache2
+) disown
+
+#instalando composer
+porcentaje="82"
+mensaje="Instalando Composer"
+progress_dialog
+(
+	wget -q -O composer.phar https://getcomposer.org/composer.phar && mv composer.phar /usr/local/bin/composer &
+	echo 'export PATH="~/.config/composer/vendor/bin:$PATH"' >> ~/.bashrc 
+	source ~/.bashrc
+) disown
+
+#instalando Node Js
+porcentaje="84"
+mensaje="Instalando Node Js"
+progress_dialog
+
+(
+    curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
+	paquete="nodejs"
+	instalar_paquetes
+) disown
+
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+
+porcentaje="100"
+mensaje="Fin instalacion"
+progress_dialog
+sleep 3
+
+mensaje="Sistema instalado con exito"
+mensaje_dialog
+
+rm -R /tmp/temporal
 
 exit 1
