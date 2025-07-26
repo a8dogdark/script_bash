@@ -213,7 +213,11 @@ if [ ${DISTRO} == "UBUNTU" ]; then
 	porcentaje="6"
 	mensaje="Agregamos Repositorio Ondrej Php"
 	progress_dialog
-	add-apt-repository ppa:ondrej/php
+	(
+		apt install -y software-properties-common && \
+		add-apt-repository -y ppa:ondrej/php && \
+		apt update
+	) disown
 
 	porcentaje="8"
 	mensaje="Actualizamos el sistema"
@@ -554,10 +558,7 @@ progress_dialog
     echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | sudo debconf-set-selections
 
     # Instalar phpMyAdmin y las extensiones PHP necesarias
-	paquete="phpmyadmin"
-	instalar_paquetes
-
-    # Reiniciar Apache para aplicar los cambios de PHP
+	apt install -y -q phpmyadmin
     systemctl reload apache2
 ) disown
 
@@ -575,14 +576,10 @@ progress_dialog
 porcentaje="84"
 mensaje="Instalando Node Js"
 progress_dialog
-
 (
     curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
-	paquete="nodejs"
-	instalar_paquetes
+	apt install -y -q nodejs
 ) disown
-
-curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
 
 porcentaje="100"
 mensaje="Fin instalacion"
