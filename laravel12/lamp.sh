@@ -69,8 +69,10 @@ if [ ! $? -eq 0 ]; then
 fi
 dialog --title "Dogdark" \
 	--yesno "Bienvenidos al instalador Lamp\n\nEl sistema será preparado para instalar\nun sistema Lamp y laravel 12 de forma autómatica.\nInstalará los siguientes paquetes:\nApache2\nPhp 8.4\n${MYSQL}\nPhpmyadmin\nComposer\nNodeJs 24\nInstalador Laravel\nProyecto Nuevo\n¿Desea Continuar?" 0 0
-	if [ ! $? -eq 0 ]; then
+	if [ $? -eq 0 ]; then
  	   clear
+        else
+	   clear
            echo "Saliendo del Instalador";
 	   exit 1
 	fi
