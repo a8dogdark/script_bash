@@ -237,29 +237,48 @@ case $response in
             fi
             
             echo "XXXX"
+            echo "Configurando Apache..."
+            echo "XXXX"
+            echo 15 # Nuevo porcentaje para la configuración de Apache
+            # Configurar ServerName para evitar la advertencia AH00558
+            if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
+                APACHE_CONF="/etc/apache2/apache2.conf"
+                if ! grep -q "ServerName localhost" "$APACHE_CONF"; then
+                    echo "ServerName localhost" >> "$APACHE_CONF"
+                fi
+            elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
+                HTTPD_CONF="/etc/httpd/conf/httpd.conf"
+                if ! grep -q "ServerName localhost" "$HTTPD_CONF"; then
+                    echo "ServerName localhost" >> "$HTTPD_CONF"
+                fi
+            fi
+            sleep 0.5 # Pequeña pausa para simular la operación
+
+            echo "XXXX"
             echo "Habilitando mod_rewrite..."
             echo "XXXX"
-            echo 20 # Porcentaje para mod_rewrite
+            echo 25 # Ajustado el porcentaje
             # Validar y habilitar mod_rewrite y reiniciar Apache
             if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
-                # Verificar si el módulo rewrite ya está habilitado
                 if ! apache2ctl -M | grep -q rewrite_module; then
                     a2enmod rewrite >/dev/null 2>&1
                     systemctl restart apache2 >/dev/null 2>&1
+                else
+                    systemctl reload apache2 >/dev/null 2>&1 # Recargar Apache si ya está habilitado para aplicar ServerName
                 fi
             elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
-                # En AlmaLinux (y otras distribuciones RHEL), mod_rewrite suele estar cargado por defecto.
-                # Verificamos si está cargado; si no, reiniciamos el servicio para asegurar (no hay un 'a2enmod' equivalente).
                 if ! httpd -M 2>&1 | grep -q rewrite_module; then
                     systemctl restart httpd >/dev/null 2>&1
+                else
+                    systemctl reload httpd >/dev/null 2>&1 # Recargar HTTPD si ya está habilitado para aplicar ServerName
                 fi
             fi
-            sleep 1 # Pequeña pausa para dar feedback visual, incluso si se saltó la acción
+            sleep 1 # Pequeña pausa para dar feedback visual
 
             echo "XXXX"
             echo "Instalando PHP $PHP_VERSION..."
             echo "XXXX"
-            echo 40 # Ajustado el porcentaje
+            echo 45 # Ajustado el porcentaje
             sleep 5 # Simula la instalación de PHP
 
             # Determina si es MySQL o MariaDB
@@ -272,7 +291,7 @@ case $response in
             echo "XXXX"
             echo "Instalando $DB_SYSTEM..."
             echo "XXXX"
-            echo 70 # Ajustado el porcentaje
+            echo 75 # Ajustado el porcentaje
             sleep 5 # Simula la instalación de la base de datos
 
             echo "XXXX"
