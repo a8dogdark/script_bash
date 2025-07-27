@@ -2,7 +2,7 @@
 
 # ==============================================================================
 # Script de Instalación de Servidor LAMP para Laravel 12
-# Versión: 2.1 (Optimizado y Corrección de Repositorios)
+# Versión: 2.2 (Optimización de Output en Consola)
 # Compatibilidad:
 #   - Ubuntu: 20.04 LTS (focal), 21.x, 22.04 LTS (jammy), 23.x, 24.04 LTS (noble)
 #   - Debian: 11 (bullseye), 12 (bookworm)
@@ -12,7 +12,7 @@
 # --- Variables Globales ---
 DISTRIBUCION=""          # Almacena "Ubuntu/Debian" o "AlmaLinux"
 SYSTEM_CODENAME=""       # Nombre clave de la distribución (e.g., noble, jammy, bullseye)
-VERSO="2.1"              # Versión del script
+VERSO="2.2"              # Versión del script
 PROJECT_NAME=""          # Nombre del proyecto Laravel
 PHPMYADMIN_USER_PASS=""  # Contraseña del usuario phpMyAdmin
 PHPMYADMIN_ROOT_PASS=""  # Contraseña del usuario root de phpMyAdmin (MySQL/MariaDB)
@@ -237,44 +237,44 @@ clear
         log_message "Configurando PPA de Ondrej Sury para PHP."
 
         # Limpieza agresiva de configuraciones y claves GPG anteriores de Ondrej
-        log_message "DEBUG: Limpiando configuraciones y claves GPG antiguas de Ondrej Sury."
+        log_message "Limpiando configuraciones y claves GPG antiguas de Ondrej Sury."
         find /etc/apt/sources.list.d/ -type f -name "*ondrej-*.list*" -delete >> "$LOG_FILE" 2>&1
         sudo rm -f /etc/apt/trusted.gpg.d/ondrej-php.gpg >> "$LOG_FILE" 2>&1 || true
         sudo rm -f /usr/share/keyrings/deb.sury.org-php.gpg >> "$LOG_FILE" 2>&1 || true
 
         # Limpiar el caché de apt y listas
-        log_message "DEBUG: Limpiando caché y listas de apt."
+        log_message "Limpiando caché y listas de apt."
         DEBIAN_FRONTEND=noninteractive apt-get clean >> "$LOG_FILE" 2>&1
         sudo rm -rf /var/lib/apt/lists/* >> "$LOG_FILE" 2>&1
 
         # Instalar paquetes esenciales para añadir repositorios y GPG
-        log_message "DEBUG: Instalando apt-transport-https, software-properties-common, curl, gnupg2."
+        log_message "Instalando apt-transport-https, software-properties-common, curl, gnupg2."
         DEBIAN_FRONTEND=noninteractive apt-get update >> "$LOG_FILE" 2>&1 # Update previo para asegurar que se encuentren
         DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https software-properties-common curl gnupg2 >> "$LOG_FILE" 2>&1
         if [ $? -ne 0 ]; then
             log_message "Error CRÍTICO: No se pudieron instalar paquetes esenciales para gestionar repositorios (apt-transport-https, etc.). Abortando la instalación." console
             exit 1 # Salida crítica
         fi
-        log_message "DEBUG: Paquetes esenciales instalados."
+        log_message "Paquetes esenciales instalados."
 
         # Añadir la llave GPG de Ondrej de forma segura y moderna
-        log_message "DEBUG: Añadiendo la clave GPG del PPA de Ondrej Sury a /usr/share/keyrings/."
+        log_message "Añadiendo la clave GPG del PPA de Ondrej Sury a /usr/share/keyrings/."
         curl -sSL https://packages.sury.org/php/apt.gpg | sudo gpg --dearmor -o /usr/share/keyrings/deb.sury.org-php.gpg >> "$LOG_FILE" 2>&1
         if [ $? -ne 0 ]; then
             log_message "Error CRÍTICO: No se pudo añadir la clave GPG de Ondrej Sury. Los repositorios no serán confiables. Abortando la instalación." console
             exit 1 # Salida crítica
         fi
-        log_message "DEBUG: Clave GPG de Ondrej Sury añadida con éxito."
+        log_message "Clave GPG de Ondrej Sury añadida con éxito."
 
         # Crear/actualizar el archivo de repositorio usando el SYSTEM_CODENAME detectado
         PPA_LIST_FILE="/etc/apt/sources.list.d/ondrej-php-${SYSTEM_CODENAME}.list"
-        log_message "DEBUG: Creando/actualizando archivo de repositorio de Ondrej: $PPA_LIST_FILE para codename '$SYSTEM_CODENAME'."
+        log_message "Creando/actualizando archivo de repositorio de Ondrej: $PPA_LIST_FILE para codename '$SYSTEM_CODENAME'."
         echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $SYSTEM_CODENAME main" | sudo tee "$PPA_LIST_FILE" >> "$LOG_FILE" 2>&1
         if [ $? -ne 0 ]; then
             log_message "Error CRÍTICO: No se pudo crear/actualizar el archivo del repositorio de Ondrej Sury. Abortando la instalación." console
             exit 1 # Salida crítica
         fi
-        log_message "DEBUG: Archivo de repositorio de Ondrej creado/actualizado con éxito."
+        log_message "Archivo de repositorio de Ondrej creado/actualizado con éxito."
         
         # Realizar un apt update final para cargar los nuevos repositorios
         log_message "Realizando 'apt update' después de configurar el repositorio de Ondrej."
@@ -283,7 +283,7 @@ clear
             log_message "Error CRÍTICO: 'apt update' falló después de configurar el PPA de Ondrej. Esto significa que los paquetes PHP no se encontrarán. Verifica tu conexión a internet o el nombre clave de tu distribución ($SYSTEM_CODENAME) para el repositorio de Ondrej (https://packages.sury.org/php/dists/). Abortando la instalación." console
             exit 1 # Salida crítica si el update falla aquí
         fi
-        log_message "DEBUG: 'apt update' después de Ondrej completado con éxito."
+        log_message "'apt update' después de Ondrej completado con éxito."
 
     elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
         log_message "Configurando repositorios EPEL y REMI para AlmaLinux."
@@ -498,20 +498,20 @@ clear
 
         if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
             PACKAGE_TO_INSTALL="php${PHP_VERSION}-${DEBIAN_SUFFIX}"
-            log_message "DEBUG: Intentando instalar Debian/Ubuntu paquete: '$PACKAGE_TO_INSTALL'"
+            log_message "Intentando instalar Debian/Ubuntu paquete: '$PACKAGE_TO_INSTALL'" # Solo log, no console
             if is_package_installed "$PACKAGE_TO_INSTALL" "dummy"; then
                 INSTALL_SUCCESS=true
-                log_message "  $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL) ya está instalado." console
+                log_message "  $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL) ya está instalado." # Solo log, no console
             else
                 DEBIAN_FRONTEND=noninteractive apt-get install -y "$PACKAGE_TO_INSTALL" >> "$LOG_FILE" 2>&1
                 if [ $? -eq 0 ]; then INSTALL_SUCCESS=true; fi
             fi
         elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
             PACKAGE_TO_INSTALL="$ALMALINUX_PACKAGE"
-            log_message "DEBUG: Intentando instalar AlmaLinux paquete: '$PACKAGE_TO_INSTALL'"
+            log_message "Intentando instalar AlmaLinux paquete: '$PACKAGE_TO_INSTALL'" # Solo log, no console
             if is_package_installed "dummy" "$PACKAGE_TO_INSTALL"; then
                 INSTALL_SUCCESS=true
-                log_message "  $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL) ya está instalado." console
+                log_message "  $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL) ya está instalado." # Solo log, no console
             else
                 dnf install -y "$PACKAGE_TO_INSTALL" >> "$LOG_FILE" 2>&1
                 if [ $? -eq 0 ]; then INSTALL_SUCCESS=true; fi
@@ -520,9 +520,9 @@ clear
         
         if [ "$INSTALL_SUCCESS" = false ]; then
             UNINSTALLED_EXTENSIONS+=("$DISPLAY_NAME")
-            log_message "  Advertencia: No se pudo instalar la extensión $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL)." console
+            log_message "  Advertencia: No se pudo instalar la extensión $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL)." console # Este sí en consola, es una advertencia
         else
-            log_message "  $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL) instalado con éxito." console
+            log_message "  $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL) instalado con éxito." # Solo log, no console
         fi
     done
     
@@ -568,22 +568,22 @@ clear
     
     # Intenta autenticación sin contraseña primero (para sistemas nuevos)
     if ! sudo $MYSQL_SECURE_INSTALL_CMD "exit" 2>/dev/null; then
-      log_message "DEBUG: Intentando autenticar como root con sudo."
+      log_message "Intentando autenticar como root con sudo."
       MYSQL_SECURE_INSTALL_CMD="sudo mysql -u root -e"
       if ! sudo $MYSQL_SECURE_INSTALL_CMD "exit" 2>/dev/null; then
-        log_message "DEBUG: Fallo al autenticar como root con sudo. Podría requerir contraseña o ser fresh install."
+        log_message "Fallo al autenticar como root con sudo. Podría requerir contraseña o ser fresh install."
         MYSQL_SECURE_INSTALL_CMD="mysql -u root --password=$PHPMYADMIN_ROOT_PASS -e" # Asume que ya tiene una y la probamos
       fi
     fi
 
     # Configurar contraseña de root (si es necesario y posible)
-    log_message "DEBUG: Configurando contraseña para 'root' de MySQL/MariaDB."
+    log_message "Configurando contraseña para 'root' de MySQL/MariaDB."
     $MYSQL_SECURE_INSTALL_CMD "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$PHPMYADMIN_ROOT_PASS';" >> "$LOG_FILE" 2>&1
     $MYSQL_SECURE_INSTALL_CMD "FLUSH PRIVILEGES;" >> "$LOG_FILE" 2>&1
     if [ $? -ne 0 ]; then log_message "Advertencia: Fallo al configurar contraseña de 'root' para MySQL/MariaDB. Podría requerir intervención manual." console; fi
 
     # Crear usuario 'phpmyadmin'
-    log_message "DEBUG: Creando usuario 'phpmyadmin'."
+    log_message "Creando usuario 'phpmyadmin'."
     $MYSQL_SECURE_INSTALL_CMD "CREATE USER 'phpmyadmin'@'localhost' IDENTIFIED WITH mysql_native_password BY '$PHPMYADMIN_USER_PASS';" >> "$LOG_FILE" 2>&1
     $MYSQL_SECURE_INSTALL_CMD "GRANT ALL PRIVILEGES ON *.* TO 'phpmyadmin'@'localhost' WITH GRANT OPTION;" >> "$LOG_FILE" 2>&1
     $MYSQL_SECURE_INSTALL_CMD "FLUSH PRIVILEGES;" >> "$LOG_FILE" 2>&1
