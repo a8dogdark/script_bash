@@ -4,8 +4,9 @@ DISTRIBUCION=""
 VERSION="" # Esta variable se actualizará en pasos posteriores
 VERSO="2.0" # Versión de la instalación
 PROJECT_NAME="" # Variable para el nombre del proyecto
-PHPMYADMIN_USER_PASS="" # Nueva variable para la contraseña del usuario phpMyAdmin
-PHPMYADMIN_ROOT_PASS="" # Nueva variable para la contraseña del usuario root de phpMyAdmin
+PHPMYADMIN_USER_PASS="" # Variable para la contraseña del usuario phpMyAdmin
+PHPMYADMIN_ROOT_PASS="" # Variable para la contraseña del usuario root de phpMyAdmin
+PHP_VERSION="" # Nueva variable para la versión de PHP seleccionada
 
 # Validación de usuario root
 if [ "$(id -u)" -ne 0 ]; then
@@ -130,7 +131,28 @@ case $response in
             exit 1
         fi
 
-        clear # Limpia la pantalla después de todos los diálogos de entrada
+        clear # Limpia la pantalla antes del siguiente diálogo
+
+        # Diálogo para seleccionar la versión de PHP
+        PHP_VERSION=$(dialog --backtitle "Script de Instalación Versión $VERSO" \
+                                --title "Seleccionar Versión de PHP" \
+                                --menu "Elige la versión de PHP que deseas instalar:" 15 50 4 \
+                                "8.2" "PHP 8.2 (Recomendado para Laravel 12)" \
+                                "8.3" "PHP 8.3" \
+                                "8.4" "PHP 8.4 (Versión más reciente)" 3>&1 1>&2 2>&3)
+        
+        menu_response=$? # Captura el estado de salida del menú
+
+        # Valida la selección del usuario
+        if [ $menu_response -ne 0 ] || [ -z "$PHP_VERSION" ]; then
+            clear
+            dialog --backtitle "Script de Instalación Versión $VERSO" \
+                   --title "¡Atención!" \
+                   --msgbox "No se ha seleccionado una versión de PHP o la operación fue cancelada. La instalación será abortada." 8 70
+            exit 1
+        fi
+
+        clear # Limpia la pantalla después de la selección de PHP
         ;;
     1) # El usuario eligió "No"
         clear # Limpia la pantalla antes de salir
