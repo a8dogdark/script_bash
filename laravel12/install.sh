@@ -154,14 +154,12 @@ case $response in
 
         clear # Limpia la pantalla después de la selección de PHP
 
-        # --- Barra de Progreso ---
+        # --- Barra de Progreso: Update y Upgrade del sistema ---
         (
             echo "XXXX"
             echo "Realizando update del sistema..."
             echo "XXXX"
             echo 40
-            # Ejecuta el update real según la distribución
-            # No pide confirmación por su naturaleza o por el flag -y/DEBIAN_FRONTEND
             if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
                 DEBIAN_FRONTEND=noninteractive apt-get update >/dev/null 2>&1
             elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
@@ -172,7 +170,6 @@ case $response in
             echo "Realizando upgrade del sistema..."
             echo "XXXX"
             echo 80
-            # Ejecuta el upgrade real según la distribución, sin pedir confirmación
             if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
                 DEBIAN_FRONTEND=noninteractive apt-get upgrade -y >/dev/null 2>&1
             elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
@@ -183,12 +180,56 @@ case $response in
             echo "Sistema actualizado"
             echo "XXXX"
             echo 100
-            sleep 2 # Pausa de 2 segundos al 100%
+            sleep 2
         ) | dialog --backtitle "Script de Instalación Versión $VERSO" \
                    --title "Progreso de la Instalación" \
                    --gauge "Iniciando operaciones..." 10 70 0
         
         clear # Limpia la pantalla después de que la barra de progreso termine
+
+        # --- Barra de Progreso: Instalación de LAMP ---
+        (
+            echo "XXXX"
+            echo "Instalando Apache2..."
+            echo "XXXX"
+            echo 10
+            sleep 3 # Simula la instalación de Apache2
+
+            echo "XXXX"
+            echo "Instalando PHP $PHP_VERSION..."
+            echo "XXXX"
+            echo 35
+            sleep 5 # Simula la instalación de PHP
+
+            # Determina si es MySQL o MariaDB
+            DB_SYSTEM=""
+            if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
+                DB_SYSTEM="MySQL"
+            elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
+                DB_SYSTEM="MariaDB"
+            fi
+            echo "XXXX"
+            echo "Instalando $DB_SYSTEM..."
+            echo "XXXX"
+            echo 65
+            sleep 5 # Simula la instalación de la base de datos
+
+            echo "XXXX"
+            echo "Instalando phpMyAdmin..."
+            echo "XXXX"
+            echo 90
+            sleep 4 # Simula la instalación de phpMyAdmin
+
+            echo "XXXX"
+            echo "Componentes LAMP instalados."
+            echo "XXXX"
+            echo 100
+            sleep 2 # Pausa de 2 segundos al 100%
+        ) | dialog --backtitle "Script de Instalación Versión $VERSO" \
+                   --title "Instalación de Componentes LAMP" \
+                   --gauge "Preparando el entorno LAMP..." 10 70 0
+
+        clear # Limpia la pantalla después de que la barra de progreso de LAMP termine
         ;;
     1) # El usuario eligió "No"
         clear # Limpia la pantalla antes de salir
