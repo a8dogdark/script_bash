@@ -246,51 +246,34 @@ case $response in
             # Agrega el repositorio de Ondrej si es Debian/Ubuntu y no está ya agregado
             if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
                 log_message "Configurando PPA de Ondrej para Debian/Ubuntu."
-                if ! grep -q "ppa.launchpadcontent.net/ondrej/php" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
-                    log_message "Instalando software-properties-common."
-                    DEBIAN_FRONTEND=noninteractive apt-get install -y software-properties-common >> "$LOG_FILE" 2>&1
-                    
-                    # --- INICIO DEL CAMBIO: Forzar la versión para add-apt-repository a 'noble' (Ubuntu 24.04 LTS) ---
-                    TARGET_CODENAME="noble" # Siempre usaremos 'noble' si es un Ubuntu/Debian, si no es una versión LTS conocida.
+                # Limpiar cualquier configuración anterior del PPA de Ondrej para evitar conflictos
+                log_message "Limpiando configuraciones antiguas del PPA de Ondrej..."
+                rm -f /etc/apt/sources.list.d/ondrej-ubuntu-php-*.list >> "$LOG_FILE" 2>&1
+                rm -f /etc/apt/sources.list.d/ondrej-ubuntu-apache2-*.list >> "$LOG_FILE" 2>&1 # Por si acaso
+                apt-key del $(apt-key list | grep -i "ondrej" | awk '{print $1}') >> "$LOG_FILE" 2>&1 # Limpia llaves viejas si existen
 
-                    log_message "Añadiendo PPA de Ondrej para PHP. Se intentará forzar el nombre clave a '$TARGET_CODENAME' si el sistema es de desarrollo o no está soportado."
-                    
-                    # add-apt-repository -y ppa:ondrej/php agregará el PPA usando SYSTEM_CODENAME.
-                    # Luego editaremos el archivo .list para cambiar el codename.
-                    add-apt-repository -y ppa:ondrej/php >> "$LOG_FILE" 2>&1
-                    
-                    # El archivo PPA se creará con el SYSTEM_CODENAME. Lo buscamos y lo modificamos.
-                    PPA_LIST_FILE="/etc/apt/sources.list.d/ondrej-ubuntu-php-${SYSTEM_CODENAME}.list"
-                    
-                    if [ -f "$PPA_LIST_FILE" ]; then
-                        log_message "Modificando $PPA_LIST_FILE para usar $TARGET_CODENAME en lugar de $SYSTEM_CODENAME."
-                        sed -i "s/${SYSTEM_CODENAME}/${TARGET_CODENAME}/g" "$PPA_LIST_FILE" >> "$LOG_FILE" 2>&1
-                        if [ $? -ne 0 ]; then
-                            log_message "Error al modificar $PPA_LIST_FILE. Podría haber problemas con el PPA de Ondrej." console
-                        fi
-                    else
-                        log_message "Advertencia: No se encontró el archivo de lista del PPA de Ondrej en $PPA_LIST_FILE. Posible error al añadir el PPA inicialmente." console
-                    fi
-                    # --- FIN DEL CAMBIO ---
+                # Asegurarse de tener apt-transport-https y software-properties-common
+                log_message "Instalando apt-transport-https y software-properties-common."
+                DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https software-properties-common curl gnupg2 >> "$LOG_FILE" 2>&1
 
-                    log_message "Realizando update después de añadir/modificar el repositorio."
-                    DEBIAN_FRONTEND=noninteractive apt-get update >> "$LOG_FILE" 2>&1
+                # Añadir la llave GPG de Ondrej
+                log_message "Añadiendo la llave GPG del PPA de Ondrej."
+                curl -sSL https://packages.sury.org/php/apt.gpg | gpg --dearmor | tee /usr/share/keyrings/deb.sury.org-php.gpg >/dev/null
+
+                # Crear el archivo de lista para el PPA de Ondrej directamente con 'noble'
+                PPA_NOBLE_LIST_FILE="/etc/apt/sources.list.d/ondrej-php-noble.list"
+                if [ ! -f "$PPA_NOBLE_LIST_FILE" ]; then
+                    log_message "Creando el archivo de repositorio de Ondrej para PHP con nombre clave 'noble'."
+                    echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ noble main" | tee "$PPA_NOBLE_LIST_FILE" >> "$LOG_FILE" 2>&1
                 else
-                    log_message "PPA de Ondrej ya configurado. Verificando si necesita reparación para 'noble'."
-                    # Si ya está configurado, podemos verificar si usa un codename problemático y repararlo de nuevo a 'noble'
-                    PPA_LIST_FILE=$(grep -l "ppa.launchpadcontent.net/ondrej/php" /etc/apt/sources.list.d/*.list 2>/dev/null | head -n 1)
-                    if [[ -f "$PPA_LIST_FILE" && $(grep -q " ${SYSTEM_CODENAME} " "$PPA_LIST_FILE"; echo $?) -eq 0 ]]; then
-                         log_message "PPA de Ondrej detectado usando $SYSTEM_CODENAME. Intentando reparar a noble."
-                         sed -i "s/${SYSTEM_CODENAME}/noble/g" "$PPA_LIST_FILE" >> "$LOG_FILE" 2>&1
-                         if [ $? -eq 0 ]; then
-                            log_message "PPA de Ondrej reparado a noble. Realizando update."
-                            DEBIAN_FRONTEND=noninteractive apt-get update >> "$LOG_FILE" 2>&1
-                         else
-                            log_message "Error al reparar el PPA de Ondrej a noble. Por favor, revisa el log para más detalles." console
-                         fi
-                    else
-                        log_message "PPA de Ondrej ya configurado y parece usar un codename válido o ya reparado."
-                    fi
+                    log_message "El archivo de repositorio de Ondrej para PHP con 'noble' ya existe."
+                fi
+                
+                log_message "Realizando update después de configurar el repositorio de Ondrej."
+                DEBIAN_FRONTEND=noninteractive apt-get update >> "$LOG_FILE" 2>&1
+                if [ $? -ne 0 ]; then
+                    log_message "Error durante 'apt update' después de configurar el PPA de Ondrej. Por favor, revisa el log: $LOG_FILE" console
+                    # No salir aquí, permitir que el script intente continuar y registrar más errores.
                 fi
             # Para AlmaLinux, asegurar que el repositorio EPEL y REMI estén habilitados para PHP
             elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
