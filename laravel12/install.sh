@@ -223,14 +223,46 @@ case $response in
             echo "Instalando Apache2..."
             echo "XXXX"
             echo 10
-            sleep 3
+            # Validar e instalar Apache2
+            if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
+                if ! dpkg -s apache2 >/dev/null 2>&1; then
+                    DEBIAN_FRONTEND=noninteractive apt-get install -y apache2 >/dev/null 2>&1
+                fi
+            elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
+                if ! rpm -q httpd >/dev/null 2>&1; then
+                    dnf install -y httpd >/dev/null 2>&1
+                    systemctl enable httpd >/dev/null 2>&1
+                    systemctl start httpd >/dev/null 2>&1
+                fi
+            fi
+            
+            echo "XXXX"
+            echo "Habilitando mod_rewrite..."
+            echo "XXXX"
+            echo 20 # Porcentaje para mod_rewrite
+            # Validar y habilitar mod_rewrite y reiniciar Apache
+            if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
+                # Verificar si el módulo rewrite ya está habilitado
+                if ! apache2ctl -M | grep -q rewrite_module; then
+                    a2enmod rewrite >/dev/null 2>&1
+                    systemctl restart apache2 >/dev/null 2>&1
+                fi
+            elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
+                # En AlmaLinux (y otras distribuciones RHEL), mod_rewrite suele estar cargado por defecto.
+                # Verificamos si está cargado; si no, reiniciamos el servicio para asegurar (no hay un 'a2enmod' equivalente).
+                if ! httpd -M 2>&1 | grep -q rewrite_module; then
+                    systemctl restart httpd >/dev/null 2>&1
+                fi
+            fi
+            sleep 1 # Pequeña pausa para dar feedback visual, incluso si se saltó la acción
 
             echo "XXXX"
             echo "Instalando PHP $PHP_VERSION..."
             echo "XXXX"
-            echo 35
-            sleep 5
+            echo 40 # Ajustado el porcentaje
+            sleep 5 # Simula la instalación de PHP
 
+            # Determina si es MySQL o MariaDB
             DB_SYSTEM=""
             if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
                 DB_SYSTEM="MySQL"
@@ -240,20 +272,20 @@ case $response in
             echo "XXXX"
             echo "Instalando $DB_SYSTEM..."
             echo "XXXX"
-            echo 65
-            sleep 5
+            echo 70 # Ajustado el porcentaje
+            sleep 5 # Simula la instalación de la base de datos
 
             echo "XXXX"
             echo "Instalando phpMyAdmin..."
             echo "XXXX"
             echo 90
-            sleep 4
+            sleep 4 # Simula la instalación de phpMyAdmin
 
             echo "XXXX"
             echo "Componentes LAMP instalados."
             echo "XXXX"
             echo 100
-            sleep 2
+            sleep 2 # Pausa de 2 segundos al 100%
         ) | dialog --backtitle "Script de Instalación Versión $VERSO" \
                    --title "Instalación de Componentes LAMP" \
                    --gauge "Preparando el entorno LAMP..." 10 70 0
