@@ -7,6 +7,7 @@ PROJECT_NAME="" # Variable para el nombre del proyecto
 PHPMYADMIN_USER_PASS="" # Variable para la contraseña del usuario phpMyAdmin
 PHPMYADMIN_ROOT_PASS="" # Variable para la contraseña del usuario root de phpMyAdmin
 PHP_VERSION="" # Variable para la versión de PHP seleccionada
+SELECTED_APPS="" # Nueva variable para almacenar las aplicaciones seleccionadas
 
 # Validación de usuario root
 if [ "$(id -u)" -ne 0 ]; then
@@ -151,6 +152,29 @@ case $response in
                    --msgbox "No se ha seleccionado una versión de PHP o la operación fue cancelada. La instalación será abortada." 8 70
             exit 1
         fi
+
+        clear # Limpia la pantalla antes del siguiente diálogo
+        
+        # --- NUEVO: Diálogo para seleccionar aplicaciones adicionales ---
+        SELECTED_APPS=$(dialog --backtitle "Script de Instalación Versión $VERSO" \
+                               --title "Seleccionar Aplicaciones Adicionales" \
+                               --checklist "Elige qué programas adicionales quieres instalar:" 20 60 4 \
+                               "vscode" "Visual Studio Code" OFF \
+                               "sublimetext" "Sublime Text" OFF \
+                               "brave" "Brave Browser" OFF \
+                               "googlechrome" "Google Chrome" OFF 3>&1 1>&2 2>&3)
+
+        app_selection_response=$? # Captura el estado de salida del checklist
+
+        # Si el usuario cancela la selección de apps, se puede optar por continuar sin ellas o abortar
+        # Por ahora, continuaremos pero puedes cambiarlo a 'exit 1' si prefieres que sea obligatorio.
+        if [ $app_selection_response -ne 0 ]; then
+            clear
+            dialog --backtitle "Script de Instalación Versión $VERSO" \
+                   --title "Info" \
+                   --msgbox "No se seleccionaron aplicaciones adicionales, o la operación fue cancelada. Se continuará con la instalación principal." 8 70
+        fi
+        # --- FIN NUEVO: Diálogo para seleccionar aplicaciones adicionales ---
 
         clear # Limpia la pantalla después de la selección de PHP
 
