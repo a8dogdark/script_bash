@@ -10,17 +10,10 @@ PHP_VERSION="" # Variable para la versión de PHP seleccionada
 SELECTED_APPS="" # Nueva variable para almacenar las aplicaciones seleccionadas
 
 # Archivo de log para depuración
-# Se ajusta la ubicación del log para que sea accesible desde el usuario de escritorio, en la carpeta Escritorio.
-if [ -n "$SUDO_USER" ]; then
-    USER_HOME=$(eval echo "~$SUDO_USER") # Obtiene el directorio home del usuario original
-    LOG_DIR="$USER_HOME/Desktop" # CAMBIO CLAVE: Ahora apunta a la carpeta Desktop
-else
-    # Fallback si SUDO_USER no está definido (aunque debería estarlo con sudo)
-    # Esto guardaría el log en /root/Desktop si el script se ejecuta directamente como root.
-    LOG_DIR="$HOME/Desktop" 
-fi
+# CAMBIO CLAVE: Ahora se guarda el log directamente en /tmp para facilitar el acceso.
+LOG_DIR="/tmp" 
 
-mkdir -p "$LOG_DIR" # Asegura que la carpeta Desktop exista para el usuario
+mkdir -p "$LOG_DIR" # Asegura que la carpeta /tmp exista (siempre existe, pero buena práctica)
 LOG_FILE="$LOG_DIR/lamp_install_$(date +%Y%m%d_%H%M%S).log"
 
 # Crear o limpiar el archivo de log al inicio
