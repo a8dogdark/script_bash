@@ -157,16 +157,27 @@ case $response in
         # --- Barra de Progreso ---
         (
             echo "XXXX"
-            echo "Update del sistema"
+            echo "Realizando update del sistema..."
             echo "XXXX"
             echo 40
-            sleep 2 # Simula el tiempo de actualización
+            # Ejecuta el update real según la distribución
+            # No pide confirmación por su naturaleza o por el flag -y/DEBIAN_FRONTEND
+            if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
+                DEBIAN_FRONTEND=noninteractive apt-get update >/dev/null 2>&1
+            elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
+                dnf update -y >/dev/null 2>&1
+            fi
             
             echo "XXXX"
-            echo "Upgrade del sistema"
+            echo "Realizando upgrade del sistema..."
             echo "XXXX"
             echo 80
-            sleep 2 # Simula el tiempo de actualización
+            # Ejecuta el upgrade real según la distribución, sin pedir confirmación
+            if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
+                DEBIAN_FRONTEND=noninteractive apt-get upgrade -y >/dev/null 2>&1
+            elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
+                dnf upgrade -y >/dev/null 2>&1
+            fi
             
             echo "XXXX"
             echo "Sistema actualizado"
