@@ -26,5 +26,12 @@ if [ -z "$PASS_ROOT" ]; then
   echo "el campo no puede venir vacio"
 fi
 
+apago_cursor
+
+clear
+printf "****************************\n"
+printf "* Actualizamos el sistema  *\n"
+printf "****************************\n"
+
 sudo apt update -y
 sudo apt upgrade -y
