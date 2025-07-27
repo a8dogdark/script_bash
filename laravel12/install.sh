@@ -65,7 +65,7 @@ if [ -f /etc/os-release ]; then
     # Detecta distribuciones basadas en Debian/Ubuntu
     if [[ "$ID" == "ubuntu" || "$ID" == "debian" || "$ID_LIKE" == "debian" ]]; then
         DISTRIBUCION="Ubuntu/Debian"
-        SYSTEM_CODENAME=$VERSION_CODENAME # Captura el nombre clave real del sistema (e.g., "noble")
+        SYSTEM_CODENAME=$(lsb_release -cs) # Captura el nombre clave real del sistema (e.g., "noble", "jammy", "bookworm")
         log_message "Nombre clave del sistema detectado: $SYSTEM_CODENAME" console
 
         if ! is_package_installed "dialog" "dialog"; then # Verifica si dialog no está instalado
@@ -263,59 +263,80 @@ case $response in
             if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
                 log_message "Configurando PPA de Ondrej para Debian/Ubuntu."
                 
-                # --- INICIO DE LA SECCIÓN DE LIMPIEZA REFORZADA ---
-                log_message "Iniciando limpieza reforzada de configuraciones antiguas del PPA de Ondrej."
+                # --- INICIO DE LA SECCIÓN DE LIMPIEZA REFORZADA Y CONFIGURACIÓN DE REPO ---
+                log_message "Iniciando limpieza reforzada de configuraciones antiguas del PPA de Ondrej y reconfiguración."
                 
                 # 1. Eliminar archivos de lista existentes de Ondrej
-                log_message "Eliminando archivos *.list de Ondrej en /etc/apt/sources.list.d/."
+                log_message "DEBUG: Eliminando archivos *.list de Ondrej en /etc/apt/sources.list.d/."
                 find /etc/apt/sources.list.d/ -type f -name "*ondrej-ubuntu-php-*.list*" -delete >> "$LOG_FILE" 2>&1
                 find /etc/apt/sources.list.d/ -type f -name "*ondrej-ubuntu-apache2-*.list*" -delete >> "$LOG_FILE" 2>&1
                 find /etc/apt/sources.list.d/ -type f -name "*ondrej-*.list*" -delete >> "$LOG_FILE" 2>&1 # Para atrapar cualquier otro
 
                 # 2. Eliminar referencias de PPA con add-apt-repository --remove
-                # Esto es útil si se añadieron usando add-apt-repository
-                log_message "Intentando eliminar PPAs de Ondrej usando add-apt-repository --remove (puede fallar si no existen, ignorar errores)."
+                log_message "DEBUG: Intentando eliminar PPAs de Ondrej usando add-apt-repository --remove (puede fallar si no existen, ignorar errores)."
                 add-apt-repository --remove ppa:ondrej/php -y >> "$LOG_FILE" 2>&1 || true
                 add-apt-repository --remove ppa:ondrej/apache2 -y >> "$LOG_FILE" 2>&1 || true
 
-                # 3. Limpiar el caché de apt
-                log_message "Limpiando el caché de paquetes de apt."
-                DEBIAN_FRONTEND=noninteractive apt-get clean >> "$LOG_FILE" 2>&1
+                # 3. Eliminar claves GPG antiguas de Ondrej
+                log_message "DEBUG: Eliminando claves GPG antiguas de Ondrej en /etc/apt/trusted.gpg.d/ y /usr/share/keyrings/."
+                sudo rm -f /etc/apt/trusted.gpg.d/ondrej-php.gpg >> "$LOG_FILE" 2>&1 || true
+                sudo rm -f /etc/apt/trusted.gpg.d/php.gpg >> "$LOG_FILE" 2>&1 || true
+                sudo rm -f /usr/share/keyrings/deb.sury.org-php.gpg >> "$LOG_FILE" 2>&1 || true # La clave que el script crea
 
-                # 4. Forzar un apt update después de la limpieza
-                log_message "Realizando un apt update después de la limpieza de repositorios."
+                # 4. Limpiar el caché de apt
+                log_message "DEBUG: Limpiando el caché de paquetes de apt."
+                DEBIAN_FRONTEND=noninteractive apt-get clean >> "$LOG_FILE" 2>&1
+                sudo rm -rf /var/lib/apt/lists/* >> "$LOG_FILE" 2>&1 # Limpieza más agresiva de listas
+
+                # 5. Forzar un apt update después de la limpieza
+                log_message "DEBUG: Realizando un apt update después de la limpieza de repositorios."
                 DEBIAN_FRONTEND=noninteractive apt-get update >> "$LOG_FILE" 2>&1
                 if [ $? -ne 0 ]; then
                     log_message "Advertencia: 'apt update' falló después de la limpieza de Ondrej. Podría haber problemas residuales. Revisa el log: $LOG_FILE" console
-                    # No salir, intentar continuar con la adición del repositorio noble
                 fi
                 log_message "Limpieza de Ondrej completada."
-                # --- FIN DE LA SECCIÓN DE LIMPIEZA REFORZADA ---
 
                 # Asegurarse de tener apt-transport-https y software-properties-common
-                log_message "Instalando apt-transport-https, software-properties-common, curl y gnupg2."
+                log_message "DEBUG: Instalando apt-transport-https, software-properties-common, curl y gnupg2."
                 DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https software-properties-common curl gnupg2 >> "$LOG_FILE" 2>&1
-
-                # Añadir la llave GPG de Ondrej
-                log_message "Añadiendo la llave GPG del PPA de Ondrej al nuevo formato de keyrings."
-                # Usar sudo tee para escribir en un archivo que requiere permisos de root
-                curl -sSL https://packages.sury.org/php/apt.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/deb.sury.org-php.gpg >/dev/null 2>> "$LOG_FILE"
-
-                # Crear el archivo de lista para el PPA de Ondrej directamente con 'noble'
-                PPA_NOBLE_LIST_FILE="/etc/apt/sources.list.d/ondrej-php-noble.list"
-                if [ ! -f "$PPA_NOBLE_LIST_FILE" ]; then
-                    log_message "Creando el archivo de repositorio de Ondrej para PHP con nombre clave 'noble'."
-                    echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ noble main" | sudo tee "$PPA_NOBLE_LIST_FILE" >> "$LOG_FILE" 2>&1
-                else
-                    log_message "El archivo de repositorio de Ondrej para PHP con 'noble' ya existe."
+                if [ $? -ne 0 ]; then
+                    log_message "Error: No se pudieron instalar paquetes esenciales (apt-transport-https, etc.). Abortando." console
+                    exit 1
                 fi
+
+                # Añadir la llave GPG de Ondrej de forma segura
+                log_message "DEBUG: Añadiendo la llave GPG del PPA de Ondrej al nuevo formato de keyrings."
+                curl -sSL https://packages.sury.org/php/apt.gpg | sudo gpg --dearmor -o /usr/share/keyrings/deb.sury.org-php.gpg >> "$LOG_FILE" 2>&1
+                if [ $? -ne 0 ]; then
+                    log_message "Error: No se pudo añadir la clave GPG de Ondrej Sury. Esto causará errores de 'NO_PUBKEY'. Abortando." console
+                    exit 1
+                fi
+                log_message "DEBUG: Clave GPG de Ondrej Sury añadida con éxito."
+
+                # Obtener el nombre clave de la distribución (ej. noble, jammy, bookworm)
+                SYSTEM_CODENAME=$(lsb_release -cs)
+                log_message "DEBUG: Nombre clave del sistema detectado para el repositorio: $SYSTEM_CODENAME"
+
+                # Crear el archivo de lista para el PPA de Ondrej con el nombre clave correcto y signed-by
+                PPA_LIST_FILE="/etc/apt/sources.list.d/ondrej-php-$SYSTEM_CODENAME.list"
+                log_message "DEBUG: Creando/actualizando el archivo de repositorio de Ondrej para PHP: $PPA_LIST_FILE"
+                echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $SYSTEM_CODENAME main" | sudo tee "$PPA_LIST_FILE" >> "$LOG_FILE" 2>&1
+                if [ $? -ne 0 ]; then
+                    log_message "Error: No se pudo crear/actualizar el archivo del repositorio de Ondrej. Abortando." console
+                    exit 1
+                fi
+                log_message "DEBUG: Archivo de repositorio de Ondrej creado/actualizado con éxito."
                 
-                log_message "Realizando update después de configurar el repositorio de Ondrej."
+                log_message "Realizando apt update después de configurar el repositorio de Ondrej."
                 DEBIAN_FRONTEND=noninteractive apt-get update >> "$LOG_FILE" 2>&1
                 if [ $? -ne 0 ]; then
-                    log_message "Error durante 'apt update' después de configurar el PPA de Ondrej. Por favor, revisa el log: $LOG_FILE" console
-                    # No salir aquí, permitir que el script intente continuar y registrar más errores.
+                    log_message "Error CRÍTICO: 'apt update' falló después de configurar el PPA de Ondrej. Esto significa que los paquetes PHP no se encontrarán. Revisa el log: $LOG_FILE" console
+                    dialog --backtitle "Script de Instalación Versión $VERSO" \
+                           --title "Error Crítico de Repositorio" \
+                           --msgbox "El comando 'apt update' falló después de configurar el repositorio de Ondrej Sury. Esto es un error crítico y significa que los paquetes PHP no podrán ser encontrados. Por favor, revisa el log en $LOG_FILE para más detalles. La instalación no puede continuar." 15 70
+                    exit 1 # Salir si el update falla aquí, ya que la instalación de PHP no funcionará
                 fi
+                log_message "DEBUG: 'apt update' después de Ondrej completado con éxito."
             # Para AlmaLinux, asegurar que el repositorio EPEL y REMI estén habilitados para PHP
             elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
                 log_message "Configurando repositorios EPEL y REMI para AlmaLinux."
