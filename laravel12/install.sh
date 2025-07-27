@@ -9,8 +9,22 @@ PHPMYADMIN_ROOT_PASS="" # Variable para la contraseña del usuario root de phpMy
 PHP_VERSION="" # Variable para la versión de PHP seleccionada
 SELECTED_APPS="" # Nueva variable para almacenar las aplicaciones seleccionadas
 
+# Archivo de log para depuración
+LOG_FILE="/var/log/lamp_install_$(date +%Y%m%d_%H%M%S).log"
+# Crear o limpiar el archivo de log al inicio
+echo "Iniciando log de instalación LAMP. Fecha: $(date)" > "$LOG_FILE"
+echo "===============================================" >> "$LOG_FILE"
+
 # Array para almacenar extensiones que no se pudieron instalar
 UNINSTALLED_EXTENSIONS=()
+
+# Función para registrar un mensaje en el log y opcionalmente en la consola
+log_message() {
+    echo "$(date +'%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE"
+    if [ "$2" = "console" ]; then
+        echo "$1" >/dev/tty
+    fi
+}
 
 # Función para verificar si un paquete está instalado
 # Uso: is_package_installed "paquete_debian" "paquete_almalinux"
@@ -42,38 +56,43 @@ fi
 # Instalación y Validación de 'dialog'
 if [ -f /etc/os-release ]; then
     . /etc/os-release # Carga las variables de identificación del sistema
-    
+    log_message "Distribución detectada: $ID ($ID_LIKE), Versión: $VERSION_ID"
+
     # Detecta distribuciones basadas en Debian/Ubuntu
     if [[ "$ID" == "ubuntu" || "$ID" == "debian" || "$ID_LIKE" == "debian" ]]; then
         DISTRIBUCION="Ubuntu/Debian"
         if ! is_package_installed "dialog" "dialog"; then # Verifica si dialog no está instalado
-            DEBIAN_FRONTEND=noninteractive apt-get update >/dev/null 2>&1
-            DEBIAN_FRONTEND=noninteractive apt-get install -y dialog >/dev/null 2>&1
+            log_message "Instalando dialog..."
+            DEBIAN_FRONTEND=noninteractive apt-get update >> "$LOG_FILE" 2>&1
+            DEBIAN_FRONTEND=noninteractive apt-get install -y dialog >> "$LOG_FILE" 2>&1
             if [ $? -ne 0 ]; then # Si la instalación falló
-                echo "Error: No se pudo instalar el paquete 'dialog'. Por favor, inténtelo manualmente."
+                echo "Error: No se pudo instalar el paquete 'dialog'. Por favor, inténtelo manualmente." | tee -a "$LOG_FILE"
                 exit 1
             fi
+            log_message "dialog instalado."
         fi
     # Detecta distribuciones basadas en RHEL (como AlmaLinux)
     elif [[ "$ID" == "almalinux" || "$ID_LIKE" == "rhel fedora" || "$ID_LIKE" == "rhel" ]]; then
         DISTRIBUCION="AlmaLinux"
         if ! is_package_installed "dialog" "dialog"; then # Verifica si dialog no está instalado
-            dnf install -y dialog >/dev/null 2>&1
+            log_message "Instalando dialog..."
+            dnf install -y dialog >> "$LOG_FILE" 2>&1
             if [ $? -ne 0 ]; then # Si la instalación falló
-                echo "Error: No se pudo instalar el paquete 'dialog'. Por favor, inténtelo manualmente."
+                echo "Error: No se pudo instalar el paquete 'dialog'. Por favor, inténtelo manualmente." | tee -a "$LOG_FILE"
                 exit 1
             fi
+            log_message "dialog instalado."
         fi
     else
         # Si la distribución no es una de las esperadas
-        echo "Error: La distribución ($ID) no está soportada para la instalación automática de 'dialog'."
-        echo "Por favor, instale 'dialog' manualmente si es necesario."
+        echo "Error: La distribución ($ID) no está soportada para la instalación automática de 'dialog'." | tee -a "$LOG_FILE"
+        echo "Por favor, instale 'dialog' manualmente si es necesario." | tee -a "$LOG_FILE"
         exit 1
     fi
 else
     # Si /etc/os-release no existe
-    echo "Error: No se pudo detectar la distribución del sistema (/etc/os-release no encontrado)."
-    echo "Por favor, instale 'dialog' manualmente si es necesario."
+    echo "Error: No se pudo detectar la distribución del sistema (/etc/os-release no encontrado)." | tee -a "$LOG_FILE"
+    echo "Por favor, instale 'dialog' manualmente si es necesario." | tee -a "$LOG_FILE"
     exit 1
 fi
 
@@ -97,6 +116,7 @@ case $response in
         PROJECT_NAME=$(dialog --backtitle "Script de Instalación Versión $VERSO" \
                                 --title "Nombre del Proyecto Laravel" \
                                 --inputbox "Por favor, ingresa el nombre que deseas para tu proyecto Laravel 12:" 10 60 3>&1 1>&2 2>&3)
+        log_message "Nombre de proyecto Laravel elegido: $PROJECT_NAME"
         
         input_response=$?
 
@@ -105,6 +125,7 @@ case $response in
             dialog --backtitle "Script de Instalación Versión $VERSO" \
                    --title "¡Atención!" \
                    --msgbox "No se ha ingresado un nombre de proyecto válido o la operación fue cancelada. La instalación será abortada." 8 60
+            log_message "Instalación abortada: Nombre de proyecto no válido o cancelado."
             exit 1
         fi
 
@@ -114,6 +135,7 @@ case $response in
         PHPMYADMIN_USER_PASS=$(dialog --backtitle "Script de Instalación Versión $VERSO" \
                                         --title "Contraseña phpMyAdmin" \
                                         --inputbox "Debes ingresar una contraseña para el usuario 'phpmyadmin':" 10 60 3>&1 1>&2 2>&3)
+        log_message "Contraseña para phpmyadmin ingresada (no se registra el valor)."
         
         input_response=$?
 
@@ -122,6 +144,7 @@ case $response in
             dialog --backtitle "Script de Instalación Versión $VERSO" \
                    --title "¡Atención!" \
                    --msgbox "No se ha ingresado una contraseña para el usuario 'phpmyadmin' o la operación fue cancelada. La instalación será abortada." 8 70
+            log_message "Instalación abortada: Contraseña de phpmyadmin no válida o cancelada."
             exit 1
         fi
 
@@ -131,6 +154,7 @@ case $response in
         PHPMYADMIN_ROOT_PASS=$(dialog --backtitle "Script de Instalación Versión $VERSO" \
                                         --title "Contraseña Root phpMyAdmin" \
                                         --inputbox "Debes ingresar una contraseña para el usuario 'root' de phpMyAdmin:" 10 60 3>&1 1>&2 2>&3)
+        log_message "Contraseña para root de phpMyAdmin ingresada (no se registra el valor)."
         
         input_response=$?
 
@@ -139,6 +163,7 @@ case $response in
             dialog --backtitle "Script de Instalación Versión $VERSO" \
                    --title "¡Atención!" \
                    --msgbox "No se ha ingresado una contraseña para el usuario 'root' de phpMyAdmin o la operación fue cancelada. La instalación será abortada." 8 70
+            log_message "Instalación abortada: Contraseña de root de phpMyAdmin no válida o cancelada."
             exit 1
         fi
 
@@ -151,6 +176,7 @@ case $response in
                                 "8.2" "PHP 8.2 (Recomendado para Laravel 12)" \
                                 "8.3" "PHP 8.3" \
                                 "8.4" "PHP 8.4 (Versión más reciente)" 3>&1 1>&2 2>&3)
+        log_message "Versión de PHP seleccionada: $PHP_VERSION"
         
         menu_response=$?
 
@@ -159,6 +185,7 @@ case $response in
             dialog --backtitle "Script de Instalación Versión $VERSO" \
                    --title "¡Atención!" \
                    --msgbox "No se ha seleccionado una versión de PHP o la operación fue cancelada. La instalación será abortada." 8 70
+            log_message "Instalación abortada: Versión de PHP no seleccionada o cancelada."
             exit 1
         fi
 
@@ -174,6 +201,7 @@ case $response in
                                "googlechrome" "Google Chrome" OFF 3>&1 1>&2 2>&3)
 
         app_selection_response=$?
+        log_message "Aplicaciones adicionales seleccionadas: $SELECTED_APPS"
 
         if [ $app_selection_response -ne 0 ]; then
             clear
@@ -186,14 +214,16 @@ case $response in
 
         # --- Barra de Progreso: Update y Upgrade del sistema ---
         (
+            log_message "Iniciando update y upgrade del sistema." console
+
             echo "XXXX"
             echo "Realizando update del sistema..."
             echo "XXXX"
             echo 20 # 20% para el update
             if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
-                DEBIAN_FRONTEND=noninteractive apt-get update >/dev/null 2>&1
+                DEBIAN_FRONTEND=noninteractive apt-get update >> "$LOG_FILE" 2>&1
             elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
-                dnf update -y >/dev/null 2>&1
+                dnf update -y >> "$LOG_FILE" 2>&1
             fi
             
             echo "XXXX"
@@ -201,9 +231,9 @@ case $response in
             echo "XXXX"
             echo 60 # 60% para el upgrade
             if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
-                DEBIAN_FRONTEND=noninteractive apt-get upgrade -y >/dev/null 2>&1
+                DEBIAN_FRONTEND=noninteractive apt-get upgrade -y >> "$LOG_FILE" 2>&1
             elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
-                dnf upgrade -y >/dev/null 2>&1
+                dnf upgrade -y >> "$LOG_FILE" 2>&1
             fi
 
             echo "XXXX"
@@ -212,23 +242,33 @@ case $response in
             echo 80 # 80% para agregar repositorios
             # Agrega el repositorio de Ondrej si es Debian/Ubuntu y no está ya agregado
             if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
-                # Check if Ondrej PPA is already added
+                log_message "Configurando PPA de Ondrej para Debian/Ubuntu."
                 if ! grep -q "ppa.launchpadcontent.net/ondrej/php" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
-                    # Instalar software-properties-common para add-apt-repository
-                    DEBIAN_FRONTEND=noninteractive apt-get install -y software-properties-common >/dev/null 2>&1
-                    # Agregar PPA de Ondrej para PHP
-                    add-apt-repository -y ppa:ondrej/php >/dev/null 2>&1
-                    # Realizar un nuevo update después de añadir el repositorio
-                    DEBIAN_FRONTEND=noninteractive apt-get update >/dev/null 2>&1
+                    log_message "Instalando software-properties-common."
+                    DEBIAN_FRONTEND=noninteractive apt-get install -y software-properties-common >> "$LOG_FILE" 2>&1
+                    log_message "Añadiendo PPA de Ondrej para PHP."
+                    add-apt-repository -y ppa:ondrej/php >> "$LOG_FILE" 2>&1
+                    log_message "Realizando update después de añadir PPA."
+                    DEBIAN_FRONTEND=noninteractive apt-get update >> "$LOG_FILE" 2>&1
+                else
+                    log_message "PPA de Ondrej ya configurado."
                 fi
             # Para AlmaLinux, asegurar que el repositorio EPEL y REMI estén habilitados para PHP
             elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
-                if ! rpm -q epel-release >/dev/null 2>&1; then
-                    dnf install -y epel-release >/dev/null 2>&1
+                log_message "Configurando repositorios EPEL y REMI para AlmaLinux."
+                if ! is_package_installed "epel-release" "epel-release"; then
+                    log_message "Instalando epel-release."
+                    dnf install -y epel-release >> "$LOG_FILE" 2>&1
+                else
+                    log_message "epel-release ya instalado."
                 fi
-                if ! rpm -q remi-release >/dev/null 2>&1; then
-                    dnf install -y https://rpms.remirepo.net/enterprise/remi-release-8.rpm >/dev/null 2>&1 # For AlmaLinux 8
-                    dnf module reset php -y >/dev/null 2>&1 # Reset php module to ensure remi takes precedence
+                if ! is_package_installed "remi-release" "remi-release"; then
+                    log_message "Instalando remi-release."
+                    dnf install -y https://rpms.remirepo.net/enterprise/remi-release-8.rpm >> "$LOG_FILE" 2>&1 # For AlmaLinux 8
+                    log_message "Reseteando módulo PHP para asegurar preferencia de REMI."
+                    dnf module reset php -y >> "$LOG_FILE" 2>&1
+                else
+                    log_message "remi-release ya instalado."
                 fi
             fi
             sleep 2 # Simula el tiempo si no es Debian/Ubuntu o si la operación fue muy rápida
@@ -238,6 +278,7 @@ case $response in
             echo "XXXX"
             echo 100
             sleep 2
+            log_message "Update y upgrade del sistema completados." console
         ) | dialog --backtitle "Script de Instalación Versión $VERSO" \
                    --title "Progreso de la Instalación" \
                    --gauge "Iniciando operaciones..." 10 70 0
@@ -246,6 +287,8 @@ case $response in
 
         # --- Barra de Progreso: Instalación de LAMP ---
         (
+            log_message "Iniciando instalación de componentes LAMP." console
+
             echo "XXXX"
             echo "Instalando Apache2..."
             echo "XXXX"
@@ -253,13 +296,19 @@ case $response in
             # Validar e instalar Apache2
             if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
                 if ! is_package_installed "apache2" "httpd"; then
-                    DEBIAN_FRONTEND=noninteractive apt-get install -y apache2 >/dev/null 2>&1
+                    log_message "Instalando apache2."
+                    DEBIAN_FRONTEND=noninteractive apt-get install -y apache2 >> "$LOG_FILE" 2>&1
+                else
+                    log_message "apache2 ya instalado."
                 fi
             elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
                 if ! is_package_installed "apache2" "httpd"; then
-                    dnf install -y httpd >/dev/null 2>&1
-                    systemctl enable httpd >/dev/null 2>&1
-                    systemctl start httpd >/dev/null 2>&1
+                    log_message "Instalando httpd."
+                    dnf install -y httpd >> "$LOG_FILE" 2>&1
+                    systemctl enable httpd >> "$LOG_FILE" 2>&1
+                    systemctl start httpd >> "$LOG_FILE" 2>&1
+                else
+                    log_message "httpd ya instalado."
                 fi
             fi
             
@@ -272,11 +321,17 @@ case $response in
                 APACHE_CONF="/etc/apache2/apache2.conf"
                 if ! grep -q "ServerName localhost" "$APACHE_CONF"; then
                     echo "ServerName localhost" >> "$APACHE_CONF"
+                    log_message "Añadido ServerName localhost a $APACHE_CONF."
+                else
+                    log_message "ServerName localhost ya presente en $APACHE_CONF."
                 fi
             elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
                 HTTPD_CONF="/etc/httpd/conf/httpd.conf"
                 if ! grep -q "ServerName localhost" "$HTTPD_CONF"; then
                     echo "ServerName localhost" >> "$HTTPD_CONF"
+                    log_message "Añadido ServerName localhost a $HTTPD_CONF."
+                else
+                    log_message "ServerName localhost ya presente en $HTTPD_CONF."
                 fi
             fi
             sleep 0.5 # Pequeña pausa para simular la operación
@@ -288,16 +343,20 @@ case $response in
             # Validar y habilitar mod_rewrite y reiniciar Apache
             if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
                 if ! apache2ctl -M | grep -q rewrite_module; then
-                    a2enmod rewrite >/dev/null 2>&1
-                    systemctl restart apache2 >/dev/null 2>&1
+                    log_message "Habilitando mod_rewrite."
+                    a2enmod rewrite >> "$LOG_FILE" 2>&1
+                    systemctl restart apache2 >> "$LOG_FILE" 2>&1
                 else
-                    systemctl reload apache2 >/dev/null 2>&1 # Recargar Apache si ya está habilitado para aplicar ServerName
+                    log_message "mod_rewrite ya habilitado. Recargando apache2."
+                    systemctl reload apache2 >> "$LOG_FILE" 2>&1 # Recargar Apache si ya está habilitado para aplicar ServerName
                 fi
             elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
                 if ! httpd -M 2>&1 | grep -q rewrite_module; then
-                    systemctl restart httpd >/dev/null 2>&1
+                    log_message "Habilitando mod_rewrite y reiniciando httpd."
+                    systemctl restart httpd >> "$LOG_FILE" 2>&1
                 else
-                    systemctl reload httpd >/dev/null 2>&1 # Recargar HTTPD si ya está habilitado para aplicar ServerName
+                    log_message "mod_rewrite ya habilitado. Recargando httpd."
+                    systemctl reload httpd >> "$LOG_FILE" 2>&1 # Recargar HTTPD si ya está habilitado para aplicar ServerName
                 fi
             fi
             sleep 1 # Pequeña pausa para dar feedback visual
@@ -309,24 +368,34 @@ case $response in
             # Validar e instalar PHP si no está ya instalado
             PHP_INSTALLED=false
             if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
-                if is_package_installed "php${PHP_VERSION}" "php"; then # 'php' es un marcador de posición para AlmaLinux aquí, no se usa
+                if is_package_installed "php${PHP_VERSION}" "dummy"; then
                     PHP_INSTALLED=true
+                    log_message "PHP ${PHP_VERSION} ya está instalado."
                 else
-                    DEBIAN_FRONTEND=noninteractive apt-get install -y php${PHP_VERSION} >/dev/null 2>&1
-                    if [ $? -eq 0 ]; then PHP_INSTALLED=true; fi
+                    log_message "Instalando php${PHP_VERSION}."
+                    DEBIAN_FRONTEND=noninteractive apt-get install -y php${PHP_VERSION} >> "$LOG_FILE" 2>&1
+                    if [ $? -eq 0 ]; then
+                        PHP_INSTALLED=true
+                        log_message "php${PHP_VERSION} instalado con éxito."
+                    else
+                        log_message "Error al instalar php${PHP_VERSION}."
+                    fi
                 fi
             elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
-                # Para AlmaLinux, verificamos php-cli Y la versión
-                if is_package_installed "php-cli" "php-cli" && php -v | grep -q "PHP ${PHP_VERSION}"; then
+                if is_package_installed "dummy" "php-cli" && php -v | grep -q "PHP ${PHP_VERSION}"; then
                     PHP_INSTALLED=true
+                    log_message "PHP ${PHP_VERSION} (php-cli) ya está instalado y es la versión correcta."
                 else
-                    # Habilitar el módulo REMI para la versión de PHP seleccionada
-                    dnf module enable -y php:remi-${PHP_VERSION} >/dev/null 2>&1
-                    # Instalar el paquete php que trae la versión correcta del módulo habilitado
-                    dnf install -y php >/dev/null 2>&1
-                    # Asegurar que la versión correcta de PHP esté establecida como predeterminada (si es necesario, el módulo DNF debería manejarlo)
-                    update-alternatives --set php /usr/bin/php${PHP_VERSION} >/dev/null 2>&1 2>/dev/null # Redirigir stderr también
-                    if [ $? -eq 0 ]; then PHP_INSTALLED=true; fi
+                    log_message "Habilitando módulo PHP:remi-${PHP_VERSION} y instalando PHP base."
+                    dnf module enable -y php:remi-${PHP_VERSION} >> "$LOG_FILE" 2>&1
+                    dnf install -y php >> "$LOG_FILE" 2>&1
+                    update-alternatives --set php /usr/bin/php${PHP_VERSION} >> "$LOG_FILE" 2>&1 2>/dev/null # Redirigir stderr también
+                    if [ $? -eq 0 ]; then
+                        PHP_INSTALLED=true
+                        log_message "PHP ${PHP_VERSION} base instalado con éxito en AlmaLinux."
+                    else
+                        log_message "Error al instalar PHP ${PHP_VERSION} base en AlmaLinux."
+                    fi
                 fi
             fi
             sleep 1 # Pequeña pausa para la base de PHP
@@ -356,7 +425,7 @@ case $response in
                 "SQLite3|sqlite3|php-sqlite3"
                 "LDAP|ldap|php-ldap"
                 "SNMP|snmp|php-snmp"
-                "XSL|xsl|php-xmlrpc" # XSL en AlmaLinux es parte de php-xmlrpc
+                "XSL|xsl|php-xmlrpc" # XSL on AlmaLinux is part of php-xmlrpc
                 "APCu|apcu|php-pecl-apcu"
                 "Memcached|memcached|php-pecl-memcached"
                 "MongoDB|mongodb|php-pecl-mongodb"
@@ -385,6 +454,7 @@ case $response in
             CURRENT_PROGRESS=$START_EXT_PERCENTAGE
 
             if [ "$PHP_INSTALLED" = true ]; then
+                log_message "Iniciando instalación de extensiones PHP." console
                 # Asegurar herramientas de compilación para PECL antes de iterar extensiones para AlmaLinux
                 if [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
                     echo "XXXX"
@@ -394,7 +464,10 @@ case $response in
                     if (( CURRENT_PROGRESS > END_EXT_PERCENTAGE )); then CURRENT_PROGRESS=$END_EXT_PERCENTAGE; fi
                     echo $CURRENT_PROGRESS
                     if ! is_package_installed "build-essential" "php-devel"; then # build-essential for Debian/Ubuntu, php-devel for AlmaLinux
-                        dnf install -y php-devel gcc make >/dev/null 2>&1
+                        log_message "Instalando php-devel, gcc, make para compilación PECL."
+                        dnf install -y php-devel gcc make >> "$LOG_FILE" 2>&1
+                    else
+                        log_message "Herramientas de compilación PECL ya instaladas."
                     fi
                     sleep 0.5
                 fi
@@ -413,37 +486,38 @@ case $response in
                     echo $CURRENT_PROGRESS
 
                     PACKAGE_TO_INSTALL=""
-                    
                     INSTALL_SUCCESS=false
 
                     if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
                         PACKAGE_TO_INSTALL="php${PHP_VERSION}-${DEBIAN_SUFFIX}"
-                        if is_package_installed "$PACKAGE_TO_INSTALL" "dummy"; then # dummy no se usa, solo para la firma de la función
+                        if is_package_installed "$PACKAGE_TO_INSTALL" "dummy"; then
                             INSTALL_SUCCESS=true
-                            echo "  $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL) ya está instalado." >/dev/tty
+                            log_message "  $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL) ya está instalado." console
                         else
-                            echo "  Intentando instalar $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL)..." >/dev/tty
-                            DEBIAN_FRONTEND=noninteractive apt-get install -y "$PACKAGE_TO_INSTALL" >/dev/null 2>&1
+                            log_message "  Intentando instalar $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL)..." console
+                            DEBIAN_FRONTEND=noninteractive apt-get install -y "$PACKAGE_TO_INSTALL" >> "$LOG_FILE" 2>&1
                             if [ $? -eq 0 ]; then INSTALL_SUCCESS=true; fi
                         fi
                     elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
                         PACKAGE_TO_INSTALL="$ALMALINUX_PACKAGE"
-                        if is_package_installed "dummy" "$PACKAGE_TO_INSTALL"; then # dummy no se usa
+                        if is_package_installed "dummy" "$PACKAGE_TO_INSTALL"; then
                             INSTALL_SUCCESS=true
-                            echo "  $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL) ya está instalado." >/dev/tty
+                            log_message "  $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL) ya está instalado." console
                         else
-                            echo "  Intentando instalar $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL)..." >/dev/tty
-                            dnf install -y "$PACKAGE_TO_INSTALL" >/dev/null 2>&1
+                            log_message "  Intentando instalar $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL)..." console
+                            dnf install -y "$PACKAGE_TO_INSTALL" >> "$LOG_FILE" 2>&1
                             if [ $? -eq 0 ]; then INSTALL_SUCCESS=true; fi
                         fi
                     fi
                     
                     if [ "$INSTALL_SUCCESS" = false ]; then
                         UNINSTALLED_EXTENSIONS+=("$DISPLAY_NAME")
-                        echo "  Advertencia: No se pudo instalar la extensión $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL)." >&2 # Error a stderr
+                        log_message "  Advertencia: No se pudo instalar la extensión $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL)." console
                     fi
                     sleep 0.1 # Pequeña pausa para que la barra de progreso se actualice visiblemente
                 done
+            else
+                log_message "La instalación base de PHP $PHP_VERSION falló, omitiendo la instalación de extensiones." console
             fi # Fin del if [ "$PHP_INSTALLED" = true ]
 
             # Asegurar que el porcentaje final para las extensiones PHP se establezca
@@ -451,6 +525,7 @@ case $response in
             echo "Extensiones PHP procesadas."
             echo "XXXX"
             echo 70
+            log_message "Procesamiento de extensiones PHP completado." console
 
             # Determina si es MySQL o MariaDB
             DB_SYSTEM=""
@@ -463,18 +538,21 @@ case $response in
             echo "Instalando $DB_SYSTEM..."
             echo "XXXX"
             echo 75 # Ajustado el porcentaje
+            log_message "Iniciando instalación de $DB_SYSTEM." console
             sleep 5 # Simula la instalación de la base de datos
 
             echo "XXXX"
             echo "Instalando phpMyAdmin..."
             echo "XXXX"
             echo 90
+            log_message "Iniciando instalación de phpMyAdmin." console
             sleep 4 # Simula la instalación de phpMyAdmin
 
             echo "XXXX"
             echo "Componentes LAMP instalados."
             echo "XXXX"
             echo 100
+            log_message "Componentes LAMP instalados." console
             # No hay sleep aquí, la barra de progreso terminará y luego se mostrará el mensaje final.
         ) | dialog --backtitle "Script de Instalación Versión $VERSO" \
                    --title "Instalación de Componentes LAMP" \
@@ -484,6 +562,7 @@ case $response in
 
         # --- Mensaje final de instalación ---
         INSTALL_MESSAGE="\n¡La instalación ha finalizado con éxito!\n"
+        log_message "Instalación LAMP finalizada."
 
         if [ ${#UNINSTALLED_EXTENSIONS[@]} -gt 0 ]; then
             INSTALL_MESSAGE+="\nSin embargo, las siguientes extensiones PHP no pudieron ser instaladas:\n\n"
@@ -491,7 +570,10 @@ case $response in
                 INSTALL_MESSAGE+="  - $ext\n"
             done
             INSTALL_MESSAGE+="\nPor favor, verifica si las necesitas y considera instalarlas manualmente si es necesario."
+            log_message "Extensiones no instaladas: ${UNINSTALLED_EXTENSIONS[*]}"
         fi
+
+        INSTALL_MESSAGE+="\nPuedes revisar el archivo de log para más detalles: \n${LOG_FILE}"
 
         dialog --backtitle "Script de Instalación Versión $VERSO" \
                --title "Instalación Completada" \
@@ -500,10 +582,12 @@ case $response in
         clear # Limpia la pantalla después del mensaje final
         ;;
     1) # El usuario eligió "No"
+        log_message "Instalación cancelada por el usuario."
         clear
         exit 0
         ;;
     255) # El usuario presionó ESC
+        log_message "Instalación cancelada por el usuario (ESC)."
         clear
         exit 1
         ;;
