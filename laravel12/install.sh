@@ -9,6 +9,21 @@ PHPMYADMIN_ROOT_PASS="" # Variable para la contraseña del usuario root de phpMy
 PHP_VERSION="" # Variable para la versión de PHP seleccionada
 SELECTED_APPS="" # Nueva variable para almacenar las aplicaciones seleccionadas
 
+# Array para almacenar extensiones que no se pudieron instalar
+UNINSTALLED_EXTENSIONS=()
+
+# Función para verificar si un paquete está instalado
+# Uso: is_package_installed "paquete_debian" "paquete_almalinux"
+is_package_installed() {
+    local debian_pkg="$1"
+    local almalinux_pkg="$2"
+    if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
+        dpkg -s "$debian_pkg" >/dev/null 2>&1
+    elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
+        rpm -q "$almalinux_pkg" >/dev/null 2>&1
+    fi
+}
+
 # Validación de usuario root
 if [ "$(id -u)" -ne 0 ]; then
     clear
@@ -31,7 +46,7 @@ if [ -f /etc/os-release ]; then
     # Detecta distribuciones basadas en Debian/Ubuntu
     if [[ "$ID" == "ubuntu" || "$ID" == "debian" || "$ID_LIKE" == "debian" ]]; then
         DISTRIBUCION="Ubuntu/Debian"
-        if ! dpkg -s dialog >/dev/null 2>&1; then # Verifica si dialog no está instalado
+        if ! is_package_installed "dialog" "dialog"; then # Verifica si dialog no está instalado
             DEBIAN_FRONTEND=noninteractive apt-get update >/dev/null 2>&1
             DEBIAN_FRONTEND=noninteractive apt-get install -y dialog >/dev/null 2>&1
             if [ $? -ne 0 ]; then # Si la instalación falló
@@ -42,7 +57,7 @@ if [ -f /etc/os-release ]; then
     # Detecta distribuciones basadas en RHEL (como AlmaLinux)
     elif [[ "$ID" == "almalinux" || "$ID_LIKE" == "rhel fedora" || "$ID_LIKE" == "rhel" ]]; then
         DISTRIBUCION="AlmaLinux"
-        if ! rpm -q dialog >/dev/null 2>&1; then # Verifica si dialog no está instalado
+        if ! is_package_installed "dialog" "dialog"; then # Verifica si dialog no está instalado
             dnf install -y dialog >/dev/null 2>&1
             if [ $? -ne 0 ]; then # Si la instalación falló
                 echo "Error: No se pudo instalar el paquete 'dialog'. Por favor, inténtelo manualmente."
@@ -206,6 +221,15 @@ case $response in
                     # Realizar un nuevo update después de añadir el repositorio
                     DEBIAN_FRONTEND=noninteractive apt-get update >/dev/null 2>&1
                 fi
+            # Para AlmaLinux, asegurar que el repositorio EPEL y REMI estén habilitados para PHP
+            elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
+                if ! rpm -q epel-release >/dev/null 2>&1; then
+                    dnf install -y epel-release >/dev/null 2>&1
+                fi
+                if ! rpm -q remi-release >/dev/null 2>&1; then
+                    dnf install -y https://rpms.remirepo.net/enterprise/remi-release-8.rpm >/dev/null 2>&1 # For AlmaLinux 8
+                    dnf module reset php -y >/dev/null 2>&1 # Reset php module to ensure remi takes precedence
+                fi
             fi
             sleep 2 # Simula el tiempo si no es Debian/Ubuntu o si la operación fue muy rápida
             
@@ -228,11 +252,11 @@ case $response in
             echo 10
             # Validar e instalar Apache2
             if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
-                if ! dpkg -s apache2 >/dev/null 2>&1; then
+                if ! is_package_installed "apache2" "httpd"; then
                     DEBIAN_FRONTEND=noninteractive apt-get install -y apache2 >/dev/null 2>&1
                 fi
             elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
-                if ! rpm -q httpd >/dev/null 2>&1; then
+                if ! is_package_installed "apache2" "httpd"; then
                     dnf install -y httpd >/dev/null 2>&1
                     systemctl enable httpd >/dev/null 2>&1
                     systemctl start httpd >/dev/null 2>&1
@@ -285,32 +309,32 @@ case $response in
             # Validar e instalar PHP si no está ya instalado
             PHP_INSTALLED=false
             if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
-                if dpkg -s php${PHP_VERSION} >/dev/null 2>&1; then
+                if is_package_installed "php${PHP_VERSION}" "php"; then # 'php' es un marcador de posición para AlmaLinux aquí, no se usa
                     PHP_INSTALLED=true
                 else
                     DEBIAN_FRONTEND=noninteractive apt-get install -y php${PHP_VERSION} >/dev/null 2>&1
                     if [ $? -eq 0 ]; then PHP_INSTALLED=true; fi
                 fi
             elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
-                # For AlmaLinux, we check for php-cli as the main indicator for the selected version
-                if rpm -q php-cli >/dev/null 2>&1 && php -v | grep -q "PHP ${PHP_VERSION}"; then
+                # Para AlmaLinux, verificamos php-cli Y la versión
+                if is_package_installed "php-cli" "php-cli" && php -v | grep -q "PHP ${PHP_VERSION}"; then
                     PHP_INSTALLED=true
                 else
-                    # Enable REMI module for the selected PHP version
+                    # Habilitar el módulo REMI para la versión de PHP seleccionada
                     dnf module enable -y php:remi-${PHP_VERSION} >/dev/null 2>&1
-                    # Install php package which pulls in the correct version from the enabled module
+                    # Instalar el paquete php que trae la versión correcta del módulo habilitado
                     dnf install -y php >/dev/null 2>&1
-                    # Ensure the correct PHP version is set as default using alternatives (if needed, DNF module should handle this)
-                    update-alternatives --set php /usr/bin/php${PHP_VERSION} >/dev/null 2>&1 2>/dev/null # Redirect stderr too
+                    # Asegurar que la versión correcta de PHP esté establecida como predeterminada (si es necesario, el módulo DNF debería manejarlo)
+                    update-alternatives --set php /usr/bin/php${PHP_VERSION} >/dev/null 2>&1 2>/dev/null # Redirigir stderr también
                     if [ $? -eq 0 ]; then PHP_INSTALLED=true; fi
                 fi
             fi
             sleep 1 # Pequeña pausa para la base de PHP
 
-            # List of PHP extensions to install and their package names per distribution
-            # Format: "DisplayName|debian_package_suffix|almalinux_package_name"
-            # Note: debian_package_suffix will be prefixed with "php${PHP_VERSION}-"
-            #       almalinux_package_name will be used as is, assuming remi module handles versioning
+            # Lista de extensiones PHP a instalar y sus nombres de paquete por distribución
+            # Formato: "Nombre_Mostrado|paquete_debian_suffix|paquete_almalinux_nombre"
+            # Nota: paquete_debian_suffix será prefijado con "php${PHP_VERSION}-"
+            #       paquete_almalinux_nombre será usado tal cual, asumiendo que el módulo remi maneja el versionado
             PHP_EXTENSIONS=(
                 "CLI|cli|php-cli"
                 "FPM|fpm|php-fpm"
@@ -332,7 +356,7 @@ case $response in
                 "SQLite3|sqlite3|php-sqlite3"
                 "LDAP|ldap|php-ldap"
                 "SNMP|snmp|php-snmp"
-                "XSL|xsl|php-xmlrpc" # XSL on AlmaLinux is part of php-xmlrpc
+                "XSL|xsl|php-xmlrpc" # XSL en AlmaLinux es parte de php-xmlrpc
                 "APCu|apcu|php-pecl-apcu"
                 "Memcached|memcached|php-pecl-memcached"
                 "MongoDB|mongodb|php-pecl-mongodb"
@@ -353,17 +377,15 @@ case $response in
                 "Gearman|gearman|php-pecl-gearman"
             )
 
-            # Calculate progress increment per extension
+            # Cálculo del incremento de progreso por extensión
             TOTAL_EXTENSIONS=${#PHP_EXTENSIONS[@]}
             START_EXT_PERCENTAGE=45
             END_EXT_PERCENTAGE=70
-            # Ensure at least 1% per extension for visibility if many, or calculate precisely
-            # If 39 extensions, (70-45)/39 = 25/39 = ~0.64
             PERCENT_PER_EXT=$(echo "scale=2; ($END_EXT_PERCENTAGE - $START_EXT_PERCENTAGE) / $TOTAL_EXTENSIONS" | bc)
             CURRENT_PROGRESS=$START_EXT_PERCENTAGE
 
             if [ "$PHP_INSTALLED" = true ]; then
-                # Ensure build tools for PECL are present before iterating extensions for AlmaLinux
+                # Asegurar herramientas de compilación para PECL antes de iterar extensiones para AlmaLinux
                 if [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
                     echo "XXXX"
                     echo "Verificando herramientas de compilación para extensiones PECL..."
@@ -371,7 +393,7 @@ case $response in
                     CURRENT_PROGRESS=$(echo "scale=0; $CURRENT_PROGRESS + $PERCENT_PER_EXT" | bc)
                     if (( CURRENT_PROGRESS > END_EXT_PERCENTAGE )); then CURRENT_PROGRESS=$END_EXT_PERCENTAGE; fi
                     echo $CURRENT_PROGRESS
-                    if ! rpm -q php-devel >/dev/null 2>&1 || ! rpm -q gcc >/dev/null 2>&1 || ! rpm -q make >/dev/null 2>&1; then
+                    if ! is_package_installed "build-essential" "php-devel"; then # build-essential for Debian/Ubuntu, php-devel for AlmaLinux
                         dnf install -y php-devel gcc make >/dev/null 2>&1
                     fi
                     sleep 0.5
@@ -380,6 +402,7 @@ case $response in
                 for EXTENSION_INFO in "${PHP_EXTENSIONS[@]}"; do
                     IFS='|' read -r DISPLAY_NAME DEBIAN_SUFFIX ALMALINUX_PACKAGE <<< "$EXTENSION_INFO"
                     
+                    # Incrementar progreso antes de cada intento de instalación
                     CURRENT_PROGRESS=$(echo "scale=0; $CURRENT_PROGRESS + $PERCENT_PER_EXT" | bc)
                     if (( CURRENT_PROGRESS > END_EXT_PERCENTAGE )); then
                         CURRENT_PROGRESS=$END_EXT_PERCENTAGE
@@ -390,48 +413,42 @@ case $response in
                     echo $CURRENT_PROGRESS
 
                     PACKAGE_TO_INSTALL=""
-                    CHECK_COMMAND=""
                     
-                    INSTALLED=false
+                    INSTALL_SUCCESS=false
 
                     if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
                         PACKAGE_TO_INSTALL="php${PHP_VERSION}-${DEBIAN_SUFFIX}"
-                        CHECK_COMMAND="dpkg -s ${PACKAGE_TO_INSTALL}"
+                        if is_package_installed "$PACKAGE_TO_INSTALL" "dummy"; then # dummy no se usa, solo para la firma de la función
+                            INSTALL_SUCCESS=true
+                            echo "  $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL) ya está instalado." >/dev/tty
+                        else
+                            echo "  Intentando instalar $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL)..." >/dev/tty
+                            DEBIAN_FRONTEND=noninteractive apt-get install -y "$PACKAGE_TO_INSTALL" >/dev/null 2>&1
+                            if [ $? -eq 0 ]; then INSTALL_SUCCESS=true; fi
+                        fi
                     elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
                         PACKAGE_TO_INSTALL="$ALMALINUX_PACKAGE"
-                        CHECK_COMMAND="rpm -q ${PACKAGE_TO_INSTALL}"
-                    fi
-
-                    # Perform the check and install
-                    if eval "$CHECK_COMMAND" >/dev/null 2>&1; then
-                        INSTALLED=true
-                        echo "  $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL) ya está instalado." >/dev/tty
-                    else
-                        echo "  Intentando instalar $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL)..." >/dev/tty
-                        if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
-                            DEBIAN_FRONTEND=noninteractive apt-get install -y "$PACKAGE_TO_INSTALL" >/dev/null 2>&1
-                            if [ $? -eq 0 ]; then INSTALLED=true; fi
-                        elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
-                            # For some extensions, the direct 'php-' package might not exist or might be provided by a PECL package
-                            # The list should ideally reflect the exact package names.
-                            # We already ensured php-devel, gcc, make are there for PECL.
+                        if is_package_installed "dummy" "$PACKAGE_TO_INSTALL"; then # dummy no se usa
+                            INSTALL_SUCCESS=true
+                            echo "  $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL) ya está instalado." >/dev/tty
+                        else
+                            echo "  Intentando instalar $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL)..." >/dev/tty
                             dnf install -y "$PACKAGE_TO_INSTALL" >/dev/null 2>&1
-                            if [ $? -eq 0 ]; then INSTALLED=true; fi
+                            if [ $? -eq 0 ]; then INSTALL_SUCCESS=true; fi
                         fi
                     fi
                     
-                    if [ "$INSTALLED" = true ]; then
-                        : # Do nothing, message already printed above if it was already installed or just installed
-                    else
-                        echo "  Advertencia: No se pudo instalar la extensión $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL)." >&2 # Error to stderr
+                    if [ "$INSTALL_SUCCESS" = false ]; then
+                        UNINSTALLED_EXTENSIONS+=("$DISPLAY_NAME")
+                        echo "  Advertencia: No se pudo instalar la extensión $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL)." >&2 # Error a stderr
                     fi
                     sleep 0.1 # Pequeña pausa para que la barra de progreso se actualice visiblemente
                 done
             fi # Fin del if [ "$PHP_INSTALLED" = true ]
 
-            # Ensure the final percentage for PHP extensions is set
+            # Asegurar que el porcentaje final para las extensiones PHP se establezca
             echo "XXXX"
-            echo "Extensiones PHP instaladas."
+            echo "Extensiones PHP procesadas."
             echo "XXXX"
             echo 70
 
@@ -466,10 +483,20 @@ case $response in
         clear # Limpia la pantalla después de la barra de progreso
 
         # --- Mensaje final de instalación ---
+        INSTALL_MESSAGE="\n¡La instalación ha finalizado con éxito!\n"
+
+        if [ ${#UNINSTALLED_EXTENSIONS[@]} -gt 0 ]; then
+            INSTALL_MESSAGE+="\nSin embargo, las siguientes extensiones PHP no pudieron ser instaladas:\n\n"
+            for ext in "${UNINSTALLED_EXTENSIONS[@]}"; do
+                INSTALL_MESSAGE+="  - $ext\n"
+            done
+            INSTALL_MESSAGE+="\nPor favor, verifica si las necesitas y considera instalarlas manualmente si es necesario."
+        fi
+
         dialog --backtitle "Script de Instalación Versión $VERSO" \
                --title "Instalación Completada" \
-               --msgbox "\n¡La instalación ha finalizado con éxito!\n\nPresiona OK para salir." 10 60
-        
+               --msgbox "$INSTALL_MESSAGE\n\nPresiona OK para salir." 20 70 # Aumentar el tamaño para el mensaje de error
+
         clear # Limpia la pantalla después del mensaje final
         ;;
     1) # El usuario eligió "No"
