@@ -231,9 +231,7 @@ case $response in
 
         clear
 
-        ---
-        ## Barra de Progreso: Update y Upgrade del sistema
-        ---
+        # --- SECCIÓN DE INSTALACIÓN PRINCIPAL ---
         (
             log_message "Iniciando update y upgrade del sistema." console
 
@@ -350,9 +348,7 @@ case $response in
         
         clear
 
-        ---
-        ## Barra de Progreso: Instalación de LAMP
-        ---
+        # --- SECCIÓN DE INSTALACIÓN DE LAMP ---
         (
             log_message "Iniciando instalación de componentes LAMP." console
 
@@ -556,9 +552,12 @@ case $response in
                     INSTALL_SUCCESS=false
 
                     if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
-                        # CORRECCIÓN AQUÍ: Asegurar el guion entre la versión de PHP y el sufijo
-                        # ¡Asegurado que no haya asteriscos!
                         PACKAGE_TO_INSTALL="php${PHP_VERSION}-${DEBIAN_SUFFIX}"
+                        
+                        # --- VERIFICACIÓN DEPURACIÓN ---
+                        log_message "DEBUG: Intentando instalar Debian/Ubuntu paquete: '$PACKAGE_TO_INSTALL'"
+                        # --- FIN VERIFICACIÓN DEPURACIÓN ---
+
                         if is_package_installed "$PACKAGE_TO_INSTALL" "dummy"; then
                             INSTALL_SUCCESS=true
                             log_message "  $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL) ya está instalado." console
@@ -569,6 +568,11 @@ case $response in
                         fi
                     elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
                         PACKAGE_TO_INSTALL="$ALMALINUX_PACKAGE"
+                        
+                        # --- VERIFICACIÓN DEPURACIÓN ---
+                        log_message "DEBUG: Intentando instalar AlmaLinux paquete: '$PACKAGE_TO_INSTALL'"
+                        # --- FIN VERIFICACIÓN DEPURACIÓN ---
+
                         if is_package_installed "dummy" "$PACKAGE_TO_INSTALL"; then
                             INSTALL_SUCCESS=true
                             log_message "  $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL) ya está instalado." console
@@ -629,9 +633,7 @@ case $response in
 
         clear # Limpia la pantalla después de la barra de progreso
 
-        ---
-        ## Mensaje final de instalación
-        ---
+        # --- MENSAJE FINAL ---
         INSTALL_MESSAGE="\n¡La instalación ha finalizado con éxito!\n"
         log_message "Instalación LAMP finalizada."
 
