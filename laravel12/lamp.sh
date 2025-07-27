@@ -150,37 +150,36 @@ programas=$(dialog --title "Dogdark" \
        	"${OPCIONES_SOFTWARES[@]}" \
        	)
 status=$?
-if [ -z "$programas" ] || [ $status -ne 0 ]; then
-    dialog --msgbox "Operación cancelada." 5 30
-    clear
-    exit 1
-fi
-
-#eliminar las comillas dobles de salida
-programas=$(echo "$programas" | tr -d '"')
-
-#contamos cuantos registros existen
-cuantos_programas=$(echo "$programas" | wc -w)
-
-IFS=' ' read -r -a TEMP_PROGRAMAS <<< $programas
-
-#mensaje de datos
 mensaje+="Datos:\nNombre proyecto: ${nombre_pryecto}\nPassword Phpmyadmin: ${passmyadmin}\nPassword root phpmyadmin: ${passroot}\n\nSe va a instalar\nApache2\nPhp 8.4 y librerías\n${MYSQL}\nPhpmyadmin\nComposer\nNodeJs 24\nInstalador Laravel\nProyecto Nuevo"
 
-# Itera sobre cada tag de programa seleccionado (ej. "1", "3")
-for tag_seleccionado in "${TEMP_PROGRAMAS[@]}"; do
-    # Busca la descripción correspondiente para el tag seleccionado
-    # Itera sobre OPCIONES_SOFTWARES en pasos de 3 (tag, descripción, estado)
-    for (( i=0; i<${#OPCIONES_SOFTWARES[@]}; i+=3 )); do
-        current_tag="${OPCIONES_SOFTWARES[$i]}"
-        current_description="${OPCIONES_SOFTWARES[$((i+1))]}"
+if [ -z "$programas" ] || [ "$status" -ne 0 ]; then
+    # Si 'programas' está vacío O el usuario presionó Cancelar/Escape (status no es 0)
+    mensaje+="\n"
+else
+    # Si 'programas' NO está vacío y el usuario no canceló, significa que hay selecciones.
+#eliminar las comillas dobles de salida
+    programas=$(echo "$programas" | tr -d '"')
 
-        if [ "$tag_seleccionado" == "$current_tag" ]; then
-            mensaje+="\n$current_description" # Agrega la descripción al mensaje
-            break # Encontró la coincidencia, no necesita verificar otras opciones
-        fi
+    #contamos cuantos registros existen
+    cuantos_programas=$(echo "$programas" | wc -w)
+
+    IFS=' ' read -r -a TEMP_PROGRAMAS <<< $programas
+
+    # Itera sobre cada tag de programa seleccionado (ej. "1", "3")
+    for tag_seleccionado in "${TEMP_PROGRAMAS[@]}"; do
+        # Busca la descripción correspondiente para el tag seleccionado
+        # Itera sobre OPCIONES_SOFTWARES en pasos de 3 (tag, descripción, estado)
+        for (( i=0; i<${#OPCIONES_SOFTWARES[@]}; i+=3 )); do
+            current_tag="${OPCIONES_SOFTWARES[$i]}"
+            current_description="${OPCIONES_SOFTWARES[$((i+1))]}"
+
+            if [ "$tag_seleccionado" == "$current_tag" ]; then
+                mensaje+="\n$current_description" # Agrega la descripción al mensaje
+                break # Encontró la coincidencia, no necesita verificar otras opciones
+            fi
+        done
     done
-done
+fi
 
 mensaje+="\n¿Desea Continuar?"
 mensajesino
@@ -190,24 +189,23 @@ porcentaje=0
 progress
 
 clear
-#Validamos si existen las app agregadas
 
-#Ondrej
+#Validamos si existen las app agregadas
 if [ "${DISTRO}" = "UBUNTU" ]; then
     # Si NO está el PPA de Ondřej, lo añadimos e instalamos
     if ! grep -q "ppa.launchpadcontent.net/ondrej/php" /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null; then
         # Ejecución completamente silenciosa para Ubuntu
         mensaje="Actualizando sistema"
-	porcentaje=1
-	progress
+        porcentaje=1
+        progress
         sudo apt update > /dev/null 2>&1
         mensaje="Agregando certificados"
-	porcentaje=2
-	progress
+        porcentaje=2
+        progress
         sudo apt install -y apt-transport-https ca-certificates curl gnupg software-properties-common > /dev/null 2>&1
         mensaje="Agregando repositorio Ondrej"
-	porcentaje=3
-	progress
+        porcentaje=3
+        progress
         sudo add-apt-repository ppa:ondrej/php -y > /dev/null 2>&1
     fi
 elif [ "${DISTRO}" = "DEBIAN" ]; then
@@ -215,20 +213,20 @@ elif [ "${DISTRO}" = "DEBIAN" ]; then
     if ! grep -q "packages.sury.org/php" /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null; then
         # Ejecución completamente silenciosa para Debian
         mensaje="Actualizando sistema"
-	porcentaje=1
-	progress
+        porcentaje=1
+        progress
         sudo apt update > /dev/null 2>&1
         mensaje="Agregando certificados"
-	porcentaje=2
-	progress
+        porcentaje=2
+        progress
         sudo apt install -y apt-transport-https ca-certificates curl gnupg software-properties-common > /dev/null 2>&1
         mensaje="Agregando Gpg"
-	porcentaje=3
-	progress
+        porcentaje=3
+        progress
         sudo curl -sSL https://packages.sury.org/php/apt.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/deb.sury.org-php.gpg >/dev/null
         mensaje="Agregando App Ondrej"
-	porcentaje=4
-	progress
+        porcentaje=4
+        progress
         echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" | sudo tee /etc/apt/sources.list.d/php.list >/dev/null
     fi
 fi  
@@ -240,23 +238,50 @@ if [ "${DISTRO}" = "UBUNTU" ] || [ "${DISTRO}" = "DEBIAN" ]; then
     # Verifica si el repositorio de NodeSource para la versión 24 NO está presente
     if ! grep -q "$NODE_REPO_PATTERN" /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null; then
     	mensaje="Agregando App NodeJs ${NODE_VERSION}"
-	porcentaje=6
-	progress
+        porcentaje=5
+        progress
         curl -fsSL "[https://deb.nodesource.com/setup_$](https://deb.nodesource.com/setup_$){NODE_VERSION}.x" | sudo -E bash - > /dev/null 2>&1 
     fi
 fi
-  
-mensaje="Agregando App NodeJs ${NODE_VERSION}"
-porcentaje=8
-progress
-sudo apt update > /dev/null 2>&1
-sleep 2s
 
-mensaje="agregando app"
-porcentaje=2
-progress
+clear
+#validamos si algun software si instalara, agregaremos las app
+if [ -n "$programas" ] && [ "$status" -eq 0 ]; then
+    IFS=' ' read -r -a programas_array <<< "$(echo "$programas" | tr -d '"')"
+    nombres_para_resumen=""
+    for tag in "${programas_array[@]}"; do
+        if [ -z "$nombres_para_resumen" ]; then
+            nombres_para_resumen="${NOMBRES_PROGRAMAS_MAP[$tag]}"
+        else
+            nombres_para_resumen+=", ${NOMBRES_PROGRAMAS_MAP[$tag]}"
+        fi
+    done
+    for tag_seleccionado in "${programas_array[@]}"; do
+        case "$tag_seleccionado" in
+            1)
+                # Visual Studio Code
+                echo "eligió Visual"
+                ;;
+            2)
+                # Sublime Text
+                echo "eligio Sublime"
+                ;;
+            3)
+                # Brave Browser
+                echo "Eligio Brave"
+                ;;
+            4)
+                # Google Chrome
+                echo "eligio Chrome"
+                ;;
+            *)
+                echo "Advertencia: Opción de software desconocida seleccionada: $tag_seleccionado"
+                ;;
+        esac
+    done
+fi
 
-sleep 2s
+
 
 #cursor visible
 echo -e "\e[?25h"
