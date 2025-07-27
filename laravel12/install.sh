@@ -289,74 +289,96 @@ case $response in
                     PHP_INSTALLED=true
                 else
                     DEBIAN_FRONTEND=noninteractive apt-get install -y php${PHP_VERSION} >/dev/null 2>&1
-                    PHP_INSTALLED=true
+                    if [ $? -eq 0 ]; then PHP_INSTALLED=true; fi
                 fi
             elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
-                if rpm -q php-cli-${PHP_VERSION} >/dev/null 2>&1; then
+                # For AlmaLinux, we check for php-cli as the main indicator for the selected version
+                if rpm -q php-cli >/dev/null 2>&1 && php -v | grep -q "PHP ${PHP_VERSION}"; then
                     PHP_INSTALLED=true
                 else
+                    # Enable REMI module for the selected PHP version
                     dnf module enable -y php:remi-${PHP_VERSION} >/dev/null 2>&1
-                    dnf install -y php >/dev/null 2>&1 # dnf install php instalará la versión habilitada por el módulo
-                    update-alternatives --set php /usr/bin/php${PHP_VERSION} >/dev/null 2>&1
-                    PHP_INSTALLED=true
+                    # Install php package which pulls in the correct version from the enabled module
+                    dnf install -y php >/dev/null 2>&1
+                    # Ensure the correct PHP version is set as default using alternatives (if needed, DNF module should handle this)
+                    update-alternatives --set php /usr/bin/php${PHP_VERSION} >/dev/null 2>&1 2>/dev/null # Redirect stderr too
+                    if [ $? -eq 0 ]; then PHP_INSTALLED=true; fi
                 fi
             fi
             sleep 1 # Pequeña pausa para la base de PHP
 
-            # Lista de extensiones PHP a instalar y sus nombres de paquete por distribución
-            # Formato: "Nombre_Mostrado|paquete_debian|paquete_almalinux"
+            # List of PHP extensions to install and their package names per distribution
+            # Format: "DisplayName|debian_package_suffix|almalinux_package_name"
+            # Note: debian_package_suffix will be prefixed with "php${PHP_VERSION}-"
+            #       almalinux_package_name will be used as is, assuming remi module handles versioning
             PHP_EXTENSIONS=(
-                "CLI|php${PHP_VERSION}-cli|php-cli"
-                "FPM|php${PHP_VERSION}-fpm|php-fpm"
-                "Common|php${PHP_VERSION}-common|php-common"
-                "ZIP|php${PHP_VERSION}-zip|php-zip"
-                "MySQL|php${PHP_VERSION}-mysql|php-mysqlnd"
-                "cURL|php${PHP_VERSION}-curl|php-curl"
-                "GD|php${PHP_VERSION}-gd|php-gd"
-                "Intl|php${PHP_VERSION}-intl|php-intl"
-                "MBString|php${PHP_VERSION}-mbstring|php-mbstring"
-                "XML|php${PHP_VERSION}-xml|php-xml"
-                "SOAP|php${PHP_VERSION}-soap|php-soap"
-                "BCMath|php${PHP_VERSION}-bcmath|php-bcmath"
-                "GMP|php${PHP_VERSION}-gmp|php-gmp"
-                "OPcache|php${PHP_VERSION}-opcache|php-opcache"
-                "Imagick|php${PHP_VERSION}-imagick|php-pecl-imagick"
-                "Redis|php${PHP_VERSION}-redis|php-pecl-redis"
-                "PgSQL|php${PHP_VERSION}-pgsql|php-pgsql"
-                "SQLite3|php${PHP_VERSION}-sqlite3|php-sqlite3"
-                "LDAP|php${PHP_VERSION}-ldap|php-ldap"
-                "SNMP|php${PHP_VERSION}-snmp|php-snmp"
-                "XSL|php${PHP_VERSION}-xsl|php-xmlrpc" # XSL en AlmaLinux es parte de php-xmlrpc
-                "APCu|php${PHP_VERSION}-apcu|php-pecl-apcu"
-                "Memcached|php${PHP_VERSION}-memcached|php-pecl-memcached"
-                "MongoDB|php${PHP_VERSION}-mongodb|php-pecl-mongodb"
-                "SSH2|php${PHP_VERSION}-ssh2|php-pecl-ssh2"
-                "Sybase|php${PHP_VERSION}-sybase|php-sybase"
-                "ODBC|php${PHP_VERSION}-odbc|php-odbc"
-                "Pspell|php${PHP_VERSION}-pspell|php-pspell"
-                "Igbinary|php${PHP_VERSION}-igbinary|php-pecl-igbinary"
-                "Xdebug|php${PHP_VERSION}-xdebug|php-pecl-xdebug"
-                "DS (Data Structures)|php${PHP_VERSION}-ds|php-pecl-ds"
-                "Enchant|php${PHP_VERSION}-enchant|php-enchant"
-                "Msgpack|php${PHP_VERSION}-msgpack|php-pecl-msgpack"
-                "OAuth|php${PHP_VERSION}-oauth|php-pecl-oauth"
-                "Uploadprogress|php${PHP_VERSION}-uploadprogress|php-pecl-uploadprogress"
-                "UUID|php${PHP_VERSION}-uuid|php-pecl-uuid"
-                "ZMQ|php${PHP_VERSION}-zmq|php-pecl-zmq"
-                "Solr|php${PHP_VERSION}-solr|php-pecl-solr"
-                "Gearman|php${PHP_VERSION}-gearman|php-pecl-gearman"
+                "CLI|cli|php-cli"
+                "FPM|fpm|php-fpm"
+                "Common|common|php-common"
+                "ZIP|zip|php-zip"
+                "MySQL|mysql|php-mysqlnd"
+                "cURL|curl|php-curl"
+                "GD|gd|php-gd"
+                "Intl|intl|php-intl"
+                "MBString|mbstring|php-mbstring"
+                "XML|xml|php-xml"
+                "SOAP|soap|php-soap"
+                "BCMath|bcmath|php-bcmath"
+                "GMP|gmp|php-gmp"
+                "OPcache|opcache|php-opcache"
+                "Imagick|imagick|php-pecl-imagick"
+                "Redis|redis|php-pecl-redis"
+                "PgSQL|pgsql|php-pgsql"
+                "SQLite3|sqlite3|php-sqlite3"
+                "LDAP|ldap|php-ldap"
+                "SNMP|snmp|php-snmp"
+                "XSL|xsl|php-xmlrpc" # XSL on AlmaLinux is part of php-xmlrpc
+                "APCu|apcu|php-pecl-apcu"
+                "Memcached|memcached|php-pecl-memcached"
+                "MongoDB|mongodb|php-pecl-mongodb"
+                "SSH2|ssh2|php-pecl-ssh2"
+                "Sybase|sybase|php-sybase"
+                "ODBC|odbc|php-odbc"
+                "Pspell|pspell|php-pspell"
+                "Igbinary|igbinary|php-pecl-igbinary"
+                "Xdebug|xdebug|php-pecl-xdebug"
+                "DS (Data Structures)|ds|php-pecl-ds"
+                "Enchant|enchant|php-enchant"
+                "Msgpack|msgpack|php-pecl-msgpack"
+                "OAuth|oauth|php-pecl-oauth"
+                "Uploadprogress|uploadprogress|php-pecl-uploadprogress"
+                "UUID|uuid|php-pecl-uuid"
+                "ZMQ|zmq|php-pecl-zmq"
+                "Solr|solr|php-pecl-solr"
+                "Gearman|gearman|php-pecl-gearman"
             )
 
-            # Cálculo del incremento de progreso por extensión
+            # Calculate progress increment per extension
             TOTAL_EXTENSIONS=${#PHP_EXTENSIONS[@]}
             START_EXT_PERCENTAGE=45
             END_EXT_PERCENTAGE=70
+            # Ensure at least 1% per extension for visibility if many, or calculate precisely
+            # If 39 extensions, (70-45)/39 = 25/39 = ~0.64
             PERCENT_PER_EXT=$(echo "scale=2; ($END_EXT_PERCENTAGE - $START_EXT_PERCENTAGE) / $TOTAL_EXTENSIONS" | bc)
             CURRENT_PROGRESS=$START_EXT_PERCENTAGE
 
             if [ "$PHP_INSTALLED" = true ]; then
+                # Ensure build tools for PECL are present before iterating extensions for AlmaLinux
+                if [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
+                    echo "XXXX"
+                    echo "Verificando herramientas de compilación para extensiones PECL..."
+                    echo "XXXX"
+                    CURRENT_PROGRESS=$(echo "scale=0; $CURRENT_PROGRESS + $PERCENT_PER_EXT" | bc)
+                    if (( CURRENT_PROGRESS > END_EXT_PERCENTAGE )); then CURRENT_PROGRESS=$END_EXT_PERCENTAGE; fi
+                    echo $CURRENT_PROGRESS
+                    if ! rpm -q php-devel >/dev/null 2>&1 || ! rpm -q gcc >/dev/null 2>&1 || ! rpm -q make >/dev/null 2>&1; then
+                        dnf install -y php-devel gcc make >/dev/null 2>&1
+                    fi
+                    sleep 0.5
+                fi
+
                 for EXTENSION_INFO in "${PHP_EXTENSIONS[@]}"; do
-                    IFS='|' read -r DISPLAY_NAME DEBIAN_PACKAGE ALMALINUX_PACKAGE <<< "$EXTENSION_INFO"
+                    IFS='|' read -r DISPLAY_NAME DEBIAN_SUFFIX ALMALINUX_PACKAGE <<< "$EXTENSION_INFO"
                     
                     CURRENT_PROGRESS=$(echo "scale=0; $CURRENT_PROGRESS + $PERCENT_PER_EXT" | bc)
                     if (( CURRENT_PROGRESS > END_EXT_PERCENTAGE )); then
@@ -367,37 +389,51 @@ case $response in
                     echo "XXXX"
                     echo $CURRENT_PROGRESS
 
+                    PACKAGE_TO_INSTALL=""
+                    CHECK_COMMAND=""
+                    
                     INSTALLED=false
+
                     if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
-                        if dpkg -s "$DEBIAN_PACKAGE" >/dev/null 2>&1; then
-                            INSTALLED=true
-                        else
-                            DEBIAN_FRONTEND=noninteractive apt-get install -y "$DEBIAN_PACKAGE" >/dev/null 2>&1
-                            if [ $? -eq 0 ]; then INSTALLED=true; fi
-                        fi
+                        PACKAGE_TO_INSTALL="php${PHP_VERSION}-${DEBIAN_SUFFIX}"
+                        CHECK_COMMAND="dpkg -s ${PACKAGE_TO_INSTALL}"
                     elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
-                        if rpm -q "$ALMALINUX_PACKAGE" >/dev/null 2>&1; then
-                            INSTALLED=true
-                        else
-                            # Para PECL extensions en AlmaLinux, pueden requerir la instalación de php-devel
-                            # Añadimos una verificación aquí para php-devel y los paquetes build-essential si no están ya.
-                            # Para asegurar que compilaciones de PECL puedan ocurrir si es necesario.
-                            if ! rpm -q php-devel >/dev/null 2>&1; then
-                                dnf install -y php-devel gcc make >/dev/null 2>&1
-                            fi
-                            dnf install -y "$ALMALINUX_PACKAGE" >/dev/null 2>&1
+                        PACKAGE_TO_INSTALL="$ALMALINUX_PACKAGE"
+                        CHECK_COMMAND="rpm -q ${PACKAGE_TO_INSTALL}"
+                    fi
+
+                    # Perform the check and install
+                    if eval "$CHECK_COMMAND" >/dev/null 2>&1; then
+                        INSTALLED=true
+                        echo "  $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL) ya está instalado." >/dev/tty
+                    else
+                        echo "  Intentando instalar $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL)..." >/dev/tty
+                        if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
+                            DEBIAN_FRONTEND=noninteractive apt-get install -y "$PACKAGE_TO_INSTALL" >/dev/null 2>&1
+                            if [ $? -eq 0 ]; then INSTALLED=true; fi
+                        elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
+                            # For some extensions, the direct 'php-' package might not exist or might be provided by a PECL package
+                            # The list should ideally reflect the exact package names.
+                            # We already ensured php-devel, gcc, make are there for PECL.
+                            dnf install -y "$PACKAGE_TO_INSTALL" >/dev/null 2>&1
                             if [ $? -eq 0 ]; then INSTALLED=true; fi
                         fi
                     fi
                     
                     if [ "$INSTALLED" = true ]; then
-                        echo "  $DISPLAY_NAME instalado/ya presente." >/dev/tty # Output a la consola real, no a dialog
+                        : # Do nothing, message already printed above if it was already installed or just installed
                     else
-                        echo "  Advertencia: No se pudo instalar $DISPLAY_NAME." >/dev/tty # Output a la consola real
+                        echo "  Advertencia: No se pudo instalar la extensión $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL)." >&2 # Error to stderr
                     fi
                     sleep 0.1 # Pequeña pausa para que la barra de progreso se actualice visiblemente
                 done
             fi # Fin del if [ "$PHP_INSTALLED" = true ]
+
+            # Ensure the final percentage for PHP extensions is set
+            echo "XXXX"
+            echo "Extensiones PHP instaladas."
+            echo "XXXX"
+            echo 70
 
             # Determina si es MySQL o MariaDB
             DB_SYSTEM=""
