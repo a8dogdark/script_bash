@@ -150,7 +150,7 @@ printf "********************************\n"
 printf "* Instalamos librerias php 8.4 *\n"
 printf "********************************\n"
 
-sudo apt install -y php8.4-{cli,xml,curl,mbstring,mysql,zip,json}
+sudo apt install -y php8.4-{cli,xml,curl,mbstring,mysql,zip,json,bcmath,bz2,gd,gmp,intl,mbstring,opcache,readline,xml,zip}
 
 
 printf "***********************\n"
