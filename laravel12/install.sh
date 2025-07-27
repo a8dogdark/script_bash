@@ -6,7 +6,7 @@ VERSO="2.0" # Versión de la instalación
 PROJECT_NAME="" # Variable para el nombre del proyecto
 PHPMYADMIN_USER_PASS="" # Variable para la contraseña del usuario phpMyAdmin
 PHPMYADMIN_ROOT_PASS="" # Variable para la contraseña del usuario root de phpMyAdmin
-PHP_VERSION="" # Nueva variable para la versión de PHP seleccionada
+PHP_VERSION="" # Variable para la versión de PHP seleccionada
 
 # Validación de usuario root
 if [ "$(id -u)" -ne 0 ]; then
@@ -153,6 +153,31 @@ case $response in
         fi
 
         clear # Limpia la pantalla después de la selección de PHP
+
+        # --- Barra de Progreso ---
+        (
+            echo "XXXX"
+            echo "Update del sistema"
+            echo "XXXX"
+            echo 40
+            sleep 2 # Simula el tiempo de actualización
+            
+            echo "XXXX"
+            echo "Upgrade del sistema"
+            echo "XXXX"
+            echo 80
+            sleep 2 # Simula el tiempo de actualización
+            
+            echo "XXXX"
+            echo "Sistema actualizado"
+            echo "XXXX"
+            echo 100
+            sleep 2 # Pausa de 2 segundos al 100%
+        ) | dialog --backtitle "Script de Instalación Versión $VERSO" \
+                   --title "Progreso de la Instalación" \
+                   --gauge "Iniciando operaciones..." 10 70 0
+        
+        clear # Limpia la pantalla después de que la barra de progreso termine
         ;;
     1) # El usuario eligió "No"
         clear # Limpia la pantalla antes de salir
