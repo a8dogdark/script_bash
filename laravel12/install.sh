@@ -10,7 +10,11 @@ PHP_VERSION="" # Variable para la versión de PHP seleccionada
 SELECTED_APPS="" # Nueva variable para almacenar las aplicaciones seleccionadas
 
 # Archivo de log para depuración
-LOG_FILE="/var/log/lamp_install_$(date +%Y%m%d_%H%M%S).log"
+# CAMBIO: Se cambia la ubicación del log a la carpeta Documentos del usuario.
+LOG_DIR="$HOME/Documents"
+mkdir -p "$LOG_DIR" # Asegura que la carpeta Documents exista
+LOG_FILE="$LOG_DIR/lamp_install_$(date +%Y%m%d_%H%M%S).log"
+
 # Crear o limpiar el archivo de log al inicio
 echo "Iniciando log de instalación LAMP. Fecha: $(date)" > "$LOG_FILE"
 echo "===============================================" >> "$LOG_FILE"
@@ -250,21 +254,23 @@ case $response in
                 log_message "Limpiando configuraciones antiguas del PPA de Ondrej..."
                 rm -f /etc/apt/sources.list.d/ondrej-ubuntu-php-*.list >> "$LOG_FILE" 2>&1
                 rm -f /etc/apt/sources.list.d/ondrej-ubuntu-apache2-*.list >> "$LOG_FILE" 2>&1 # Por si acaso
-                apt-key del $(apt-key list | grep -i "ondrej" | awk '{print $1}') >> "$LOG_FILE" 2>&1 # Limpia llaves viejas si existen
+                # Se elimina la forma antigua de 'apt-key del' ya que no siempre funciona de forma consistente en sistemas modernos
+                # y el método de keyrings es el preferido.
 
                 # Asegurarse de tener apt-transport-https y software-properties-common
-                log_message "Instalando apt-transport-https y software-properties-common."
+                log_message "Instalando apt-transport-https, software-properties-common, curl y gnupg2."
                 DEBIAN_FRONTEND=noninteractive apt-get install -y apt-transport-https software-properties-common curl gnupg2 >> "$LOG_FILE" 2>&1
 
                 # Añadir la llave GPG de Ondrej
-                log_message "Añadiendo la llave GPG del PPA de Ondrej."
-                curl -sSL https://packages.sury.org/php/apt.gpg | gpg --dearmor | tee /usr/share/keyrings/deb.sury.org-php.gpg >/dev/null
+                log_message "Añadiendo la llave GPG del PPA de Ondrej al nuevo formato de keyrings."
+                # Usar sudo tee para escribir en un archivo que requiere permisos de root
+                curl -sSL https://packages.sury.org/php/apt.gpg | gpg --dearmor | sudo tee /usr/share/keyrings/deb.sury.org-php.gpg >/dev/null 2>> "$LOG_FILE"
 
                 # Crear el archivo de lista para el PPA de Ondrej directamente con 'noble'
                 PPA_NOBLE_LIST_FILE="/etc/apt/sources.list.d/ondrej-php-noble.list"
                 if [ ! -f "$PPA_NOBLE_LIST_FILE" ]; then
                     log_message "Creando el archivo de repositorio de Ondrej para PHP con nombre clave 'noble'."
-                    echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ noble main" | tee "$PPA_NOBLE_LIST_FILE" >> "$LOG_FILE" 2>&1
+                    echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ noble main" | sudo tee "$PPA_NOBLE_LIST_FILE" >> "$LOG_FILE" 2>&1
                 else
                     log_message "El archivo de repositorio de Ondrej para PHP con 'noble' ya existe."
                 fi
