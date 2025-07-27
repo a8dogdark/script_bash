@@ -69,6 +69,8 @@ else
     echo "Hay error al encontrar la distribuición, no la reconoce el programa"
     exit 1
 fi
+
+
 #validamos si existe la carpeta tmp
 if [ ! -d "${temp}" ]; then
 	#creamos la carpeta tmp
@@ -191,7 +193,7 @@ clear
 #Validamos si existen las app agregadas
 
 #Ondrej
-if [ "$DISTRO" == "ubuntu" ]; then
+if [ "${DISTRO}" = "UBUNTU" ]; then
     # Si NO está el PPA de Ondřej, lo añadimos e instalamos
     if ! grep -q "ppa.launchpadcontent.net/ondrej/php" /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null; then
         # Ejecución completamente silenciosa para Ubuntu
@@ -208,7 +210,7 @@ if [ "$DISTRO" == "ubuntu" ]; then
 	progress
         sudo add-apt-repository ppa:ondrej/php -y > /dev/null 2>&1
     fi
-elif [ "$DISTRO" == "debian" ]; then
+elif [ "${DISTRO}" = "DEBIAN" ]; then
     # Si NO está el repositorio directo de Ondřej, lo añadimos e instalamos
     if ! grep -q "packages.sury.org/php" /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null; then
         # Ejecución completamente silenciosa para Debian
@@ -234,7 +236,7 @@ fi
 #NodeJs 24
 NODE_REPO_PATTERN="[nodesource.com/node_$](https://nodesource.com/node_$){NODE_VERSION}.x"
 
-if [ "$DISTRO" == "ubuntu" ] || [ "$DISTRO" == "debian" ]; then
+if [ "${DISTRO}" = "UBUNTU" ] || [ "${DISTRO}" = "DEBIAN" ]; then
     # Verifica si el repositorio de NodeSource para la versión 24 NO está presente
     if ! grep -q "$NODE_REPO_PATTERN" /etc/apt/sources.list /etc/apt/sources.list.d/*.list 2>/dev/null; then
     	mensaje="Agregando App NodeJs ${NODE_VERSION}"
@@ -248,8 +250,6 @@ mensaje="Agregando App NodeJs ${NODE_VERSION}"
 porcentaje=8
 progress
 sudo apt update > /dev/null 2>&1
-  
-exit 1
 sleep 2s
 
 mensaje="agregando app"
@@ -262,6 +262,7 @@ sleep 2s
 echo -e "\e[?25h"
 clear
 exit 1
+
 
 
 
