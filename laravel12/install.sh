@@ -250,28 +250,18 @@ case $response in
                     log_message "Instalando software-properties-common."
                     DEBIAN_FRONTEND=noninteractive apt-get install -y software-properties-common >> "$LOG_FILE" 2>&1
                     
-                    # --- INICIO DEL CAMBIO: Forzar la versión para add-apt-repository ---
-                    TARGET_CODENAME="$SYSTEM_CODENAME" # Por defecto, usa el nombre clave del sistema
-                    # Si el nombre clave del sistema es 'plucky' o 'devel' (u otro que no tenga un Release file en Ondrej),
-                    # intentamos usar 'noble' (Ubuntu 24.04 LTS) o 'jammy' (Ubuntu 22.04 LTS)
-                    # NOTA: Noble Numbat (24.04 LTS) es más reciente.
-                    case "$SYSTEM_CODENAME" in
-                        plucky|devel|sid) # Añade aquí otros nombres clave que causen problemas si los encuentras
-                            log_message "Detectada una versión de desarrollo o no soportada ($SYSTEM_CODENAME). Intentando forzar 'noble' para el PPA de Ondrej."
-                            TARGET_CODENAME="noble" # Forzamos a usar el nombre clave "noble"
-                            ;;
-                        *)
-                            log_message "Usando el nombre clave detectado del sistema ($SYSTEM_CODENAME) para el PPA de Ondrej."
-                            ;;
-                    esac
+                    # --- INICIO DEL CAMBIO: Forzar la versión para add-apt-repository a 'noble' (Ubuntu 24.04 LTS) ---
+                    TARGET_CODENAME="noble" # Siempre usaremos 'noble' si es un Ubuntu/Debian, si no es una versión LTS conocida.
 
-                    log_message "Añadiendo PPA de Ondrej para PHP con nombre clave forzado: $TARGET_CODENAME."
-                    # El truco está en usar la opción -s para cambiar el codename antes de add-apt-repository
-                    # y luego limpiarlo si es necesario, o editar el archivo .list directamente.
-                    # add-apt-repository -y ppa:ondrej/php no permite forzar el codename directamente con un flag.
-                    # La forma más robusta es añadir el PPA y luego modificar el archivo de sources.list
+                    log_message "Añadiendo PPA de Ondrej para PHP. Se intentará forzar el nombre clave a '$TARGET_CODENAME' si el sistema es de desarrollo o no está soportado."
+                    
+                    # add-apt-repository -y ppa:ondrej/php agregará el PPA usando SYSTEM_CODENAME.
+                    # Luego editaremos el archivo .list para cambiar el codename.
                     add-apt-repository -y ppa:ondrej/php >> "$LOG_FILE" 2>&1
-                    PPA_LIST_FILE="/etc/apt/sources.list.d/ondrej-ubuntu-php-$SYSTEM_CODENAME.list"
+                    
+                    # El archivo PPA se creará con el SYSTEM_CODENAME. Lo buscamos y lo modificamos.
+                    PPA_LIST_FILE="/etc/apt/sources.list.d/ondrej-ubuntu-php-${SYSTEM_CODENAME}.list"
+                    
                     if [ -f "$PPA_LIST_FILE" ]; then
                         log_message "Modificando $PPA_LIST_FILE para usar $TARGET_CODENAME en lugar de $SYSTEM_CODENAME."
                         sed -i "s/${SYSTEM_CODENAME}/${TARGET_CODENAME}/g" "$PPA_LIST_FILE" >> "$LOG_FILE" 2>&1
@@ -279,15 +269,15 @@ case $response in
                             log_message "Error al modificar $PPA_LIST_FILE. Podría haber problemas con el PPA de Ondrej." console
                         fi
                     else
-                        log_message "Advertencia: No se encontró el archivo de lista del PPA de Ondrej en $PPA_LIST_FILE. Posible error al añadir el PPA." console
+                        log_message "Advertencia: No se encontró el archivo de lista del PPA de Ondrej en $PPA_LIST_FILE. Posible error al añadir el PPA inicialmente." console
                     fi
                     # --- FIN DEL CAMBIO ---
 
                     log_message "Realizando update después de añadir/modificar el repositorio."
                     DEBIAN_FRONTEND=noninteractive apt-get update >> "$LOG_FILE" 2>&1
                 else
-                    log_message "PPA de Ondrej ya configurado."
-                    # Si ya está configurado, podemos verificar si usa 'plucky' y repararlo de nuevo
+                    log_message "PPA de Ondrej ya configurado. Verificando si necesita reparación para 'noble'."
+                    # Si ya está configurado, podemos verificar si usa un codename problemático y repararlo de nuevo a 'noble'
                     PPA_LIST_FILE=$(grep -l "ppa.launchpadcontent.net/ondrej/php" /etc/apt/sources.list.d/*.list 2>/dev/null | head -n 1)
                     if [[ -f "$PPA_LIST_FILE" && $(grep -q " ${SYSTEM_CODENAME} " "$PPA_LIST_FILE"; echo $?) -eq 0 ]]; then
                          log_message "PPA de Ondrej detectado usando $SYSTEM_CODENAME. Intentando reparar a noble."
@@ -296,8 +286,10 @@ case $response in
                             log_message "PPA de Ondrej reparado a noble. Realizando update."
                             DEBIAN_FRONTEND=noninteractive apt-get update >> "$LOG_FILE" 2>&1
                          else
-                            log_message "Error al reparar el PPA de Ondrej a noble." console
+                            log_message "Error al reparar el PPA de Ondrej a noble. Por favor, revisa el log para más detalles." console
                          fi
+                    else
+                        log_message "PPA de Ondrej ya configurado y parece usar un codename válido o ya reparado."
                     fi
                 fi
             # Para AlmaLinux, asegurar que el repositorio EPEL y REMI estén habilitados para PHP
@@ -425,7 +417,7 @@ case $response in
                         PHP_INSTALLED=true
                         log_message "php${PHP_VERSION} instalado con éxito."
                     else
-                        log_message "Error al instalar php${PHP_VERSION}."
+                        log_message "Error al instalar php${PHP_VERSION}. Revisa el log." console
                     fi
                 fi
             elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
@@ -441,7 +433,7 @@ case $response in
                         PHP_INSTALLED=true
                         log_message "PHP ${PHP_VERSION} base instalado con éxito en AlmaLinux."
                     else
-                        log_message "Error al instalar PHP ${PHP_VERSION} base en AlmaLinux."
+                        log_message "Error al instalar PHP ${PHP_VERSION} base en AlmaLinux. Revisa el log." console
                     fi
                 fi
             fi
@@ -561,7 +553,7 @@ case $response in
                         UNINSTALLED_EXTENSIONS+=("$DISPLAY_NAME")
                         log_message "  Advertencia: No se pudo instalar la extensión $DISPLAY_NAME (paquete $PACKAGE_TO_INSTALL)." console
                     fi
-                    sleep 0.1 # Pequeña pausa para que la barra de progreso se actualice visiblemente
+                    sleep 0.1 # Pequeña pausa para que la barra de progreso se actualice visiblely
                 done
             else
                 log_message "La instalación base de PHP $PHP_VERSION falló, omitiendo la instalación de extensiones." console
