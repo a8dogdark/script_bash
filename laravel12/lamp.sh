@@ -25,3 +25,6 @@ read -p "Password para root Mysql: " PASS_ROOT
 if [ -z "$PASS_ROOT" ]; then
   echo "el campo no puede venir vacio"
 fi
+
+sudo apt update -y
+sudo apt upgrade -y
