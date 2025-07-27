@@ -1,5 +1,7 @@
 #!/bin/bash
 
+VEROS="2.0"
+
 # Validar si el usuario es root
 if [ "$(id -u)" -ne 0 ]; then
     clear
@@ -29,21 +31,21 @@ case "$DISTRO" in
             clear
             exit 1
         fi
-        DB_PACKAGE="mysql-server" # Ubuntu 22.04+ prefiere MySQL por defecto
+        DB_PACKAGE="mysql-server"
         ;;
     debian)
         if ! (( $(echo "$VERSION >= 11" | bc -l) )); then
             clear
             exit 1
         fi
-        DB_PACKAGE="mariadb-server" # Debian 11+ prefiere MariaDB por defecto
+        DB_PACKAGE="mariadb-server"
         ;;
     almalinux)
         if ! [[ "$VERSION" =~ ^(8|9)\.[0-9]+$ ]]; then
             clear
             exit 1
         fi
-        DB_PACKAGE="mariadb-server" # AlmaLinux prefiere MariaDB por defecto
+        DB_PACKAGE="mariadb-server"
         ;;
     *)
         clear
@@ -70,7 +72,7 @@ if ! command -v dialog &> /dev/null; then
 fi
 
 # Cuadro de bienvenida con información de paquetes y opciones Aceptar/Salir
-dialog --clear --backtitle "Instalador de Sistema" \
+dialog --clear --backtitle "Instalador de Sistema v$VEROS" \
 --title "Bienvenido al Instalador de Laravel 12" \
 --yesno "\nEste script preparara tu sistema para Laravel 12.\n\nSe instalaran los siguientes paquetes:\n- Apache2\n- PHP (y extensiones necesarias)\n- $DB_PACKAGE\n- phpMyAdmin\n\n¿Deseas continuar con la instalacion?" 18 70
 
