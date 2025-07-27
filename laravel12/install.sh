@@ -61,6 +61,9 @@ if [ -f /etc/os-release ]; then
     # Detecta distribuciones basadas en Debian/Ubuntu
     if [[ "$ID" == "ubuntu" || "$ID" == "debian" || "$ID_LIKE" == "debian" ]]; then
         DISTRIBUCION="Ubuntu/Debian"
+        SYSTEM_CODENAME=$VERSION_CODENAME # Captura el nombre clave real del sistema (e.g., "plucky")
+        log_message "Nombre clave del sistema detectado: $SYSTEM_CODENAME"
+
         if ! is_package_installed "dialog" "dialog"; then # Verifica si dialog no está instalado
             log_message "Instalando dialog..."
             DEBIAN_FRONTEND=noninteractive apt-get update >> "$LOG_FILE" 2>&1
@@ -246,12 +249,56 @@ case $response in
                 if ! grep -q "ppa.launchpadcontent.net/ondrej/php" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
                     log_message "Instalando software-properties-common."
                     DEBIAN_FRONTEND=noninteractive apt-get install -y software-properties-common >> "$LOG_FILE" 2>&1
-                    log_message "Añadiendo PPA de Ondrej para PHP."
+                    
+                    # --- INICIO DEL CAMBIO: Forzar la versión para add-apt-repository ---
+                    TARGET_CODENAME="$SYSTEM_CODENAME" # Por defecto, usa el nombre clave del sistema
+                    # Si el nombre clave del sistema es 'plucky' o 'devel' (u otro que no tenga un Release file en Ondrej),
+                    # intentamos usar 'noble' (Ubuntu 24.04 LTS) o 'jammy' (Ubuntu 22.04 LTS)
+                    # NOTA: Noble Numbat (24.04 LTS) es más reciente.
+                    case "$SYSTEM_CODENAME" in
+                        plucky|devel|sid) # Añade aquí otros nombres clave que causen problemas si los encuentras
+                            log_message "Detectada una versión de desarrollo o no soportada ($SYSTEM_CODENAME). Intentando forzar 'noble' para el PPA de Ondrej."
+                            TARGET_CODENAME="noble" # Forzamos a usar el nombre clave "noble"
+                            ;;
+                        *)
+                            log_message "Usando el nombre clave detectado del sistema ($SYSTEM_CODENAME) para el PPA de Ondrej."
+                            ;;
+                    esac
+
+                    log_message "Añadiendo PPA de Ondrej para PHP con nombre clave forzado: $TARGET_CODENAME."
+                    # El truco está en usar la opción -s para cambiar el codename antes de add-apt-repository
+                    # y luego limpiarlo si es necesario, o editar el archivo .list directamente.
+                    # add-apt-repository -y ppa:ondrej/php no permite forzar el codename directamente con un flag.
+                    # La forma más robusta es añadir el PPA y luego modificar el archivo de sources.list
                     add-apt-repository -y ppa:ondrej/php >> "$LOG_FILE" 2>&1
-                    log_message "Realizando update después de añadir PPA."
+                    PPA_LIST_FILE="/etc/apt/sources.list.d/ondrej-ubuntu-php-$SYSTEM_CODENAME.list"
+                    if [ -f "$PPA_LIST_FILE" ]; then
+                        log_message "Modificando $PPA_LIST_FILE para usar $TARGET_CODENAME en lugar de $SYSTEM_CODENAME."
+                        sed -i "s/${SYSTEM_CODENAME}/${TARGET_CODENAME}/g" "$PPA_LIST_FILE" >> "$LOG_FILE" 2>&1
+                        if [ $? -ne 0 ]; then
+                            log_message "Error al modificar $PPA_LIST_FILE. Podría haber problemas con el PPA de Ondrej." console
+                        fi
+                    else
+                        log_message "Advertencia: No se encontró el archivo de lista del PPA de Ondrej en $PPA_LIST_FILE. Posible error al añadir el PPA." console
+                    fi
+                    # --- FIN DEL CAMBIO ---
+
+                    log_message "Realizando update después de añadir/modificar el repositorio."
                     DEBIAN_FRONTEND=noninteractive apt-get update >> "$LOG_FILE" 2>&1
                 else
                     log_message "PPA de Ondrej ya configurado."
+                    # Si ya está configurado, podemos verificar si usa 'plucky' y repararlo de nuevo
+                    PPA_LIST_FILE=$(grep -l "ppa.launchpadcontent.net/ondrej/php" /etc/apt/sources.list.d/*.list 2>/dev/null | head -n 1)
+                    if [[ -f "$PPA_LIST_FILE" && $(grep -q " ${SYSTEM_CODENAME} " "$PPA_LIST_FILE"; echo $?) -eq 0 ]]; then
+                         log_message "PPA de Ondrej detectado usando $SYSTEM_CODENAME. Intentando reparar a noble."
+                         sed -i "s/${SYSTEM_CODENAME}/noble/g" "$PPA_LIST_FILE" >> "$LOG_FILE" 2>&1
+                         if [ $? -eq 0 ]; then
+                            log_message "PPA de Ondrej reparado a noble. Realizando update."
+                            DEBIAN_FRONTEND=noninteractive apt-get update >> "$LOG_FILE" 2>&1
+                         else
+                            log_message "Error al reparar el PPA de Ondrej a noble." console
+                         fi
+                    fi
                 fi
             # Para AlmaLinux, asegurar que el repositorio EPEL y REMI estén habilitados para PHP
             elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
