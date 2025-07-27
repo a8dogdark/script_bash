@@ -172,15 +172,9 @@ case $response in
         # --- Barra de Progreso: Update y Upgrade del sistema ---
         (
             echo "XXXX"
-            echo "Agregando repositorios..."
-            echo "XXXX"
-            echo 20 # 20% para agregar repositorios
-            sleep 2 # Simula el tiempo para agregar repositorios
-            
-            echo "XXXX"
             echo "Realizando update del sistema..."
             echo "XXXX"
-            echo 60 # Pasa a 60% para el update
+            echo 20 # 20% para el update
             if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
                 DEBIAN_FRONTEND=noninteractive apt-get update >/dev/null 2>&1
             elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
@@ -190,12 +184,18 @@ case $response in
             echo "XXXX"
             echo "Realizando upgrade del sistema..."
             echo "XXXX"
-            echo 90 # Pasa a 90% para el upgrade
+            echo 60 # 60% para el upgrade
             if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
                 DEBIAN_FRONTEND=noninteractive apt-get upgrade -y >/dev/null 2>&1
             elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
                 dnf upgrade -y >/dev/null 2>&1
             fi
+
+            echo "XXXX"
+            echo "Agregando repositorios adicionales..."
+            echo "XXXX"
+            echo 80 # 80% para agregar repositorios (después del upgrade)
+            sleep 2 # Simula el tiempo para agregar repositorios
             
             echo "XXXX"
             echo "Sistema actualizado"
