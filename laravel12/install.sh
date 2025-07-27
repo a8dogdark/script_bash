@@ -22,24 +22,28 @@ else
     exit 1
 fi
 
+# Definir el paquete de base de datos y validar compatibilidad
 case "$DISTRO" in
     ubuntu)
         if ! (( $(echo "$VERSION >= 22" | bc -l) )); then
             clear
             exit 1
         fi
+        DB_PACKAGE="mysql-server" # Ubuntu 22.04+ prefiere MySQL por defecto
         ;;
     debian)
         if ! (( $(echo "$VERSION >= 11" | bc -l) )); then
             clear
             exit 1
         fi
+        DB_PACKAGE="mariadb-server" # Debian 11+ prefiere MariaDB por defecto
         ;;
     almalinux)
         if ! [[ "$VERSION" =~ ^(8|9)\.[0-9]+$ ]]; then
             clear
             exit 1
         fi
+        DB_PACKAGE="mariadb-server" # AlmaLinux prefiere MariaDB por defecto
         ;;
     *)
         clear
@@ -65,22 +69,22 @@ if ! command -v dialog &> /dev/null; then
     done
 fi
 
-# Cuadro de bienvenida con opciones Aceptar/Salir
+# Cuadro de bienvenida con información de paquetes y opciones Aceptar/Salir
 dialog --clear --backtitle "Instalador de Sistema" \
---title "Bienvenido" \
---yesno "\n¡Bienvenido al asistente de instalación!\n\nEste script preparará tu sistema.\n\n¿Deseas continuar con la instalación?" 10 60
+--title "Bienvenido al Instalador de Laravel 12" \
+--yesno "\nEste script preparara tu sistema para Laravel 12.\n\nSe instalaran los siguientes paquetes:\n- Apache2\n- PHP (y extensiones necesarias)\n- $DB_PACKAGE\n- phpMyAdmin\n\n¿Deseas continuar con la instalacion?" 18 70
 
 response=$?
 case $response in
-    0) # Código de retorno 0 = Yes/Aceptar
+    0) # Codigo de retorno 0 = Yes/Aceptar
         clear
-        # El script continuaría aquí con las siguientes acciones
+        # El script continuaria aqui con las siguientes acciones de instalacion
         ;;
-    1) # Código de retorno 1 = No/Salir
+    1) # Codigo de retorno 1 = No/Salir
         clear
         exit 0
         ;;
-    255) # Código de retorno 255 = ESC presionado o ventana cerrada
+    255) # Codigo de retorno 255 = ESC presionado o ventana cerrada
         clear
         exit 0
         ;;
