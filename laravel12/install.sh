@@ -3,7 +3,9 @@
 DISTRIBUCION=""
 VERSION="" # Esta variable se actualizará en pasos posteriores
 VERSO="2.0" # Versión de la instalación
-PROJECT_NAME="" # Nueva variable para el nombre del proyecto
+PROJECT_NAME="" # Variable para el nombre del proyecto
+PHPMYADMIN_USER_PASS="" # Nueva variable para la contraseña del usuario phpMyAdmin
+PHPMYADMIN_ROOT_PASS="" # Nueva variable para la contraseña del usuario root de phpMyAdmin
 
 # Validación de usuario root
 if [ "$(id -u)" -ne 0 ]; then
@@ -75,7 +77,7 @@ case $response in
     0) # El usuario eligió "Sí"
         clear # Limpia la pantalla después del diálogo
         
-        # --- AQUÍ EMPIEZA EL INPUTBOX ---
+        # Diálogo para pedir el nombre del proyecto Laravel
         PROJECT_NAME=$(dialog --backtitle "Script de Instalación Versión $VERSO" \
                                 --title "Nombre del Proyecto Laravel" \
                                 --inputbox "Por favor, ingresa el nombre que deseas para tu proyecto Laravel 12:" 10 60 3>&1 1>&2 2>&3)
@@ -83,7 +85,7 @@ case $response in
         # Captura el estado de salida del inputbox (0 para OK, 1 para Cancelar, 255 para ESC)
         input_response=$?
 
-        # Valida la entrada del usuario
+        # Valida la entrada del usuario para el nombre del proyecto
         if [ $input_response -ne 0 ] || [ -z "$PROJECT_NAME" ]; then
             clear
             dialog --backtitle "Script de Instalación Versión $VERSO" \
@@ -92,8 +94,43 @@ case $response in
             exit 1
         fi
 
-        # Si todo está bien, el script continuaría desde aquí con el $PROJECT_NAME
-        clear
+        clear # Limpia la pantalla antes del siguiente diálogo
+
+        # Diálogo para pedir la contraseña del usuario phpMyAdmin
+        PHPMYADMIN_USER_PASS=$(dialog --backtitle "Script de Instalación Versión $VERSO" \
+                                        --title "Contraseña phpMyAdmin" \
+                                        --inputbox "Debes ingresar una contraseña para el usuario 'phpmyadmin':" 10 60 3>&1 1>&2 2>&3)
+        
+        input_response=$? # Reutiliza la variable para la respuesta
+
+        # Valida la entrada del usuario para la contraseña de phpmyadmin
+        if [ $input_response -ne 0 ] || [ -z "$PHPMYADMIN_USER_PASS" ]; then
+            clear
+            dialog --backtitle "Script de Instalación Versión $VERSO" \
+                   --title "¡Atención!" \
+                   --msgbox "No se ha ingresado una contraseña para el usuario 'phpmyadmin' o la operación fue cancelada. La instalación será abortada." 8 70
+            exit 1
+        fi
+
+        clear # Limpia la pantalla antes del siguiente diálogo
+
+        # Diálogo para pedir la contraseña del usuario root de phpMyAdmin
+        PHPMYADMIN_ROOT_PASS=$(dialog --backtitle "Script de Instalación Versión $VERSO" \
+                                        --title "Contraseña Root phpMyAdmin" \
+                                        --inputbox "Debes ingresar una contraseña para el usuario 'root' de phpMyAdmin:" 10 60 3>&1 1>&2 2>&3)
+        
+        input_response=$? # Reutiliza la variable para la respuesta
+
+        # Valida la entrada del usuario para la contraseña root de phpmyadmin
+        if [ $input_response -ne 0 ] || [ -z "$PHPMYADMIN_ROOT_PASS" ]; then
+            clear
+            dialog --backtitle "Script de Instalación Versión $VERSO" \
+                   --title "¡Atención!" \
+                   --msgbox "No se ha ingresado una contraseña para el usuario 'root' de phpMyAdmin o la operación fue cancelada. La instalación será abortada." 8 70
+            exit 1
+        fi
+
+        clear # Limpia la pantalla después de todos los diálogos de entrada
         ;;
     1) # El usuario eligió "No"
         clear # Limpia la pantalla antes de salir
