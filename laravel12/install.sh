@@ -64,7 +64,7 @@ clear
 # Muestra el diálogo de bienvenida con opción Sí/No
 dialog --backtitle "Script de Instalación Versión $VERSO" \
        --title "Bienvenida al Instalador" \
-       --yesno "¡Bienvenido al script de instalación!\n\nEste script te ayudará a instalar y configurar el software necesario en tu sistema $DISTRIBUCION.\n\n¿Deseas continuar con la instalación?" 15 60
+       --yesno "\n¡Bienvenido al script de instalación!\n\nEste script te ayudará a instalar y configurar el software necesario en tu sistema $DISTRIBUCION.\nPrepararemos un servidor LAMP para Laravel 12.\n\n¿Deseas continuar con la instalación?" 15 60
 
 # Captura la respuesta del usuario (0 para Sí, 1 para No, 255 para ESC)
 response=$?
