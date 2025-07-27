@@ -142,7 +142,7 @@ printf "**********************\n"
 printf "* Instalamos php 8.4 *\n"
 printf "**********************\n"
 
-sudo add-apt-repository ppa:ondrej/php -y
+sudo add-apt-repository -y ppa:ondrej/php
 sudo apt update y
 sudo apt install -y php8.4
 
@@ -163,5 +163,5 @@ printf "*******************\n"
 printf "* fIN INSTALACION *\n"
 printf "*******************\n"
 sleep 2
-clear
+
 exit 1
