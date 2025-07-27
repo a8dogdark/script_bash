@@ -59,6 +59,7 @@ if [ -f "/etc/os-release" ]; then
     if [ "$ID" = "ubuntu" ]; then
         DISTRO="UBUNTU"
         MYSQL="mysql-server"
+	VERDISTRO=$(lsb_release -sr | cut -d'.' -f1)
     elif [ "$ID" = "debian" ]; then
         DISTRO="DEBIAN"
         MYSQL="mariadb-server"
@@ -389,14 +390,15 @@ if ! dpkg -l | grep -q "^ii  ${MYSQL} " 2>/dev/null; then
     porcentaje=45
     progress
     sleep 1s
-    
-            mysql --execute="ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${passroot}';" >>/dev/null 2>&1
-            sudo mysql --execute="FLUSH PRIVILEGES;"
-        else
-            mysql --execute="ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '${passroot}';" >>/dev/null 2>&1
-            sudo mysql --execute="FLUSH PRIVILEGES;"
-        fi
-
+    if [ "$VERDISTRO" -ge 25 ]; then
+    	#la versión principal de Ubuntu ($VERDISTRO) es 25 o posterior."
+  	mysql --execute="ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '${passroot}';" >>/dev/null 2>&1
+        sudo mysql --execute="FLUSH PRIVILEGES;"
+    else
+    	#la versión principal de Ubuntu ($VERDISTRO) es anterior a la 25."
+    	mysql --execute="ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${passroot}';" >>/dev/null 2>&1
+        sudo mysql --execute="FLUSH PRIVILEGES;"
+    fi
 fi
 #instalamos phpmyadmin
 mensaje="Instalando phpmyadmin"
