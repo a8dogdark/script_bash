@@ -3,6 +3,7 @@
 DISTRIBUCION=""
 VERSION="" # Esta variable se actualizará en pasos posteriores
 VERSO="2.0" # Versión de la instalación
+PROJECT_NAME="" # Nueva variable para el nombre del proyecto
 
 # Validación de usuario root
 if [ "$(id -u)" -ne 0 ]; then
@@ -73,7 +74,26 @@ response=$?
 case $response in
     0) # El usuario eligió "Sí"
         clear # Limpia la pantalla después del diálogo
-        # No se necesita echo, el flujo del script continuará
+        
+        # --- AQUÍ EMPIEZA EL INPUTBOX ---
+        PROJECT_NAME=$(dialog --backtitle "Script de Instalación Versión $VERSO" \
+                                --title "Nombre del Proyecto Laravel" \
+                                --inputbox "Por favor, ingresa el nombre que deseas para tu proyecto Laravel 12:" 10 60 3>&1 1>&2 2>&3)
+        
+        # Captura el estado de salida del inputbox (0 para OK, 1 para Cancelar, 255 para ESC)
+        input_response=$?
+
+        # Valida la entrada del usuario
+        if [ $input_response -ne 0 ] || [ -z "$PROJECT_NAME" ]; then
+            clear
+            dialog --backtitle "Script de Instalación Versión $VERSO" \
+                   --title "¡Atención!" \
+                   --msgbox "No se ha ingresado un nombre de proyecto válido o la operación fue cancelada. La instalación será abortada." 8 60
+            exit 1
+        fi
+
+        # Si todo está bien, el script continuaría desde aquí con el $PROJECT_NAME
+        clear
         ;;
     1) # El usuario eligió "No"
         clear # Limpia la pantalla antes de salir
