@@ -282,7 +282,198 @@ case $response in
             echo "Instalando PHP $PHP_VERSION..."
             echo "XXXX"
             echo 45 # Ajustado el porcentaje
-            sleep 5 # Simula la instalación de PHP
+            # Validar e instalar PHP si no está ya instalado
+            PHP_INSTALLED=false
+            if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
+                if dpkg -s php${PHP_VERSION} >/dev/null 2>&1; then
+                    PHP_INSTALLED=true
+                else
+                    DEBIAN_FRONTEND=noninteractive apt-get install -y php${PHP_VERSION} >/dev/null 2>&1
+                    PHP_INSTALLED=true
+                fi
+            elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
+                if rpm -q php-cli-${PHP_VERSION} >/dev/null 2>&1; then
+                    PHP_INSTALLED=true
+                else
+                    dnf module enable -y php:remi-${PHP_VERSION} >/dev/null 2>&1
+                    dnf install -y php >/dev/null 2>&1 # dnf install php instalará la versión habilitada por el módulo
+                    update-alternatives --set php /usr/bin/php${PHP_VERSION} >/dev/null 2>&1
+                    PHP_INSTALLED=true
+                fi
+            fi
+            sleep 2 # Simula la instalación de PHP (ajustado de 5s a 2s si se salta o es rápido)
+
+            # Instalar extensiones PHP solo si PHP base fue instalado o se confirmó su presencia.
+            if [ "$PHP_INSTALLED" = true ]; then
+
+                echo "XXXX"
+                echo "Instalando extensiones PHP comunes (CLI, FPM, Common, ZIP, XML)..."
+                echo "XXXX"
+                echo 50 # Nuevo porcentaje
+                # Validar e instalar solo si php-cli (o php${PHP_VERSION}-cli) no está instalado.
+                if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
+                    if ! dpkg -s php${PHP_VERSION}-cli >/dev/null 2>&1; then
+                        DEBIAN_FRONTEND=noninteractive apt-get install -y \
+                            php${PHP_VERSION}-cli \
+                            php${PHP_VERSION}-fpm \
+                            php${PHP_VERSION}-common \
+                            php${PHP_VERSION}-zip \
+                            php${PHP_VERSION}-xml \
+                            >/dev/null 2>&1
+                    fi
+                elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
+                    if ! rpm -q php-cli >/dev/null 2>&1; then
+                        dnf install -y \
+                            php-cli \
+                            php-fpm \
+                            php-common \
+                            php-zip \
+                            php-xml \
+                            >/dev/null 2>&1
+                    fi
+                fi
+                sleep 1
+
+                echo "XXXX"
+                echo "Instalando extensiones PHP de base de datos (MySQL, PostgreSQL, SQLite3, ODBC, Sybase)..."
+                echo "XXXX"
+                echo 55 # Nuevo porcentaje
+                # Validar e instalar solo si php-mysql (o php${PHP_VERSION}-mysql) no está instalado.
+                if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
+                    if ! dpkg -s php${PHP_VERSION}-mysql >/dev/null 2>&1; then
+                        DEBIAN_FRONTEND=noninteractive apt-get install -y \
+                            php${PHP_VERSION}-mysql \
+                            php${PHP_VERSION}-pgsql \
+                            php${PHP_VERSION}-sqlite3 \
+                            php${PHP_VERSION}-odbc \
+                            php${PHP_VERSION}-sybase \
+                            >/dev/null 2>&1
+                    fi
+                elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
+                    if ! rpm -q php-mysqlnd >/dev/null 2>&1; then
+                        dnf install -y \
+                            php-mysqlnd \
+                            php-pgsql \
+                            php-sqlite3 \
+                            php-odbc \
+                            php-sybase \
+                            >/dev/null 2>&1
+                    fi
+                fi
+                sleep 1
+
+                echo "XXXX"
+                echo "Instalando extensiones PHP de rendimiento y caché (OPcache, APCu, Redis, Memcached, Igbinary, Msgpack)..."
+                echo "XXXX"
+                echo 60 # Nuevo porcentaje
+                # Validar e instalar solo si php-opcache (o php${PHP_VERSION}-opcache) no está instalado.
+                if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
+                    if ! dpkg -s php${PHP_VERSION}-opcache >/dev/null 2>&1; then
+                        DEBIAN_FRONTEND=noninteractive apt-get install -y \
+                            php${PHP_VERSION}-opcache \
+                            php${PHP_VERSION}-apcu \
+                            php${PHP_VERSION}-redis \
+                            php${PHP_VERSION}-memcached \
+                            php${PHP_VERSION}-igbinary \
+                            php${PHP_VERSION}-msgpack \
+                            >/dev/null 2>&1
+                    fi
+                elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
+                    if ! rpm -q php-opcache >/dev/null 2>&1; then
+                        dnf install -y \
+                            php-opcache \
+                            php-pecl-apcu \
+                            php-pecl-redis \
+                            php-pecl-memcached \
+                            php-pecl-igbinary \
+                            php-pecl-msgpack \
+                            >/dev/null 2>&1
+                    fi
+                fi
+                sleep 1
+
+                echo "XXXX"
+                echo "Instalando extensiones PHP de imagen y seguridad (GD, Imagick, XSL, Intl, LDAP, SNMP)..."
+                echo "XXXX"
+                echo 65 # Nuevo porcentaje
+                # Validar e instalar solo si php-gd (o php${PHP_VERSION}-gd) no está instalado.
+                if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
+                    if ! dpkg -s php${PHP_VERSION}-gd >/dev/null 2>&1; then
+                        DEBIAN_FRONTEND=noninteractive apt-get install -y \
+                            php${PHP_VERSION}-gd \
+                            php${PHP_VERSION}-imagick \
+                            php${PHP_VERSION}-xsl \
+                            php${PHP_VERSION}-intl \
+                            php${PHP_VERSION}-ldap \
+                            php${PHP_VERSION}-snmp \
+                            >/dev/null 2>&1
+                    fi
+                elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
+                    if ! rpm -q php-gd >/dev/null 2>&1; then
+                        dnf install -y \
+                            php-gd \
+                            php-pecl-imagick \
+                            php-xmlrpc \
+                            php-intl \
+                            php-ldap \
+                            php-snmp \
+                            >/dev/null 2>&1
+                    fi
+                fi
+                sleep 1
+
+                echo "XXXX"
+                echo "Instalando extensiones PHP misceláneas (cURL, MBString, SOAP, Bcmath, GMP, SSH2, pspell, enchant, mongodb, xdebug, ds, oauth, uploadprogress, uuid, zmq, solr, gearman)..."
+                echo "XXXX"
+                echo 70 # Nuevo porcentaje
+                # Validar e instalar solo si php-curl (o php${PHP_VERSION}-curl) no está instalado.
+                if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
+                    if ! dpkg -s php${PHP_VERSION}-curl >/dev/null 2>&1; then
+                        DEBIAN_FRONTEND=noninteractive apt-get install -y \
+                            php${PHP_VERSION}-curl \
+                            php${PHP_VERSION}-mbstring \
+                            php${PHP_VERSION}-soap \
+                            php${PHP_VERSION}-bcmath \
+                            php${PHP_VERSION}-gmp \
+                            php${PHP_VERSION}-ssh2 \
+                            php${PHP_VERSION}-pspell \
+                            php${PHP_VERSION}-enchant \
+                            php${PHP_VERSION}-mongodb \
+                            php${PHP_VERSION}-xdebug \
+                            php${PHP_VERSION}-ds \
+                            php${PHP_VERSION}-oauth \
+                            php${PHP_VERSION}-uploadprogress \
+                            php${PHP_VERSION}-uuid \
+                            php${PHP_VERSION}-zmq \
+                            php${PHP_VERSION}-solr \
+                            php${PHP_VERSION}-gearman \
+                            >/dev/null 2>&1
+                    fi
+                elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
+                    if ! rpm -q php-curl >/dev/null 2>&1; then
+                        dnf install -y \
+                            php-curl \
+                            php-mbstring \
+                            php-soap \
+                            php-bcmath \
+                            php-gmp \
+                            php-pecl-ssh2 \
+                            php-pspell \
+                            php-enchant \
+                            php-pecl-mongodb \
+                            php-pecl-xdebug \
+                            php-pecl-ds \
+                            php-pecl-oauth \
+                            php-pecl-uploadprogress \
+                            php-pecl-uuid \
+                            php-pecl-zmq \
+                            php-pecl-solr \
+                            php-pecl-gearman \
+                            >/dev/null 2>&1
+                    fi
+                fi
+                sleep 1
+            fi # Fin del if [ "$PHP_INSTALLED" = true ]
 
             # Determina si es MySQL o MariaDB
             DB_SYSTEM=""
