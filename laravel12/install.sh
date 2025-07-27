@@ -121,7 +121,7 @@ case $response in
 
         if [ $input_response -ne 0 ] || [ -z "$PHPMYADMIN_ROOT_PASS" ]; then
             clear
-            dialog --backtitle "Script de Instalación Verso $VERSO" \
+            dialog --backtitle "Script de Instalación Versión $VERSO" \
                    --title "¡Atención!" \
                    --msgbox "No se ha ingresado una contraseña para el usuario 'root' de phpMyAdmin o la operación fue cancelada. La instalación será abortada." 8 70
             exit 1
@@ -195,14 +195,17 @@ case $response in
             echo "Agregando repositorios adicionales..."
             echo "XXXX"
             echo 80 # 80% para agregar repositorios
-            # Agrega el repositorio de Ondrej si es Debian/Ubuntu
+            # Agrega el repositorio de Ondrej si es Debian/Ubuntu y no está ya agregado
             if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
-                # Instalar software-properties-common para add-apt-repository
-                DEBIAN_FRONTEND=noninteractive apt-get install -y software-properties-common >/dev/null 2>&1
-                # Agregar PPA de Ondrej para PHP
-                add-apt-repository -y ppa:ondrej/php >/dev/null 2>&1
-                # Realizar un nuevo update después de añadir el repositorio
-                DEBIAN_FRONTEND=noninteractive apt-get update >/dev/null 2>&1
+                # Check if Ondrej PPA is already added
+                if ! grep -q "ppa.launchpadcontent.net/ondrej/php" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
+                    # Instalar software-properties-common para add-apt-repository
+                    DEBIAN_FRONTEND=noninteractive apt-get install -y software-properties-common >/dev/null 2>&1
+                    # Agregar PPA de Ondrej para PHP
+                    add-apt-repository -y ppa:ondrej/php >/dev/null 2>&1
+                    # Realizar un nuevo update después de añadir el repositorio
+                    DEBIAN_FRONTEND=noninteractive apt-get update >/dev/null 2>&1
+                fi
             fi
             sleep 2 # Simula el tiempo si no es Debian/Ubuntu o si la operación fue muy rápida
             
