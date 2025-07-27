@@ -19,7 +19,7 @@ if [ "$ARCH" != "x86_64" ] && [ "$ARCH" != "aarch64" ]; then # x86_64 es para In
     exit 1
 fi
 
-# --- Instalación y Validación de 'dialog' ---
+# Instalación y Validación de 'dialog'
 if [ -f /etc/os-release ]; then
     . /etc/os-release # Carga las variables de identificación del sistema
     
@@ -57,11 +57,7 @@ else
     exit 1
 fi
 
----
-
-### Diálogo de Bienvenida
-
-```bash
+# Diálogo de Bienvenida
 # Limpia la pantalla antes de mostrar el diálogo
 clear
 
