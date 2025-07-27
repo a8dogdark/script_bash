@@ -526,18 +526,26 @@ if [ ! -d "/var/www/laravel" ]; then
     sudo mkdir -p /var/www/laravel > /dev/null 2>&1
 fi
 sudo chmod 777 -R /var/www > /dev/null 2>&1
+#instalamos laravel new con composer
+mensaje="Preparando el nuevo proyecto"
+porcentaje=92
+progress
+sudo COMPOSER_ALLOW_SUPERUSER=1 composer global require laravel/installer > /dev/null 2>&1
 #creamos la carpeta de los proyectos laravel
 
 #terminamos la instalacion
 
+mensaje="Eliminando temporales"
+porcentaje=99
+progress
+if [ ! -d "/var/www" ]; then
+    rm -R ${temp}/temporal > /dev/null 2>&1
+fi
+mensaje="Fin instalación"
+porcentaje=100
+progress
+sleep 2
 #cursor visible
 echo -e "\e[?25h"
-
+clear
 exit 1
-
-
-
-
-
-
-
