@@ -94,7 +94,7 @@ esac
 # Solicitar el nombre del proyecto Laravel
 PROJECT_NAME=$(dialog --clear --backtitle "Instalador de Sistema v$VEROS" \
 --title "Nombre del Proyecto Laravel" \
---inputbox "\nIngresa el nombre para tu nuevo proyecto Laravel 12:\n(Ej: mi-aplicacion-web)" 10 60 "mi-proyecto" 3>&1 1>&2 2>&3)
+--inputbox "\nIngresa el nombre para tu nuevo proyecto Laravel 12:\n(Ej: crud)" 10 60 "" 3>&1 1>&2 2>&3)
 
 # Verificar si el usuario canceló o dejó el nombre vacío
 if [ -z "$PROJECT_NAME" ]; then
