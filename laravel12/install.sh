@@ -59,4 +59,29 @@ if ! command -v dialog &> /dev/null; then
             ;;
     esac
     sleep 2
+    # Esperar activamente a que 'dialog' esté disponible si se acaba de instalar
+    while ! command -v dialog &> /dev/null; do
+        sleep 1
+    done
 fi
+
+# Cuadro de bienvenida con opciones Aceptar/Salir
+dialog --clear --backtitle "Instalador de Sistema" \
+--title "Bienvenido" \
+--yesno "\n¡Bienvenido al asistente de instalación!\n\nEste script preparará tu sistema.\n\n¿Deseas continuar con la instalación?" 10 60
+
+response=$?
+case $response in
+    0) # Código de retorno 0 = Yes/Aceptar
+        clear
+        # El script continuaría aquí con las siguientes acciones
+        ;;
+    1) # Código de retorno 1 = No/Salir
+        clear
+        exit 0
+        ;;
+    255) # Código de retorno 255 = ESC presionado o ventana cerrada
+        clear
+        exit 0
+        ;;
+esac
