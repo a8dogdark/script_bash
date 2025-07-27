@@ -3,7 +3,7 @@ apago_cursor()
 {
   echo -e "\e[?25l"
 }
-enciendo_cursor)
+enciendo_cursor()
 {
   echo -e "\e[?25h"
 }
