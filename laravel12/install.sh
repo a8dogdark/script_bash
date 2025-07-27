@@ -121,7 +121,7 @@ case $response in
 
         if [ $input_response -ne 0 ] || [ -z "$PHPMYADMIN_ROOT_PASS" ]; then
             clear
-            dialog --backtitle "Script de Instalación Versión $VERSO" \
+            dialog --backtitle "Script de Instalación Verso $VERSO" \
                    --title "¡Atención!" \
                    --msgbox "No se ha ingresado una contraseña para el usuario 'root' de phpMyAdmin o la operación fue cancelada. La instalación será abortada." 8 70
             exit 1
@@ -304,12 +304,19 @@ case $response in
             echo "Componentes LAMP instalados."
             echo "XXXX"
             echo 100
-            sleep 2 # Pausa de 2 segundos al 100%
+            # No hay sleep aquí, la barra de progreso terminará y luego se mostrará el mensaje final.
         ) | dialog --backtitle "Script de Instalación Versión $VERSO" \
                    --title "Instalación de Componentes LAMP" \
                    --gauge "Preparando el entorno LAMP..." 10 70 0
 
-        clear
+        clear # Limpia la pantalla después de la barra de progreso
+
+        # --- Mensaje final de instalación ---
+        dialog --backtitle "Script de Instalación Versión $VERSO" \
+               --title "Instalación Completada" \
+               --msgbox "\n¡La instalación ha finalizado con éxito!\n\nPresiona OK para salir." 10 60
+        
+        clear # Limpia la pantalla después del mensaje final
         ;;
     1) # El usuario eligió "No"
         clear
