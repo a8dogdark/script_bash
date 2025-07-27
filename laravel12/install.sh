@@ -80,7 +80,6 @@ response=$?
 case $response in
     0) # Codigo de retorno 0 = Yes/Aceptar
         clear
-        # El script continuaria aqui con las siguientes acciones de instalacion
         ;;
     1) # Codigo de retorno 1 = No/Salir
         clear
@@ -91,3 +90,18 @@ case $response in
         exit 0
         ;;
 esac
+
+# Solicitar el nombre del proyecto Laravel
+PROJECT_NAME=$(dialog --clear --backtitle "Instalador de Sistema v$VEROS" \
+--title "Nombre del Proyecto Laravel" \
+--inputbox "\nIngresa el nombre para tu nuevo proyecto Laravel 12:\n(Ej: mi-aplicacion-web)" 10 60 "mi-proyecto" 3>&1 1>&2 2>&3)
+
+# Verificar si el usuario canceló o dejó el nombre vacío
+if [ -z "$PROJECT_NAME" ]; then
+    clear
+    dialog --clear --backtitle "Instalador de Sistema v$VEROS" \
+    --title "Error" \
+    --msgbox "\nNo se ha especificado un nombre de proyecto. Saliendo del instalador." 8 50
+    clear
+    exit 1
+fi
