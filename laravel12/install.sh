@@ -10,18 +10,17 @@ PHP_VERSION="" # Variable para la versión de PHP seleccionada
 SELECTED_APPS="" # Nueva variable para almacenar las aplicaciones seleccionadas
 
 # Archivo de log para depuración
-# Se ajusta la ubicación del log para que sea accesible desde el usuario de escritorio.
-# Se usa SUDO_USER para obtener el nombre del usuario que ejecutó 'sudo'.
+# Se ajusta la ubicación del log para que sea accesible desde el usuario de escritorio, en la carpeta Escritorio.
 if [ -n "$SUDO_USER" ]; then
     USER_HOME=$(eval echo "~$SUDO_USER") # Obtiene el directorio home del usuario original
-    LOG_DIR="$USER_HOME/Documents"
+    LOG_DIR="$USER_HOME/Desktop" # CAMBIO CLAVE: Ahora apunta a la carpeta Desktop
 else
     # Fallback si SUDO_USER no está definido (aunque debería estarlo con sudo)
-    # Esto guardaría el log en /root/Documents si el script se ejecuta directamente como root.
-    LOG_DIR="$HOME/Documents" 
+    # Esto guardaría el log en /root/Desktop si el script se ejecuta directamente como root.
+    LOG_DIR="$HOME/Desktop" 
 fi
 
-mkdir -p "$LOG_DIR" # Asegura que la carpeta Documents exista para el usuario
+mkdir -p "$LOG_DIR" # Asegura que la carpeta Desktop exista para el usuario
 LOG_FILE="$LOG_DIR/lamp_install_$(date +%Y%m%d_%H%M%S).log"
 
 # Crear o limpiar el archivo de log al inicio
@@ -77,17 +76,9 @@ if [ -f /etc/os-release ]; then
         SYSTEM_CODENAME=$VERSION_CODENAME # Captura el nombre clave real del sistema (e.g., "plucky")
         log_message "Nombre clave del sistema detectado: **$SYSTEM_CODENAME**" console
 
-        log_message "Realizando un apt update inicial para asegurar la lista de paquetes..." console
-        DEBIAN_FRONTEND=noninteractive apt-get update >> "$LOG_FILE" 2>&1
-        if [ $? -ne 0 ]; then
-            echo "Error: Falló el 'apt update' inicial. Por favor, verifica tu conexión a internet y tus repositorios." | tee -a "$LOG_FILE"
-            echo "Revisa el log en **$LOG_FILE** para más detalles." | tee -a "$LOG_FILE"
-            exit 1
-        fi
-        log_message "'apt update' inicial completado."
-
         if ! is_package_installed "dialog" "dialog"; then # Verifica si dialog no está instalado
             log_message "Instalando **dialog**..." console
+            DEBIAN_FRONTEND=noninteractive apt-get update >> "$LOG_FILE" 2>&1 # Se mantiene un update antes de instalar dialog
             DEBIAN_FRONTEND=noninteractive apt-get install -y dialog >> "$LOG_FILE" 2>&1
             if [ $? -ne 0 ]; then # Si la instalación falló
                 echo "Error: No se pudo instalar el paquete '**dialog**'." | tee -a "$LOG_FILE"
@@ -102,17 +93,10 @@ if [ -f /etc/os-release ]; then
     # Detecta distribuciones basadas en RHEL (como AlmaLinux)
     elif [[ "$ID" == "almalinux" || "$ID_LIKE" == "rhel fedora" || "$ID_LIKE" == "rhel" ]]; then
         DISTRIBUCION="AlmaLinux"
-        log_message "Realizando un dnf update inicial para asegurar la lista de paquetes..." console
-        dnf update -y >> "$LOG_FILE" 2>&1
-        if [ $? -ne 0 ]; then
-            echo "Error: Falló el 'dnf update' inicial. Por favor, verifica tu conexión a internet y tus repositorios." | tee -a "$LOG_FILE"
-            echo "Revisa el log en **$LOG_FILE** para más detalles." | tee -a "$LOG_FILE"
-            exit 1
-        fi
-        log_message "'dnf update' inicial completado."
 
         if ! is_package_installed "dialog" "dialog"; then # Verifica si dialog no está instalado
             log_message "Instalando **dialog**..." console
+            dnf update -y >> "$LOG_FILE" 2>&1 # Se mantiene un update antes de instalar dialog
             dnf install -y dialog >> "$LOG_FILE" 2>&1
             if [ $? -ne 0 ]; then # Si la instalación falló
                 echo "Error: No se pudo instalar el paquete '**dialog**'." | tee -a "$LOG_FILE"
