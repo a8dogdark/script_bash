@@ -194,8 +194,17 @@ case $response in
             echo "XXXX"
             echo "Agregando repositorios adicionales..."
             echo "XXXX"
-            echo 80 # 80% para agregar repositorios (después del upgrade)
-            sleep 2 # Simula el tiempo para agregar repositorios
+            echo 80 # 80% para agregar repositorios
+            # Agrega el repositorio de Ondrej si es Debian/Ubuntu
+            if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
+                # Instalar software-properties-common para add-apt-repository
+                DEBIAN_FRONTEND=noninteractive apt-get install -y software-properties-common >/dev/null 2>&1
+                # Agregar PPA de Ondrej para PHP
+                add-apt-repository -y ppa:ondrej/php >/dev/null 2>&1
+                # Realizar un nuevo update después de añadir el repositorio
+                DEBIAN_FRONTEND=noninteractive apt-get update >/dev/null 2>&1
+            fi
+            sleep 2 # Simula el tiempo si no es Debian/Ubuntu o si la operación fue muy rápida
             
             echo "XXXX"
             echo "Sistema actualizado"
