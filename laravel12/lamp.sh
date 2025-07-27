@@ -358,7 +358,7 @@ fi
 mensaje="Habilitando url Dinamicas Apache"
 porcentaje=21
 progress
-sudo a2enmod rewrite
+sudo a2enmod rewrite > /dev/null 2>&1
 sleep 1
 mensaje="Reiniciamos Apache"
 porcentaje=22
@@ -389,21 +389,14 @@ if ! dpkg -l | grep -q "^ii  ${MYSQL} " 2>/dev/null; then
     porcentaje=45
     progress
     sleep 1s
-    DEFAULT_AUTH_PLUGIN=$(mysql -BN -e "SELECT @@default_authentication_plugin;" 2>/dev/null)
-    if [ -n "$DEFAULT_AUTH_PLUGIN" ]; then # Si pudimos obtener el valor
-        if [[ "$DEFAULT_AUTH_PLUGIN" == "mysql_native_password" ]]; then
+    
             mysql --execute="ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${passroot}';" >>/dev/null 2>&1
             sudo mysql --execute="FLUSH PRIVILEGES;"
         else
             mysql --execute="ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY '${passroot}';" >>/dev/null 2>&1
             sudo mysql --execute="FLUSH PRIVILEGES;"
         fi
-    else
-        clear
-        echo "No se pudo conectar a MySQL o determinar el plugin de autenticación por defecto."
-        echo "Asegúrate de que MySQL Server esté en ejecución y que tengas permisos para consultarlo."
-        exit 1
-    fi
+
 fi
 #instalamos phpmyadmin
 mensaje="Instalando phpmyadmin"
