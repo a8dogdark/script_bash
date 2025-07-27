@@ -151,6 +151,9 @@ printf "* Instalamos librerias php 8.4 *\n"
 printf "********************************\n"
 
 sudo apt install php8.4-{cli,fpm,common,zip,mysql,curl,gd,intl,mbstring,xml,soap,bcmath,gmp,opcache,imagick,redis,pgsql,sqlite3,ldap,snmp,xsl,apcu,memcached,mongodb,ssh2,sybase,odbc,pspell,igbinary,xdebug,ds,enchant,msgpack,oauth,uploadprogress,uuid,zmq,solr,gearman} -y
+sudo touch /var/www/html/info.php > /dev/null 2>&1 &
+sudo sh -c "echo '<?php phpinfo(); ?>' > /var/www/html/info.php" > /dev/null 2>&1 &
+sudo chmod 644 /var/www/html/info.php
 
 
 printf "***********************\n"
