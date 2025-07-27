@@ -10,7 +10,6 @@ PHP_VERSION="" # Variable para la versión de PHP seleccionada
 SELECTED_APPS="" # Nueva variable para almacenar las aplicaciones seleccionadas
 
 # Archivo de log para depuración
-# CAMBIO CLAVE: Ahora se guarda el log directamente en /tmp para facilitar el acceso.
 LOG_DIR="/tmp" 
 
 mkdir -p "$LOG_DIR" # Asegura que la carpeta /tmp exista (siempre existe, pero buena práctica)
@@ -557,6 +556,7 @@ case $response in
                     INSTALL_SUCCESS=false
 
                     if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
+                        # CORRECCIÓN AQUÍ: Asegurar el guion entre la versión de PHP y el sufijo
                         PACKAGE_TO_INSTALL="php${PHP_VERSION}-${DEBIAN_SUFFIX}"
                         if is_package_installed "$PACKAGE_TO_INSTALL" "dummy"; then
                             INSTALL_SUCCESS=true
