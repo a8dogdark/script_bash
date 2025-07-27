@@ -135,6 +135,8 @@ printf "*********************\n"
 printf "* Instalamos Apache *\n"
 printf "*********************\n"
 sudo apt install -y apache2
+sudo a2enmod rewrite
+sudo systemctl restart apache2
 
 printf "***********************\n"
 printf "* Instalamos ${MYSQL} *\n"
