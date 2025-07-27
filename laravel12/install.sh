@@ -63,7 +63,6 @@ else
 fi
 
 # Diálogo de Bienvenida
-# Limpia la pantalla antes de mostrar el diálogo
 clear
 
 # Muestra el diálogo de bienvenida con opción Sí/No
@@ -77,17 +76,15 @@ response=$?
 # Maneja la respuesta del usuario
 case $response in
     0) # El usuario eligió "Sí"
-        clear # Limpia la pantalla después del diálogo
+        clear
         
         # Diálogo para pedir el nombre del proyecto Laravel
         PROJECT_NAME=$(dialog --backtitle "Script de Instalación Versión $VERSO" \
                                 --title "Nombre del Proyecto Laravel" \
                                 --inputbox "Por favor, ingresa el nombre que deseas para tu proyecto Laravel 12:" 10 60 3>&1 1>&2 2>&3)
         
-        # Captura el estado de salida del inputbox (0 para OK, 1 para Cancelar, 255 para ESC)
         input_response=$?
 
-        # Valida la entrada del usuario para el nombre del proyecto
         if [ $input_response -ne 0 ] || [ -z "$PROJECT_NAME" ]; then
             clear
             dialog --backtitle "Script de Instalación Versión $VERSO" \
@@ -96,16 +93,15 @@ case $response in
             exit 1
         fi
 
-        clear # Limpia la pantalla antes del siguiente diálogo
+        clear
 
         # Diálogo para pedir la contraseña del usuario phpMyAdmin
         PHPMYADMIN_USER_PASS=$(dialog --backtitle "Script de Instalación Versión $VERSO" \
                                         --title "Contraseña phpMyAdmin" \
                                         --inputbox "Debes ingresar una contraseña para el usuario 'phpmyadmin':" 10 60 3>&1 1>&2 2>&3)
         
-        input_response=$? # Reutiliza la variable para la respuesta
+        input_response=$?
 
-        # Valida la entrada del usuario para la contraseña de phpmyadmin
         if [ $input_response -ne 0 ] || [ -z "$PHPMYADMIN_USER_PASS" ]; then
             clear
             dialog --backtitle "Script de Instalación Versión $VERSO" \
@@ -114,16 +110,15 @@ case $response in
             exit 1
         fi
 
-        clear # Limpia la pantalla antes del siguiente diálogo
+        clear
 
         # Diálogo para pedir la contraseña del usuario root de phpMyAdmin
         PHPMYADMIN_ROOT_PASS=$(dialog --backtitle "Script de Instalación Versión $VERSO" \
                                         --title "Contraseña Root phpMyAdmin" \
                                         --inputbox "Debes ingresar una contraseña para el usuario 'root' de phpMyAdmin:" 10 60 3>&1 1>&2 2>&3)
         
-        input_response=$? # Reutiliza la variable para la respuesta
+        input_response=$?
 
-        # Valida la entrada del usuario para la contraseña root de phpmyadmin
         if [ $input_response -ne 0 ] || [ -z "$PHPMYADMIN_ROOT_PASS" ]; then
             clear
             dialog --backtitle "Script de Instalación Versión $VERSO" \
@@ -132,7 +127,7 @@ case $response in
             exit 1
         fi
 
-        clear # Limpia la pantalla antes del siguiente diálogo
+        clear
 
         # Diálogo para seleccionar la versión de PHP
         PHP_VERSION=$(dialog --backtitle "Script de Instalación Versión $VERSO" \
@@ -142,9 +137,8 @@ case $response in
                                 "8.3" "PHP 8.3" \
                                 "8.4" "PHP 8.4 (Versión más reciente)" 3>&1 1>&2 2>&3)
         
-        menu_response=$? # Captura el estado de salida del menú
+        menu_response=$?
 
-        # Valida la selección del usuario
         if [ $menu_response -ne 0 ] || [ -z "$PHP_VERSION" ]; then
             clear
             dialog --backtitle "Script de Instalación Versión $VERSO" \
@@ -153,9 +147,9 @@ case $response in
             exit 1
         fi
 
-        clear # Limpia la pantalla antes del siguiente diálogo
+        clear
         
-        # --- NUEVO: Diálogo para seleccionar aplicaciones adicionales ---
+        # Diálogo para seleccionar aplicaciones adicionales
         SELECTED_APPS=$(dialog --backtitle "Script de Instalación Versión $VERSO" \
                                --title "Seleccionar Aplicaciones Adicionales" \
                                --checklist "Elige qué programas adicionales quieres instalar:" 20 60 4 \
@@ -164,26 +158,29 @@ case $response in
                                "brave" "Brave Browser" OFF \
                                "googlechrome" "Google Chrome" OFF 3>&1 1>&2 2>&3)
 
-        app_selection_response=$? # Captura el estado de salida del checklist
+        app_selection_response=$?
 
-        # Si el usuario cancela la selección de apps, se puede optar por continuar sin ellas o abortar
-        # Por ahora, continuaremos pero puedes cambiarlo a 'exit 1' si prefieres que sea obligatorio.
         if [ $app_selection_response -ne 0 ]; then
             clear
             dialog --backtitle "Script de Instalación Versión $VERSO" \
                    --title "Info" \
                    --msgbox "No se seleccionaron aplicaciones adicionales, o la operación fue cancelada. Se continuará con la instalación principal." 8 70
         fi
-        # --- FIN NUEVO: Diálogo para seleccionar aplicaciones adicionales ---
 
-        clear # Limpia la pantalla después de la selección de PHP
+        clear
 
         # --- Barra de Progreso: Update y Upgrade del sistema ---
         (
             echo "XXXX"
+            echo "Agregando repositorios..."
+            echo "XXXX"
+            echo 20 # 20% para agregar repositorios
+            sleep 2 # Simula el tiempo para agregar repositorios
+            
+            echo "XXXX"
             echo "Realizando update del sistema..."
             echo "XXXX"
-            echo 40
+            echo 60 # Pasa a 60% para el update
             if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
                 DEBIAN_FRONTEND=noninteractive apt-get update >/dev/null 2>&1
             elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
@@ -193,7 +190,7 @@ case $response in
             echo "XXXX"
             echo "Realizando upgrade del sistema..."
             echo "XXXX"
-            echo 80
+            echo 90 # Pasa a 90% para el upgrade
             if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
                 DEBIAN_FRONTEND=noninteractive apt-get upgrade -y >/dev/null 2>&1
             elif [[ "$DISTRIBUCION" == "AlmaLinux" ]]; then
@@ -209,7 +206,7 @@ case $response in
                    --title "Progreso de la Instalación" \
                    --gauge "Iniciando operaciones..." 10 70 0
         
-        clear # Limpia la pantalla después de que la barra de progreso termine
+        clear
 
         # --- Barra de Progreso: Instalación de LAMP ---
         (
@@ -217,15 +214,14 @@ case $response in
             echo "Instalando Apache2..."
             echo "XXXX"
             echo 10
-            sleep 3 # Simula la instalación de Apache2
+            sleep 3
 
             echo "XXXX"
             echo "Instalando PHP $PHP_VERSION..."
             echo "XXXX"
             echo 35
-            sleep 5 # Simula la instalación de PHP
+            sleep 5
 
-            # Determina si es MySQL o MariaDB
             DB_SYSTEM=""
             if [[ "$DISTRIBUCION" == "Ubuntu/Debian" ]]; then
                 DB_SYSTEM="MySQL"
@@ -236,31 +232,31 @@ case $response in
             echo "Instalando $DB_SYSTEM..."
             echo "XXXX"
             echo 65
-            sleep 5 # Simula la instalación de la base de datos
+            sleep 5
 
             echo "XXXX"
             echo "Instalando phpMyAdmin..."
             echo "XXXX"
             echo 90
-            sleep 4 # Simula la instalación de phpMyAdmin
+            sleep 4
 
             echo "XXXX"
             echo "Componentes LAMP instalados."
             echo "XXXX"
             echo 100
-            sleep 2 # Pausa de 2 segundos al 100%
+            sleep 2
         ) | dialog --backtitle "Script de Instalación Versión $VERSO" \
                    --title "Instalación de Componentes LAMP" \
                    --gauge "Preparando el entorno LAMP..." 10 70 0
 
-        clear # Limpia la pantalla después de que la barra de progreso de LAMP termine
+        clear
         ;;
     1) # El usuario eligió "No"
-        clear # Limpia la pantalla antes de salir
-        exit 0 # Sale del script sin errores
+        clear
+        exit 0
         ;;
     255) # El usuario presionó ESC
-        clear # Limpia la pantalla antes de salir
-        exit 1 # Sale del script con un código de error (por cancelación forzada)
+        clear
+        exit 1
         ;;
 esac
