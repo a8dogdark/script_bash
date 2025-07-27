@@ -1,4 +1,9 @@
 #! /bin/bash
+TEMPORAL="/tmp/temporal"
+VER="2.0"
+DISTRIBUICION=""
+VERSION=""
+MYSQL=""
 apago_cursor()
 {
   echo -e "\e[?25l"
@@ -7,6 +12,51 @@ enciendo_cursor()
 {
   echo -e "\e[?25h"
 }
+#verificamos que el sistema este en root
+if [ "$(id -u)" -eq 0 ]; then
+    echo " "
+else
+  echo "El programa debes ejecutarlo como root"
+  echo "Para ingresar como root"
+  echo "UBUNTU -> sudo su -"
+  echo "DEBIAN -> su -"
+  exit 1
+fi
+#verficamos si el sistema es de 64bits
+is64bit=$(getconf LONG_BIT)
+if [ "${is64bit}" != '64' ]; then
+	#Enviamos mensaje a la pantalla
+    	mensaje="El sistema solo debe ser de 64 bits"
+	mensaje_dialog
+	exit 1
+fi
+# validamos si es centos o almalinux, si es así no se instala
+if [ -f "/etc/redhat-release" ]; then
+    Centos6Check=$(cat /etc/redhat-release | grep ' 6.' | grep -iE 'centos|Red Hat')
+    if [ "${Centos6Check}" ]; then
+        mensaje="No soporta centos el instalador"
+	mensaje_dialog
+        exit 1
+    fi
+fi
+# Vemos si es ubuntu o debian
+# Leer el ID de la distribución desde /etc/os-release
+if [ -f "/etc/os-release" ]; then
+    . /etc/os-release                             # Esto "carga" las variables del archivo en el entorno actual del script
+    
+    if [ "$ID" = "ubuntu" ]; then
+        DISTRIBUICION="UBUNTU"
+        MYSQL="mysql-server"
+        VERSION=$(awk -F= '/^VERSION_ID=/ {print $2}' /etc/os-release)
+    elif [ "$ID" = "debian" ]; then
+        DISTRO="DEBIAN"
+        MYSQL="mariadb-server"
+    fi
+else 
+    echo "Hay error al encontrar la distribuicion, no la reconoce el programa"
+    exit 1
+fi
+
 apago_cursor
 clear
 printf "*************************\n"
@@ -35,3 +85,66 @@ printf "****************************\n"
 
 sudo apt update -y
 sudo apt upgrade -y
+
+printf "*******************\n"
+printf "* Instalamos Curl *\n"
+printf "*******************\n"
+sudo apt install -y curl
+
+printf "********************\n"
+printf "* Instalamos Unzip *\n"
+printf "********************\n"
+sudo apt install -y unzip
+
+printf "*******************\n"
+printf "* Instalamos Wget *\n"
+printf "*******************\n"
+sudo apt install -y wget
+
+printf "******************\n"
+printf "* Instalamos Git *\n"
+printf "******************\n"
+sudo apt install -y git
+
+printf "******************\n"
+printf "* Instalamos Sed *\n"
+printf "******************\n"
+sudo apt install -y sed
+
+printf "**************************\n"
+printf "* Instalamos lsb-release *\n"
+printf "**************************\n"
+sudo apt install -y lsb-release
+
+printf "******************************\n"
+printf "* Instalamos ca-certificates *\n"
+printf "******************************\n"
+sudo apt install -y ca-certificates
+
+printf "**********************************\n"
+printf "* Instalamos apt-transport-https *\n"
+printf "**********************************\n"
+sudo apt install -y apt-transport-https
+
+printf "*****************************************\n"
+printf "* Instalamos software-properties-common *\n"
+printf "*****************************************\n"
+sudo apt install -y software-properties-common
+
+printf "*********************\n"
+printf "* Instalamos Apache *\n"
+printf "*********************\n"
+sudo apt install -y apache2
+
+printf "***********************\n"
+printf "* Instalamos ${MYSQL} *\n"
+printf "***********************\n"
+sudo apt install -y ${MYSQL}
+
+
+printf "*******************\n"
+printf "* fIN INSTALACION *\n"
+printf "*******************\n"
+sleep 2
+clear
+exit 1
