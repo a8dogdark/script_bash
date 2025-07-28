@@ -122,9 +122,9 @@ fi
 
 clear
 
-# Preguntar contraseña para usuario phpMyAdmin
+# Preguntar contraseña para usuario phpMyAdmin (visible input)
 dialog --title "Contraseña phpMyAdmin" \
-       --passwordbox "Ingresa la contraseña para el usuario phpMyAdmin de la base de datos ($DB_SERVER):" 10 60 2> /tmp/pmadmin_pass
+       --inputbox "Ingresa la contraseña para el usuario phpMyAdmin de la base de datos ($DB_SERVER):" 10 60 2> /tmp/pmadmin_pass
 
 response=$?
 PMADMIN_PASS=$(cat /tmp/pmadmin_pass)
@@ -135,6 +135,24 @@ if [ $response -ne 0 ] || [ -z "$PMADMIN_PASS" ]; then
            --msgbox "No ingresaste ninguna contraseña para phpMyAdmin." 8 50
     clear
     echo "Instalación cancelada por falta de contraseña."
+    exit 0
+fi
+
+clear
+
+# Preguntar contraseña para usuario root de la base de datos (visible input)
+dialog --title "Contraseña Root DB" \
+       --inputbox "Ingresa la contraseña para el usuario root de la base de datos ($DB_SERVER):" 10 60 2> /tmp/rootdb_pass
+
+response=$?
+ROOTDB_PASS=$(cat /tmp/rootdb_pass)
+rm -f /tmp/rootdb_pass
+
+if [ $response -ne 0 ] || [ -z "$ROOTDB_PASS" ]; then
+    dialog --title "Error" \
+           --msgbox "No ingresaste ninguna contraseña para el usuario root de la base de datos." 8 60
+    clear
+    echo "Instalación cancelada por falta de contraseña root."
     exit 0
 fi
 
