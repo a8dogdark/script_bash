@@ -1042,5 +1042,23 @@ clear
 if $INSTALL_FAILED; then
     dialog --title "Instalación con Errores" --msgbox "La instalación de LAMP y Laravel ha finalizado, pero se detectaron errores en algunos pasos. Por favor, revisa la salida de la consola para más detalles." 10 70
 else
-    dialog --title "Instalación Completada" --msgbox "La instalación de LAMP y Laravel se ha completado con éxito. Puedes acceder a tu proyecto Laravel visitando http://${PROYECTO}.test en tu navegador. También puedes verificar la instalación de PHP en http://TU_IP/info.php y acceder a phpMyAdmin en http://TU_IP/phpmyadmin. No olvides que en tu equipo local (no en el servidor) debes añadir la línea '127.0.0.1    ${PROYECTO}.test' a tu archivo /etc/hosts (o C:\\Windows\\System32\\drivers\\etc\\hosts en Windows) para que el dominio funcione." 10 70
+    # Construir el mensaje para el cuadro de diálogo final
+    MESSAGE="¡La instalación de LAMP y Laravel se ha completado con éxito!\n\n"
+    MESSAGE+="**Datos de tu proyecto:**\n"
+    MESSAGE+="-   **URL del Proyecto:** http://${PROYECTO}.test\n"
+    MESSAGE+="-   **Ubicación del Proyecto:** ${PROJECT_PATH}\n"
+    MESSAGE+="-   **Verificación PHP:** http://TU_IP/info.php\n"
+    MESSAGE+="-   **phpMyAdmin:** http://TU_IP/phpmyadmin\n\n"
+    MESSAGE+="**Credenciales de Base de Datos:**\n"
+    MESSAGE+="-   **Usuario Root (${DBASE}):** root\n"
+    MESSAGE+="-   **Contraseña Root (${DBASE}):** ${PASSROOT}\n"
+    MESSAGE+="-   **Usuario phpMyAdmin:** phpmyadmin\n"
+    MESSAGE+="-   **Contraseña phpMyAdmin:** ${PASSPHP}\n\n"
+    MESSAGE+="**¡IMPORTANTE!** En tu equipo local (no en el servidor), debes añadir la siguiente línea a tu archivo \`/etc/hosts\` (o \`C:\\Windows\\System32\\drivers\\etc\\hosts\` en Windows) para que el dominio \`${PROYECTO}.test\` funcione:\n"
+    MESSAGE+="    **127.0.0.1    ${PROYECTO}.test**\n\n"
+    MESSAGE+="Presiona ENTER para limpiar la pantalla."
+
+    dialog --title "Instalación Completada con Éxito" --msgbox "$MESSAGE" 25 80
 fi
+
+clear # Limpia la pantalla después de que el usuario presione Enter
