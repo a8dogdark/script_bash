@@ -96,24 +96,28 @@ esac
 
 # Input para el nombre del proyecto
 PROYECTO=$(dialog --clear --stdout \
+                --backtitle "Instalador LAMP Laravel 12 - Versión $VERSION" \
                 --title "Nombre del Proyecto Laravel" \
                 --inputbox "Ingresa el nombre del proyecto Laravel 12 a crear:" 10 60)
 check_input "$PROYECTO" "Nombre del Proyecto" $?
 
 # Input para la contraseña del usuario phpMyAdmin de la base de datos
 PASSPHP=$(dialog --clear --stdout \
+               --backtitle "Instalador LAMP Laravel 12 - Versión $VERSION" \
                --title "Contraseña para Usuario phpMyAdmin de MySQL/MariaDB" \
                --inputbox "Ingresa la contraseña para el usuario phpMyAdmin de la base de datos:" 10 60)
 check_input "$PASSPHP" "Contraseña phpMyAdmin" $?
 
 # Input para la contraseña del usuario root de la base de datos
 PASSROOT=$(dialog --clear --stdout \
+                --backtitle "Instalador LAMP Laravel 12 - Versión $VERSION" \
                 --title "Contraseña para Usuario Root de MySQL/MariaDB" \
                 --inputbox "Ingresa la contraseña para el usuario root de la base de datos:" 10 60)
 check_input "$PASSROOT" "Contraseña Root" $?
 
 # Cuadro de selección de versión de PHP (radiolist)
 PHP_VERSION=$(dialog --clear --stdout \
+                     --backtitle "Instalador LAMP Laravel 12 - Versión $VERSION" \
                      --title "Selección de Versión de PHP" \
                      --radiolist "Laravel 12 es compatible con PHP 8.2 y superior. Selecciona la versión de PHP a instalar:" 15 50 3 \
                      "8.2" "Recomendada para Laravel 12" ON \
@@ -129,6 +133,7 @@ fi
 
 # Cuadro de selección de programas
 PROGRAMAS_SELECCIONADOS_STR=$(dialog --clear --stdout \
+                                     --backtitle "Instalador LAMP Laravel 12 - Versión $VERSION" \
                                      --title "Selección de Programas Adicionales" \
                                      --checklist "Selecciona uno o más programas para instalar:" 18 60 4 \
                                      "vscode" "Visual Studio Code" OFF \
@@ -1034,7 +1039,7 @@ for PROGRAMA in "${PROGRAMAS_SELECCIONADOS[@]}"; do
         *)
             echo "Programa desconocido seleccionado: $PROGRAMA. Saltando."
             ;;
-    esalac
+    esac
     sleep 1 # Pequeña pausa para visualizar los mensajes de instalación
 done
 echo "XXX"
