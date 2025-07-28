@@ -242,9 +242,41 @@ else
 fi
 echo "XXX" # Cierre del bloque de mensaje/porcentaje
 
+# 10% - Instalando Apache
+echo "XXX"
+echo "10"
+if ! command -v apache2 &> /dev/null && ! command -v httpd &> /dev/null; then
+    echo "Instalando: Apache..."
+    if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq apache2 > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al instalar Apache."; fi
+    elif [ "$DISTRO" = "AlmaLinux" ]; then
+        yum install -y -q httpd > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al instalar Apache."; fi
+    fi
+
+    # Habilitar y arrancar Apache si se instaló
+    if ! $INSTALL_FAILED; then # Solo si la instalación fue exitosa
+        if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+            systemctl enable apache2 > /dev/null 2>&1
+            systemctl start apache2 > /dev/null 2>&1
+        elif [ "$DISTRO" = "AlmaLinux" ]; then
+            systemctl enable httpd > /dev/null 2>&1
+            systemctl start httpd > /dev/null 2>&1
+            # Para AlmaLinux, también es común abrir el firewall para HTTP/HTTPS
+            firewall-cmd --permanent --add-service=http > /dev/null 2>&1
+            firewall-cmd --permanent --add-service=https > /dev/null 2>&1
+            firewall-cmd --reload > /dev/null 2>&1
+        fi
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al habilitar/iniciar Apache o configurar firewall."; fi
+    fi
+else
+    echo "Apache ya está instalado."
+fi
+echo "XXX" # Cierre del bloque de mensaje/porcentaje
+
 # Aquí se agregarán los siguientes pasos de instalación con sus porcentajes...
 # Por ejemplo:
-# 10% - Instalando Apache...
 # 20% - Instalando $DBASE...
 # 30% - Instalando PHP $PHP_VERSION...
 # etc.
