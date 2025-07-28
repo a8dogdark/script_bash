@@ -264,7 +264,7 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     TASK_WEIGHTS["Verificando e instalando phpMyAdmin..."]=5
     TASK_WEIGHTS["Configurando phpMyAdmin y usuario de base de datos..."]=3
     TASK_WEIGHTS["Verificando e instalando Composer..."]=3
-    TASK_WEIGHTS["Configurando PATH para Laravel Installer..."]=1
+    TASK_WEIGHTS["Configurando PATH para Laravel Installer..."]=1 # Peso reducido, es una tarea interna ahora
     TASK_WEIGHTS["Instalando Laravel Installer..."]=7 # Aumentado por ser una descarga importante
     TASK_WEIGHTS["Creando directorio /var/www/laravel..."]=1
     TASK_WEIGHTS["Creando proyecto Laravel '$PROJECT_NAME' con Pest en /var/www/laravel..."]=15 # Laravel new es pesado
@@ -367,6 +367,9 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     sleep 1
 
     # 3. Instalar utilidades esenciales: curl, unzip, git (con validación y más robusto)
+    # ***********************************************************************************
+    # ESTE ES EL PASO CLAVE PARA CURL, NO OMITIR
+    # ***********************************************************************************
     update_progress "Instalando utilidades esenciales (curl, unzip, git)..."
     INSTALL_PACKAGES=""
     if is_ubuntu_debian; then
@@ -374,7 +377,6 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
         if ! command -v unzip &> /dev/null; then INSTALL_PACKAGES+=" unzip"; fi
         if ! command -v git &> /dev/null; then INSTALL_PACKAGES+=" git"; fi
         if [ -n "$INSTALL_PACKAGES" ]; then
-            # Instalar en el mismo paso que la actualización inicial para asegurar que estén disponibles
             apt install -y $INSTALL_PACKAGES > /dev/null 2>&1
         fi
     elif is_almalinux; then
@@ -696,74 +698,80 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     fi
     sleep 1
 
-    # 15. Configurar PATH para el instalador global de Composer (Laravel Installer)
-    update_progress "Configurando PATH para Laravel Installer..."
-    # Directorio de binarios globales de Composer (para el usuario root)
-    # Composer puede usar $HOME/.composer/vendor/bin o $HOME/.config/composer/vendor/bin
-    COMPOSER_BIN_DIR=""
-    if [ -d "/root/.config/composer/vendor/bin" ]; then
-        COMPOSER_BIN_DIR="/root/.config/composer/vendor/bin"
-    elif [ -d "/root/.composer/vendor/bin" ]; then
-        COMPOSER_BIN_DIR="/root/.composer/vendor/bin"
-    fi
-
-    if [ -n "$COMPOSER_BIN_DIR" ] && [[ ":$PATH:" != *":$COMPOSER_BIN_DIR:"* ]]; then
-        export PATH="$PATH:$COMPOSER_BIN_DIR"
-    fi
-    # Nota: La línea del .bashrc se mantiene para futuras sesiones del usuario root,
-    # pero el 'export PATH' directo es crucial para esta ejecución del script.
-    EXPORT_PATH_LINE="export PATH=\"\$PATH:$COMPOSER_BIN_DIR\""
-    if [ -n "$COMPOSER_BIN_DIR" ] && ! grep -qxF "$EXPORT_PATH_LINE" "/root/.bashrc"; then
-        echo "$EXPORT_PATH_LINE" >> "/root/.bashrc"
-    fi
-    sleep 1
-
-    # 16. Instalar Laravel Installer
+    # 15. Instalar Laravel Installer y configurar PATH (MEJORA CLAVE)
     update_progress "Instalando Laravel Installer..."
+    
+    # Directorio donde Composer instala los binarios globales
+    COMPOSER_GLOBAL_BIN_DIR=""
+    # Primero intentamos el path moderno
+    if [ -d "/root/.config/composer/vendor/bin" ]; then
+        COMPOSER_GLOBAL_BIN_DIR="/root/.config/composer/vendor/bin"
+    # Si no, el path antiguo
+    elif [ -d "/root/.composer/vendor/bin" ]; then
+        COMPOSER_GLOBAL_BIN_DIR="/root/.composer/vendor/bin"
+    fi
+
+    # -----------------------------------------------------------------------------------
+    # *** ESTA ES LA LÍNEA CRÍTICA PARA EL PROBLEMA DEL PATH EN TIEMPO DE EJECUCIÓN ***
+    # Asegura que el PATH del *script actual* se actualice si el directorio de Composer existe
+    # -----------------------------------------------------------------------------------
+    if [ -n "$COMPOSER_GLOBAL_BIN_DIR" ] && [[ ":$PATH:" != *":$COMPOSER_GLOBAL_BIN_DIR:"* ]]; then
+        export PATH="$PATH:$COMPOSER_GLOBAL_BIN_DIR"
+        echo "DEBUG: PATH actualizado a: $PATH" > /dev/stderr # Línea de depuración para ver el PATH
+    fi
+
+    # Instalar laravel/installer si no está ya disponible
     if ! command -v laravel &> /dev/null; then
-        # Asegurarse de que Composer esté disponible en el PATH antes de usarlo
         if ! command -v composer &> /dev/null; then
-            echo "ERROR: Composer no encontrado en PATH. Revisa la instalación de Composer."
+            echo "ERROR: Composer no encontrado en PATH. No se puede instalar Laravel Installer." > /dev/stderr
             echo 100
             echo "XXX"
-            echo "ERROR: Composer no encontrado."
+            echo "ERROR: Composer no encontrado. Revisa la instalación."
             echo "XXX"
             sleep 2
             exit 1
         fi
         composer global require laravel/installer --no-interaction > /dev/null 2>&1
-        # Después de instalar, es posible que necesitemos recargar el PATH de nuevo si el instalador
-        # crea el directorio binario o lo cambia de alguna manera.
-        # Volvemos a chequear y exportar por si acaso.
+        
+        # Después de la instalación global, volvemos a verificar y exportar el PATH
+        # por si la instalación creó el directorio binario o lo cambió
         if [ -d "/root/.config/composer/vendor/bin" ]; then
-            COMPOSER_BIN_DIR="/root/.config/composer/vendor/bin"
+            COMPOSER_GLOBAL_BIN_DIR="/root/.config/composer/vendor/bin"
         elif [ -d "/root/.composer/vendor/bin" ]; then
-            COMPOSER_BIN_DIR="/root/.composer/vendor/bin"
+            COMPOSER_GLOBAL_BIN_DIR="/root/.composer/vendor/bin"
         fi
-        if [ -n "$COMPOSER_BIN_DIR" ] && [[ ":$PATH:" != *":$COMPOSER_BIN_DIR:"* ]]; then
-            export PATH="$PATH:$COMPOSER_BIN_DIR"
+        
+        if [ -n "$COMPOSER_GLOBAL_BIN_DIR" ] && [[ ":$PATH:" != *":$COMPOSER_GLOBAL_BIN_DIR:"* ]]; then
+            export PATH="$PATH:$COMPOSER_GLOBAL_BIN_DIR"
+            echo "DEBUG: PATH RE-actualizado después de instalar laravel/installer: $PATH" > /dev/stderr # Línea de depuración
         fi
     fi
-    sleep 1
+    
+    # Finalmente, agrega la línea al .bashrc para futuras sesiones (para el usuario root)
+    # Solo si no existe ya
+    EXPORT_PATH_LINE="export PATH=\"\$PATH:$COMPOSER_GLOBAL_BIN_DIR\""
+    if [ -n "$COMPOSER_GLOBAL_BIN_DIR" ] && ! grep -qxF "$EXPORT_PATH_LINE" "/root/.bashrc"; then
+        echo "$EXPORT_PATH_LINE" >> "/root/.bashrc"
+    fi
+    sleep 1 # Pequeña pausa después de la configuración del PATH
 
-    # 17. Crear directorio /var/www/laravel
+    # 16. Crear directorio /var/www/laravel
     update_progress "Creando directorio /var/www/laravel..."
     mkdir -p /var/www/laravel > /dev/null 2>&1
     sleep 1
 
-    # 18. Crear proyecto Laravel dentro de /var/www/laravel con Pest
+    # 17. Crear proyecto Laravel dentro de /var/www/laravel con Pest
     update_progress "Creando proyecto Laravel '$PROJECT_NAME' con Pest en /var/www/laravel..."
     # Mover al directorio donde se creará el proyecto
     cd /var/www/laravel/ > /dev/null 2>&1
 
     # --- INICIO DE DEPURACION ---
-    # Imprime el valor de PROJECT_NAME. Esto aparecerá en la terminal debajo del diálogo.
     echo "DEBUG: Valor de PROJECT_NAME antes de laravel new: '$PROJECT_NAME'" > /dev/stderr
-    # Imprime el comando que se va a ejecutar
     echo "DEBUG: Comando a ejecutar: laravel new \"$PROJECT_NAME\" --no-interaction --pest" > /dev/stderr
+    echo "DEBUG: PATH actual para la ejecución de laravel new: $PATH" > /dev/stderr # Añadida para depurar el PATH
     # --- FIN DE DEPURACION ---
 
-    # Ejecutar el comando laravel new. La salida no se redirige a /dev/null para ver errores.
+    # Ejecutar el comando laravel new. La salida NO se redirige a /dev/null para ver errores.
     laravel new "$PROJECT_NAME" --no-interaction --pest
     # Verificar el código de salida del comando anterior
     if [ $? -ne 0 ]; then
@@ -778,7 +786,7 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
 
     sleep 2
 
-    # 19. Configurar .env del proyecto Laravel para la base de datos
+    # 18. Configurar .env del proyecto Laravel para la base de datos
     update_progress "Configurando archivo .env para la base de datos..."
     PROJECT_PATH="/var/www/laravel/$PROJECT_NAME"
     DB_NAME=$(echo "$PROJECT_NAME" | tr '-' '_' | tr '.' '_') # Convierte el nombre del proyecto a un nombre de BD válido
@@ -792,48 +800,48 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     sed -i "/^DB_PORT=/c\DB_PORT=$DB_PORT" "$PROJECT_PATH/.env" > /dev/null 2>&1
     sleep 1
 
-    # 20. Crear la base de datos para el proyecto
+    # 19. Crear la base de datos para el proyecto
     update_progress "Creando base de datos '$DB_NAME' para el proyecto..."
     mysql -u "$DB_ROOT_USER" -p"$DB_ROOT_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS $DB_NAME;" > /dev/null 2>&1
     sleep 1
 
-    # 21. Ejecutar php artisan migrate
+    # 20. Ejecutar php artisan migrate
     update_progress "Ejecutando migraciones de Laravel..."
     cd "$PROJECT_PATH" > /dev/null 2>&1
     php artisan migrate --force > /dev/null 2>&1
     sleep 2
 
-    # 22. Instalar paquete de idioma español para Laravel
+    # 21. Instalar paquete de idioma español para Laravel
     update_progress "Instalando paquete de idioma español (laravel-lang/lang)..."
     cd "$PROJECT_PATH" > /dev/null 2>&1
     composer require laravel-lang/lang --no-interaction > /dev/null 2>&1
     sleep 2
 
-    # 23. Publicar archivos de idioma español
+    # 22. Publicar archivos de idioma español
     update_progress "Publicando archivos de idioma español..."
     php artisan lang:publish es --no-interaction > /dev/null 2>&1
     sleep 1
 
-    # 24. Configurar el idioma por defecto en config/app.php
+    # 23. Configurar el idioma por defecto en config/app.php
     update_progress "Configurando idioma por defecto a español en config/app.php..."
     sed -i "s/^    'locale' => 'en',/    'locale' => 'es',/" "$PROJECT_PATH/config/app.php" > /dev/null 2>&1
     sleep 0.5
 
-    # 25. Ejecutar npm install
+    # 24. Ejecutar npm install
     update_progress "Ejecutando npm install para dependencias frontend..."
     cd "$PROJECT_PATH" > /dev/null 2>&1
     # La salida no se redirige a /dev/null para ver errores.
     npm install --silent
     sleep 3
 
-    # 26. Ejecutar npm run build (o npm run dev)
+    # 25. Ejecutar npm run build (o npm run dev)
     update_progress "Compilando assets frontend con npm run build..."
     cd "$PROJECT_PATH" > /dev/null 2>&1
     # La salida no se redirige a /dev/null para ver errores.
     npm run build --silent
     sleep 3
 
-    # 27. Configurar permisos del proyecto Laravel
+    # 26. Configurar permisos del proyecto Laravel
     update_progress "Configurando permisos del proyecto Laravel..."
     # Establecer propietario del directorio del proyecto al usuario de Apache
     if is_ubuntu_debian; then
@@ -846,7 +854,7 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     chmod -R 775 "/var/www/laravel/$PROJECT_NAME/bootstrap/cache" > /dev/null 2>&1
     sleep 1
 
-    # 28. Configurar Virtual Host de Apache para el proyecto Laravel
+    # 27. Configurar Virtual Host de Apache para el proyecto Laravel
     update_progress "Configurando Virtual Host de Apache para '$PROJECT_NAME.test'..."
     # El nombre de dominio local
     LOCAL_DOMAIN="$PROJECT_NAME.test"
@@ -875,7 +883,7 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     fi
     sleep 1
 
-    # 29. Modificar el archivo /etc/hosts para el dominio local
+    # 28. Modificar el archivo /etc/hosts para el dominio local
     update_progress "Agregando '$PROJECT_NAME.test' al archivo /etc/hosts..."
     LOCAL_HOSTS_ENTRY="127.0.0.1\t$LOCAL_DOMAIN"
     # Verificar si la entrada ya existe para evitar duplicados
