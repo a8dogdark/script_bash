@@ -153,11 +153,30 @@ IFS=' ' read -r -a PROGRAMAS_SELECCIONADOS <<< "$PROGRAMAS_SELECCIONADOS_STR"
 
 # --- BARRA DE PROGRESO DE INSTALACIÓN ---
 (
+CURRENT_PERCENT=0 # Porcentaje actual, se mantendrá como entero
+
+# Helper function to update progress
+update_progress() {
+    local new_percent="$1"
+    local message="$2"
+    
+    # Asegurarse de que el nuevo porcentaje no sea menor que el actual ni mayor que 100
+    if [ "$new_percent" -gt "$CURRENT_PERCENT" ]; then
+        CURRENT_PERCENT="$new_percent"
+    fi
+    if [ "$CURRENT_PERCENT" -gt 100 ]; then
+        CURRENT_PERCENT=100
+    fi
+
+    echo "XXX"
+    echo "$CURRENT_PERCENT"
+    echo "$message"
+    echo "XXX"
+}
+
+
 # 1% - Preparación del sistema: Actualizar índices de paquetes
-echo "XXX"
-echo "1"
-echo "Preparando el sistema: Actualizando índices de paquetes..."
-echo "XXX"
+update_progress 1 "Preparando el sistema: Actualizando índices de paquetes..."
 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
     apt-get update -qq > /dev/null 2>&1
     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: No se pudieron actualizar los índices de paquetes."; fi
@@ -167,10 +186,7 @@ elif [ "$DISTRO" = "AlmaLinux" ]; then
 fi
 
 # 2% - Preparación del sistema: Actualizando paquetes
-echo "XXX"
-echo "2"
-echo "Preparando el sistema: Actualizando paquetes..."
-echo "XXX"
+update_progress 2 "Preparando el sistema: Actualizando paquetes..."
 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
     DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -qq > /dev/null 2>&1
     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: No se pudieron actualizar los paquetes del sistema."; fi
@@ -180,10 +196,8 @@ elif [ "$DISTRO" = "AlmaLinux" ]; then
 fi
 
 # 3% - Instalando utilidades esenciales: curl
-echo "XXX"
-echo "3"
+update_progress 3 "Instalando: curl..."
 if ! command -v curl &> /dev/null; then
-    echo "Instalando: curl..."
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl > /dev/null 2>&1
         if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar curl."; fi
@@ -195,13 +209,10 @@ else
     echo "curl ya está instalado."
     sleep 1 # Pausa para visualizar el mensaje
 fi
-echo "XXX"
 
 # 4% - Instalando utilidades esenciales: wget
-echo "XXX"
-echo "4"
+update_progress 4 "Instalando: wget..."
 if ! command -v wget &> /dev/null; then
-    echo "Instalando: wget..."
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         DEBIAN_FRONTEND=noninteractive apt-get install -y -qq wget > /dev/null 2>&1
         if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar wget."; fi
@@ -213,13 +224,10 @@ else
     echo "wget ya está instalado."
     sleep 1 # Pausa para visualizar el mensaje
 fi
-echo "XXX"
 
 # 5% - Instalando utilidades esenciales: unzip
-echo "XXX"
-echo "5"
+update_progress 5 "Instalando: unzip..."
 if ! command -v unzip &> /dev/null; then
-    echo "Instalando: unzip..."
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         DEBIAN_FRONTEND=noninteractive apt-get install -y -qq unzip > /dev/null 2>&1
         if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar unzip."; fi
@@ -231,13 +239,10 @@ else
     echo "unzip ya está instalado."
     sleep 1 # Pausa para visualizar el mensaje
 fi
-echo "XXX"
 
 # 6% - Instalando utilidades esenciales: zip
-echo "XXX"
-echo "6"
+update_progress 6 "Instalando: zip..."
 if ! command -v zip &> /dev/null; then
-    echo "Instalando: zip..."
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         DEBIAN_FRONTEND=noninteractive apt-get install -y -qq zip > /dev/null 2>&1
         if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar zip."; fi
@@ -249,14 +254,11 @@ else
     echo "zip ya está instalado."
     sleep 1 # Pausa para visualizar el mensaje
 fi
-echo "XXX"
 
 # 7% - Añadiendo PPA de Ondrej para PHP (Solo Ubuntu/Debian)
 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-    echo "XXX"
-    echo "7"
+    update_progress 7 "Añadiendo repositorio PHP de Ondrej PPA..."
     if ! grep -q "ondrej/php" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
-        echo "Añadiendo repositorio PHP de Ondrej PPA..."
         # Instalar software-properties-common si no está instalado (necesario para add-apt-repository)
         if ! command -v add-apt-repository &> /dev/null; then
             DEBIAN_FRONTEND=noninteractive apt-get install -y -qq software-properties-common > /dev/null 2>&1
@@ -274,22 +276,16 @@ if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         echo "Ondrej PPA ya está agregado."
         sleep 1 # Pausa para visualizar el mensaje
     fi
-    echo "XXX"
 else
-    echo "XXX"
-    echo "7"
-    echo "Saltando: Ondrej PPA (No es Ubuntu/Debian)."
-    echo "XXX"
+    update_progress 7 "Saltando: Ondrej PPA (No es Ubuntu/Debian)."
 fi
 
 
 # 9% - Instalando Apache
-echo "XXX"
-echo "9"
+update_progress 9 "Instalando: Apache..."
 # Primero, comprueba si Apache (httpd o apache2) ya está instalado
 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
     if ! command -v apache2 &> /dev/null; then
-        echo "Instalando: Apache..."
         DEBIAN_FRONTEND=noninteractive apt-get install -y -qq apache2 > /dev/null 2>&1
         if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Apache."; fi
     else
@@ -298,7 +294,6 @@ if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
     fi
 elif [ "$DISTRO" = "AlmaLinux" ]; then
     if ! command -v httpd &> /dev/null; then
-        echo "Instalando: Apache (httpd)..."
         yum install -y -q httpd > /dev/null 2>&1
         if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Apache (httpd)."; fi
     else
@@ -308,25 +303,20 @@ elif [ "$DISTRO" = "AlmaLinux" ]; then
 fi
 
 # 10% - Habilitando mod_rewrite y reiniciando Apache
-echo "XXX"
-echo "10"
+update_progress 10 "Habilitando módulo mod_rewrite y configurando Apache..."
 if ! $INSTALL_FAILED; then # Solo intenta configurar si no hubo un error crítico en la instalación
-    echo "Habilitando módulo mod_rewrite..."
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         a2enmod rewrite > /dev/null 2>&1
         if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al habilitar mod_rewrite."; fi
     elif [ "$DISTRO" = "AlmaLinux" ]; then
         # En AlmaLinux, mod_rewrite suele estar habilitado por defecto o es parte del paquete base httpd.
-        # No hay un comando directo como a2enmod. Solo verificamos si el módulo está cargado.
         if ! httpd -M 2>/dev/null | grep -q "rewrite_module"; then
             echo "Advertencia: mod_rewrite no encontrado o no habilitado. Puede requerir configuración manual."
-            # No se establece INSTALL_FAILED a true ya que no hay un comando de habilitación simple.
         else
             echo "mod_rewrite ya está habilitado."
         fi
     fi
     
-    echo "Configurando e iniciando Apache..."
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         systemctl enable apache2 > /dev/null 2>&1
         if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al habilitar Apache."; fi
@@ -350,9 +340,8 @@ else
     echo "Saltando configuración de Apache y mod_rewrite debido a errores previos."
     sleep 1
 fi
-echo "XXX"
 
-# Rango de 12% a 40% para PHP y extensiones (se mantiene, pero se ajustará internamente)
+# Rango de 12% a 40% para PHP y extensiones
 PHP_START_PERCENT=12
 PHP_END_PERCENT=40
 
@@ -395,119 +384,89 @@ PHP_EXTENSIONS=(
     "XSL" "php${PHP_VERSION}-xsl" "php-xsl"
 )
 
-NUM_EXTENSIONS=${#PHP_EXTENSIONS[@]}
-# Se suma 1 por el paso inicial de "base_and_remi"
-PHP_STEP_COUNT=$((NUM_EXTENSIONS + 1)) 
-# Calcular el incremento con bc para mayor precisión y redondearlo a 2 decimales para evitar desbordamientos
-PHP_STEP_INCREMENT=$(echo "scale=2; ($PHP_END_PERCENT - $PHP_START_PERCENT) / $PHP_STEP_COUNT" | bc)
-
-CURRENT_PERCENT=$PHP_START_PERCENT
-
-install_php_base_and_remi() {
-    local base_installed=false
-    echo "XXX"
-    # Calcular y redondear el porcentaje
-    CURRENT_PERCENT=$(echo "scale=2; $CURRENT_PERCENT + $PHP_STEP_INCREMENT" | bc)
-    PERCENT_ROUNDED=$(printf "%.0f" "$CURRENT_PERCENT" 2>/dev/null || echo "$PHP_START_PERCENT")
-    if (( $(echo "$PERCENT_ROUNDED < $PHP_START_PERCENT" | bc -l) )); then PERCENT_ROUNDED=$PHP_START_PERCENT; fi
-    if (( $(echo "$PERCENT_ROUNDED > $PHP_END_PERCENT" | bc -l) )); then PERCENT_ROUNDED=$PHP_END_PERCENT; fi
-    if (( $(echo "$PERCENT_ROUNDED > 100" | bc -l) )); then PERCENT_ROUNDED=100; fi
-    if (( $(echo "$PERCENT_ROUNDED < 0" | bc -l) )); then PERCENT_ROUNDED=0; fi
-
-    echo "$PERCENT_ROUNDED"
-    if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-        if ! dpkg -s "php${PHP_VERSION}-cli" &> /dev/null; then
-            echo "Instalando base de PHP ${PHP_VERSION} (cli)..."
-            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "php${PHP_VERSION}" > /dev/null 2>&1
-            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar la base de PHP ${PHP_VERSION}."; fi
-        else
-            echo "Base de PHP ${PHP_VERSION} (cli) ya está instalada."
-            base_installed=true
-        fi
-    elif [ "$DISTRO" = "AlmaLinux" ]; then
-        if ! yum repolist | grep -q "remi-php${PHP_VERSION//./}"; then
-            echo "Habilitando repositorio Remi para PHP ${PHP_VERSION}..."
-            yum install -y -q https://rpms.remirepo.net/enterprise/remi-release-8.rpm > /dev/null 2>&1
-            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar el repositorio Remi."; fi
-            if ! $INSTALL_FAILED; then
-                yum module enable -y php:remi-"${PHP_VERSION//./}" > /dev/null 2>&1
-                if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al habilitar el módulo PHP Remi."; fi
-            fi
-        fi
-        # En AlmaLinux, `php` es el paquete principal una vez que el módulo Remi está habilitado.
-        if ! rpm -q "php-cli" &> /dev/null; then # Más robusto para verificar RPMs para php-cli
-            echo "Instalando base de PHP ${PHP_VERSION} (cli/fpm)..."
-            yum install -y -q php php-cli php-fpm > /dev/null 2>&1
-            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar la base de PHP ${PHP_VERSION} en AlmaLinux."; fi
-        else
-            echo "Base de PHP ${PHP_VERSION} (cli/fpm) ya está instalada."
-            base_installed=true
-        fi
-    fi
-    echo "XXX"
-    if $base_installed; then sleep 1; fi # Pausa si ya estaba instalado
-}
-
-install_php_extension() {
-    local EXTENSION_NAME="$1"
-    local UBUNTU_PACKAGE="$2"
-    local ALMALINUX_PACKAGE="$3"
-
-    # Incrementa el porcentaje antes de cada paso
-    CURRENT_PERCENT=$(echo "scale=2; $CURRENT_PERCENT + $PHP_STEP_INCREMENT" | bc)
-    
-    # Redondea el porcentaje a un entero de forma segura.
-    PERCENT_ROUNDED=$(printf "%.0f" "$CURRENT_PERCENT" 2>/dev/null || echo "$PHP_START_PERCENT")
-    
-    # Asegurarse de que el porcentaje esté dentro de los límites
-    if (( $(echo "$PERCENT_ROUNDED < $PHP_START_PERCENT" | bc -l) )); then PERCENT_ROUNDED=$PHP_START_PERCENT; fi
-    if (( $(echo "$PERCENT_ROUNDED > $PHP_END_PERCENT" | bc -l) )); then PERCENT_ROUNDED=$PHP_END_PERCENT; fi
-    if (( $(echo "$PERCENT_ROUNDED > 100" | bc -l) )); then PERCENT_ROUNDED=100; fi
-    if (( $(echo "$PERCENT_ROUNDED < 0" | bc -l) )); then PERCENT_ROUNDED=0; fi
-
-    echo "XXX"
-    echo "$PERCENT_ROUNDED" # Usa el porcentaje redondeado
-    if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-        if ! dpkg -s "$UBUNTU_PACKAGE" &> /dev/null; then
-            echo "Instalando PHP extensión: $EXTENSION_NAME ($UBUNTU_PACKAGE)..."
-            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "$UBUNTU_PACKAGE" > /dev/null 2>&1
-            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar $UBUNTU_PACKAGE."; fi
-        else
-            echo "PHP extensión $EXTENSION_NAME ya está instalada."
-            sleep 1
-        fi
-    elif [ "$DISTRO" = "AlmaLinux" ]; then
-        if ! rpm -q "$ALMALINUX_PACKAGE" &> /dev/null; then
-            echo "Instalando PHP extensión: $EXTENSION_NAME ($ALMALINUX_PACKAGE)..."
-            yum install -y -q "$ALMALINUX_PACKAGE" > /dev/null 2>&1
-            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar $ALMALINUX_PACKAGE."; fi
-        else
-            echo "PHP extensión $EXTENSION_NAME ya está instalada."
-            sleep 1
-        fi
-    fi
-    echo "XXX"
-}
+# Numero total de "pasos" dentro del bloque PHP (base + cada extensión)
+NUM_PHP_SUB_STEPS=${#PHP_EXTENSIONS[@]}/3 # Divide por 3 porque cada extensión tiene 3 elementos
+PHP_PROGRESS_POINTS_PER_EXTENSION=$(echo "scale=2; ($PHP_END_PERCENT - $PHP_START_PERCENT) / $NUM_PHP_SUB_STEPS" | bc)
+PHP_CURRENT_SUB_PERCENT=$PHP_START_PERCENT # Usaremos un flotante para calcular los sub-pasos
 
 # 12% - Instalando base de PHP y configurando Remi (si aplica)
-install_php_base_and_remi
+# No usamos update_progress directamente para los sub-pasos de PHP para mayor granularidad.
+echo "XXX"
+PHP_CURRENT_SUB_PERCENT=$(echo "scale=2; $PHP_CURRENT_SUB_PERCENT + $PHP_PROGRESS_POINTS_PER_EXTENSION" | bc)
+echo "$(printf "%.0f" "$PHP_CURRENT_SUB_PERCENT")" # Redondear y enviar
+echo "Instalando base de PHP ${PHP_VERSION}..."
+if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+    if ! dpkg -s "php${PHP_VERSION}-cli" &> /dev/null; then
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "php${PHP_VERSION}" > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar la base de PHP ${PHP_VERSION}."; fi
+    else
+        echo "Base de PHP ${PHP_VERSION} (cli) ya está instalada."
+        sleep 1
+    fi
+elif [ "$DISTRO" = "AlmaLinux" ]; then
+    if ! yum repolist | grep -q "remi-php${PHP_VERSION//./}"; then
+        echo "Habilitando repositorio Remi para PHP ${PHP_VERSION}..."
+        yum install -y -q https://rpms.remirepo.net/enterprise/remi-release-8.rpm > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar el repositorio Remi."; fi
+        if ! $INSTALL_FAILED; then
+            yum module enable -y php:remi-"${PHP_VERSION//./}" > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al habilitar el módulo PHP Remi."; fi
+        fi
+    fi
+    if ! rpm -q "php-cli" &> /dev/null; then
+        yum install -y -q php php-cli php-fpm > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar la base de PHP ${PHP_VERSION} en AlmaLinux."; fi
+    else
+        echo "Base de PHP ${PHP_VERSION} (cli/fpm) ya está instalada."
+        sleep 1
+    fi
+fi
+echo "XXX"
+
 
 # Instalar cada extensión definida
 for (( i=0; i<${#PHP_EXTENSIONS[@]}; i+=3 )); do
     EXT_NAME="${PHP_EXTENSIONS[i]}"
     UBUNTU_PKG="${PHP_EXTENSIONS[i+1]}"
     ALMALINUX_PKG="${PHP_EXTENSIONS[i+2]}"
-    install_php_extension "$EXT_NAME" "$UBUNTU_PKG" "$ALMALINUX_PKG"
+
+    # Incrementar el porcentaje para esta extensión
+    PHP_CURRENT_SUB_PERCENT=$(echo "scale=2; $PHP_CURRENT_SUB_PERCENT + $PHP_PROGRESS_POINTS_PER_EXTENSION" | bc)
+    # Asegurarse de no exceder el límite superior del segmento PHP
+    if (( $(echo "$PHP_CURRENT_SUB_PERCENT > $PHP_END_PERCENT" | bc -l) )); then
+        PHP_CURRENT_SUB_PERCENT=$PHP_END_PERCENT
+    fi
+    
+    echo "XXX"
+    echo "$(printf "%.0f" "$PHP_CURRENT_SUB_PERCENT")" # Redondear y enviar
+    
+    if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+        if ! dpkg -s "$UBUNTU_PKG" &> /dev/null; then
+            echo "Instalando PHP extensión: $EXT_NAME ($UBUNTU_PKG)..."
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "$UBUNTU_PKG" > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar $UBUNTU_PKG."; fi
+        else
+            echo "PHP extensión $EXT_NAME ya está instalada."
+            sleep 0.5
+        fi
+    elif [ "$DISTRO" = "AlmaLinux" ]; then
+        if ! rpm -q "$ALMALINUX_PKG" &> /dev/null; then
+            echo "Instalando PHP extensión: $EXT_NAME ($ALMALINUX_PKG)..."
+            yum install -y -q "$ALMALINUX_PKG" > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar $ALMALINUX_PKG."; fi
+        else
+            echo "PHP extensión $EXT_NAME ya está instalada."
+            sleep 0.5
+        fi
+    fi
+    echo "XXX"
 done
 
 
-# 40% - Configuración final de PHP y reinicio de Apache
-echo "XXX"
-echo "40"
+# Asegurarse de que el porcentaje final de PHP sea 40%
+update_progress 40 "Configuración final de PHP y reinicio de Apache..."
 if ! $INSTALL_FAILED; then
-    echo "Configurando PHP ${PHP_VERSION} y reiniciando Apache..."
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-        # Deshabilitar otras versiones de PHP FPM si existen y habilitar la seleccionada
         INSTALLED_PHP_FPM_VERSIONS=$(dpkg -l | grep -oP 'php\d\.\d-fpm' | sed 's/php//;s/-fpm//' | sort -rV)
         for version in $INSTALLED_PHP_FPM_VERSIONS; do
             if [ "$version" != "$PHP_VERSION" ]; then
@@ -531,12 +490,9 @@ else
     echo "Saltando configuración de PHP debido a errores previos."
     sleep 1
 fi
-echo "XXX"
 
-# 45% - Instalando y configurando la base de datos (MariaDB o MySQL)
-echo "XXX"
-echo "45"
-echo "Instalando y configurando: $DBASE..."
+# 50% - Instalando y configurando la base de datos (MariaDB o MySQL)
+update_progress 50 "Instalando y configurando: $DBASE..."
 DB_PACKAGE_INSTALLED=false
 if [ "$DBASE" = "MariaDB" ]; then
     if ! dpkg -s mariadb-server &> /dev/null; then
@@ -556,7 +512,7 @@ elif [ "$DBASE" = "MySQL" ]; then
     fi
 fi
 
-if ! $INSTALL_FAILED && ! $DB_PACKAGE_INSTALLED; then # Solo configurar si se instaló ahora o si no estaba y no hubo error.
+if ! $INSTALL_FAILED && ! $DB_PACKAGE_INSTALLED; then
     echo "Habilitando e iniciando $DBASE..."
     if [ "$DBASE" = "MariaDB" ]; then
         systemctl enable mariadb > /dev/null 2>&1
@@ -570,11 +526,9 @@ if ! $INSTALL_FAILED && ! $DB_PACKAGE_INSTALLED; then # Solo configurar si se in
         if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al iniciar MySQL."; fi
     fi
 
-    # Configuración de contraseñas de la base de datos (solo si no hay errores previos)
     if ! $INSTALL_FAILED; then
         echo "Configurando contraseñas de $DBASE..."
         if [ "$DBASE" = "MariaDB" ]; then
-            # Secure installation for MariaDB
             mysql -u root <<EOF_SQL
 ALTER USER 'root'@'localhost' IDENTIFIED BY '$PASSROOT';
 DELETE FROM mysql.user WHERE User='';
@@ -588,7 +542,6 @@ FLUSH PRIVILEGES;
 EOF_SQL
             if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al configurar MariaDB con contraseñas."; fi
         elif [ "$DBASE" = "MySQL" ]; then
-            # Secure installation for MySQL
             mysql -u root <<EOF_SQL
 ALTER USER 'root'@'localhost' IDENTIFIED BY '$PASSROOT';
 DELETE FROM mysql.user WHERE User='';
@@ -607,15 +560,11 @@ else
     echo "Saltando configuración de $DBASE debido a errores o porque ya estaba instalado."
     sleep 1
 fi
-echo "XXX"
 
-# 50% - Instalando phpMyAdmin...
-echo "XXX"
-echo "50"
+# 55% - Instalando phpMyAdmin...
+update_progress 55 "Instalando: phpMyAdmin..."
 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
     if ! dpkg -s phpmyadmin &> /dev/null; then
-        echo "Instalando: phpMyAdmin (Ubuntu/Debian)..."
-        # Pre-configurar debconf para instalación silenciosa
         echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
         echo "phpmyadmin phpmyadmin/app-password-confirm password $PASSPHP" | debconf-set-selections
         echo "phpmyadmin phpmyadmin/mysql/admin-pass password $PASSROOT" | debconf-set-selections
@@ -630,11 +579,9 @@ if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
     fi
 elif [ "$DISTRO" = "AlmaLinux" ]; then
     if ! rpm -q phpmyadmin &> /dev/null; then
-        echo "Instalando: phpMyAdmin (AlmaLinux)..."
         yum install -y -q phpmyadmin > /dev/null 2>&1
         if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar phpMyAdmin."; fi
 
-        # Configurar Apache para phpMyAdmin en AlmaLinux (si no existe ya)
         if ! grep -q "Include /etc/httpd/conf.d/phpMyAdmin.conf" /etc/httpd/conf/httpd.conf; then
             echo "Alias /phpmyadmin /usr/share/phpmyadmin" > /etc/httpd/conf.d/phpMyAdmin.conf
             echo "<Directory /usr/share/phpmyadmin>" >> /etc/httpd/conf.d/phpMyAdmin.conf
@@ -643,7 +590,6 @@ elif [ "$DISTRO" = "AlmaLinux" ]; then
             echo "    Require all granted" >> /etc/httpd/conf.d/phpMyAdmin.conf
             echo "</Directory>" >> /etc/httpd/conf.d/phpMyAdmin.conf
             
-            # Reiniciar Apache para aplicar la configuración
             systemctl restart httpd > /dev/null 2>&1
             if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al reiniciar Apache después de configurar phpMyAdmin."; fi
         else
@@ -654,13 +600,10 @@ elif [ "$DISTRO" = "AlmaLinux" ]; then
         sleep 1
     fi
 fi
-echo "XXX"
 
 # 60% - Instalando Composer...
-echo "XXX"
-echo "60"
+update_progress 60 "Instalando: Composer..."
 if ! command -v composer &> /dev/null; then
-    echo "Instalando: Composer..."
     php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al descargar el instalador de Composer."; fi
     php composer-setup.php --install-dir=/usr/local/bin --filename=composer
@@ -671,15 +614,11 @@ else
     echo "Composer ya está instalado."
     sleep 1
 fi
-echo "XXX"
 
 # 70% - Instalando Node.js...
-echo "XXX"
-echo "70"
+update_progress 70 "Instalando: Node.js..."
 if ! command -v node &> /dev/null; then
-    echo "Instalando: Node.js..."
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-        # Usar Node.js 20 para Ubuntu/Debian (LTS actual)
         curl -fsSL https://deb.nodesource.com/setup_20.x | bash - > /dev/null 2>&1
         if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al añadir el repositorio de NodeSource."; fi
         if ! $INSTALL_FAILED; then
@@ -687,7 +626,6 @@ if ! command -v node &> /dev/null; then
             if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Node.js."; fi
         fi
     elif [ "$DISTRO" = "AlmaLinux" ]; then
-        # Usar Node.js 20 para AlmaLinux (LTS actual)
         curl -fsSL https://rpm.nodesource.com/setup_20.x | bash - > /dev/null 2>&1
         if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al añadir el repositorio de NodeSource."; fi
         if ! $INSTALL_FAILED; then
@@ -699,18 +637,14 @@ else
     echo "Node.js ya está instalado."
     sleep 1
 fi
-echo "XXX"
 
 # 80% - Creando la carpeta de proyectos Laravel y el proyecto en sí...
-echo "XXX"
-echo "80"
-echo "Creando estructura de directorios para proyectos Laravel..."
+update_progress 80 "Creando estructura de directorios y proyecto Laravel..."
 
 LARAVEL_PROJECTS_DIR="/var/www/laravel"
 PROJECT_PATH="${LARAVEL_PROJECTS_DIR}/${PROYECTO}"
 VIRTUAL_HOST_CONF=""
 
-# Crear la carpeta base /var/www/laravel si no existe
 if [ ! -d "$LARAVEL_PROJECTS_DIR" ]; then
     mkdir -p "$LARAVEL_PROJECTS_DIR" > /dev/null 2>&1
     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al crear el directorio $LARAVEL_PROJECTS_DIR."; fi
@@ -720,11 +654,8 @@ else
 fi
 
 if ! $INSTALL_FAILED; then
-    # Crear proyecto Laravel si la carpeta no existe
     if [ ! -d "$PROJECT_PATH" ]; then
         echo "Creando proyecto Laravel: $PROYECTO en $PROJECT_PATH (esto puede tardar unos minutos)..."
-        # Usamos `sudo -u www-data` para que el proyecto se cree con los permisos correctos de Apache
-        # En AlmaLinux, el usuario de Apache es 'apache'
         APACHE_USER=""
         if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
             APACHE_USER="www-data"
@@ -748,7 +679,6 @@ if ! $INSTALL_FAILED; then
             chmod -R 775 "${PROJECT_PATH}/storage" "${PROJECT_PATH}/bootstrap/cache" > /dev/null 2>&1
             if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al establecer permisos de escritura para storage/cache."; fi
 
-            # Ejecutar npm install y npm run build dentro del proyecto Laravel
             echo "Ejecutando 'npm install' en el proyecto Laravel (esto puede tardar)..."
             (cd "$PROJECT_PATH" && sudo -u "$APACHE_USER" npm install > /dev/null 2>&1)
             if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al ejecutar 'npm install' en el proyecto Laravel."; fi
@@ -767,22 +697,16 @@ else
     echo "Saltando creación de proyecto Laravel debido a errores previos."
     sleep 1
 fi
-echo "XXX"
 
 # 85% - Configurando base de datos y ejecutando migraciones para Laravel
-echo "XXX"
-echo "85"
+update_progress 85 "Configurando base de datos y ejecutando migraciones para Laravel..."
 if ! $INSTALL_FAILED; then
     echo "Creando base de datos '${PROYECTO}' y configurando .env..."
-    # Crear la base de datos si no existe
     mysql -u root -p"$PASSROOT" -e "CREATE DATABASE IF NOT EXISTS \`${PROYECTO}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" > /dev/null 2>&1
     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al crear la base de datos '${PROYECTO}'. Asegúrate de que $DBASE esté corriendo y la contraseña root sea correcta."; fi
 
     if ! $INSTALL_FAILED; then
-        # Actualizar el archivo .env del proyecto Laravel
         ENV_FILE="${PROJECT_PATH}/.env"
-        
-        # Primero, asegurar que .env existe y tiene permisos de escritura temporales para root
         if [ ! -f "$ENV_FILE" ]; then
             echo "Advertencia: .env no encontrado en $PROJECT_PATH. Creando desde .env.example."
             cp "${PROJECT_PATH}/.env.example" "$ENV_FILE" > /dev/null 2>&1
@@ -790,19 +714,15 @@ if ! $INSTALL_FAILED; then
         fi
         
         if ! $INSTALL_FAILED; then
-            # Temporalmente dar permisos de escritura para que `sed` pueda modificarlo
-            # Luego se restauran los permisos para el usuario de Apache
             chmod 664 "$ENV_FILE" > /dev/null 2>&1
             
             sed -i "s/^DB_DATABASE=.*/DB_DATABASE=${PROYECTO}/" "$ENV_FILE"
             sed -i "s/^DB_USERNAME=.*/DB_USERNAME=root/" "$ENV_FILE"
             sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=${PASSROOT}/" "$ENV_FILE"
             
-            # Restaurar permisos y propietario al usuario de Apache
             chmod 644 "$ENV_FILE" > /dev/null 2>&1
             chown "$APACHE_USER":"$APACHE_USER" "$ENV_FILE" > /dev/null 2>&1
 
-            # Ejecutar migraciones de Laravel
             echo "Ejecutando migraciones de Laravel..."
             (cd "$PROJECT_PATH" && sudo -u "$APACHE_USER" php artisan migrate --force > /dev/null 2>&1)
             if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al ejecutar 'php artisan migrate'."; fi
@@ -812,34 +732,26 @@ else
     echo "Saltando configuración de base de datos y migraciones debido a errores previos."
     sleep 1
 fi
-echo "XXX"
 
 # 90% - Configurando idioma español en Laravel
-echo "XXX"
-echo "90"
+update_progress 90 "Configurando idioma español en Laravel..."
 if ! $INSTALL_FAILED; then
-    echo "Configurando idioma español para el proyecto Laravel..."
-    # Instalar el paquete de traducciones de Laravel
+    echo "Instalando paquete de traducciones para Laravel..."
     (cd "$PROJECT_PATH" && sudo -u "$APACHE_USER" composer require laravel-lang/lang > /dev/null 2>&1)
     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar el paquete laravel-lang/lang."; fi
 
     if ! $INSTALL_FAILED; then
-        # Publicar los archivos de idioma
+        echo "Publicando archivos de traducción en español..."
         (cd "$PROJECT_PATH" && sudo -u "$APACHE_USER" php artisan lang:publish es > /dev/null 2>&1)
         if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al publicar las traducciones en español."; fi
     fi
 
     if ! $INSTALL_FAILED; then
-        # Cambiar el locale por defecto en config/app.php
         APP_CONFIG_FILE="${PROJECT_PATH}/config/app.php"
         if [ -f "$APP_CONFIG_FILE" ]; then
-            # Temporalmente dar permisos de escritura
             chmod 664 "$APP_CONFIG_FILE" > /dev/null 2>&1
-            
             sed -i "s/'locale' => 'en'/'locale' => 'es'/" "$APP_CONFIG_FILE"
             sed -i "s/'faker_locale' => 'en_US'/'faker_locale' => 'es_ES'/" "$APP_CONFIG_FILE"
-            
-            # Restaurar permisos y propietario
             chmod 644 "$APP_CONFIG_FILE" > /dev/null 2>&1
             chown "$APACHE_USER":"$APACHE_USER" "$APP_CONFIG_FILE" > /dev/null 2>&1
             echo "Idioma español configurado correctamente en config/app.php."
@@ -851,19 +763,14 @@ else
     echo "Saltando configuración de idioma español debido a errores previos."
     sleep 1
 fi
-echo "XXX"
 
 
 # 93% - Configurando Virtual Host para Laravel...
-echo "XXX"
-echo "93"
+update_progress 93 "Configurando Virtual Host para Laravel..."
 if ! $INSTALL_FAILED; then
-    echo "Configurando Virtual Host para ${PROYECTO}.test..."
-    # Configuración de Virtual Host para Apache
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         VIRTUAL_HOST_CONF="/etc/apache2/sites-available/${PROYECTO}.conf"
         
-        # Eliminar archivo de configuración si ya existe (para evitar duplicados en re-ejecuciones)
         if [ -f "$VIRTUAL_HOST_CONF" ]; then
             a2dissite "${PROYECTO}.conf" > /dev/null 2>&1
             rm "$VIRTUAL_HOST_CONF" > /dev/null 2>&1
@@ -889,7 +796,6 @@ if ! $INSTALL_FAILED; then
     elif [ "$DISTRO" = "AlmaLinux" ]; then
         VIRTUAL_HOST_CONF="/etc/httpd/conf.d/${PROYECTO}.conf"
 
-        # Eliminar archivo de configuración si ya existe
         if [ -f "$VIRTUAL_HOST_CONF" ]; then
             rm "$VIRTUAL_HOST_CONF" > /dev/null 2>&1
             if [ $? -ne 0 ]; then echo "Advertencia: Fallo al limpiar configuración antigua de Virtual Host."; fi
@@ -909,7 +815,6 @@ if ! $INSTALL_FAILED; then
         systemctl restart httpd > /dev/null 2>&1
         if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al reiniciar Apache después de configurar Virtual Host."; fi
         
-        # Enforce SELinux contexts for new directories
         echo "Aplicando contexto SELinux para el proyecto Laravel..."
         semanage fcontext -a -t httpd_sys_rw_content_t "${PROJECT_PATH}/storage(/.*)?" > /dev/null 2>&1
         semanage fcontext -a -t httpd_sys_rw_content_t "${PROJECT_PATH}/bootstrap/cache(/.*)?" > /dev/null 2>&1
@@ -917,7 +822,6 @@ if ! $INSTALL_FAILED; then
         if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al aplicar contexto SELinux. Esto podría causar problemas de permisos."; fi
     fi
     
-    # Añadir entrada a /etc/hosts si no existe
     if ! grep -q "${PROYECTO}.test" /etc/hosts; then
         echo "Añadiendo entrada a /etc/hosts para ${PROYECTO}.test..."
         echo "127.0.0.1    ${PROYECTO}.test" >> /etc/hosts
@@ -929,19 +833,15 @@ else
     echo "Saltando configuración de Virtual Host debido a errores previos."
     sleep 1
 fi
-echo "XXX"
 
 # 95% - Creando archivo info.php para verificación de PHP...
-echo "XXX"
-echo "95"
+update_progress 95 "Creando archivo info.php para verificación de PHP..."
 if [ -f "/var/www/html/info.php" ]; then
     echo "El archivo info.php ya existe. Saltando creación."
-    sleep 1 # Pequeña pausa para que el mensaje sea visible
+    sleep 1
 else
-    echo "Creando archivo info.php en el directorio web de Apache..."
     echo "<?php phpinfo(); ?>" > /var/www/html/info.php
     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al crear /var/www/html/info.php."; fi
-    # Asegurarse de que Apache pueda leer el archivo
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         chown www-data:www-data /var/www/html/info.php > /dev/null 2>&1
     elif [ "$DISTRO" = "AlmaLinux" ]; then
@@ -949,18 +849,23 @@ else
     fi
     chmod 644 /var/www/html/info.php > /dev/null 2>&1
 fi
-echo "XXX"
 
 # 98% - Instalando programas adicionales seleccionados...
-echo "XXX"
-echo "98"
-echo "Instalando programas seleccionados: ${PROGRAMAS_SELECCIONADOS[*]}..."
+PROGRAMS_TOTAL=${#PROGRAMAS_SELECCIONADOS[@]}
+if [ "$PROGRAMS_TOTAL" -gt 0 ]; then
+    PROGRAM_INCREMENT=$(echo "scale=2; (100 - $CURRENT_PERCENT) / $PROGRAMS_TOTAL" | bc)
+else
+    PROGRAM_INCREMENT=0 # No hay programas, no hay incremento.
+fi
 
 for PROGRAMA in "${PROGRAMAS_SELECCIONADOS[@]}"; do
+    CURRENT_PERCENT=$(echo "scale=0; $CURRENT_PERCENT + $PROGRAM_INCREMENT" | bc)
+    if [ "$CURRENT_PERCENT" -gt 98 ]; then CURRENT_PERCENT=98; fi # Limitar al max para esta sección
+    update_progress "$CURRENT_PERCENT" "Instalando programa: $PROGRAMA..."
+
     case "$PROGRAMA" in
         "vscode")
             if ! command -v code &> /dev/null; then
-                echo "Instalando: Visual Studio Code..."
                 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
                     wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
                     install -D -o -g 0 -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
@@ -983,7 +888,6 @@ for PROGRAMA in "${PROGRAMAS_SELECCIONADOS[@]}"; do
             ;;
         "sublime")
             if ! command -v subl &> /dev/null; then
-                echo "Instalando: Sublime Text..."
                 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
                     wget -qO - https://download.sublimetext.com/apt/rpm-pub-key.gpg | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/sublimehq-archive.gpg > /dev/null
                     echo "deb https://download.sublimetext.com/apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list > /dev/null
@@ -1003,7 +907,6 @@ for PROGRAMA in "${PROGRAMAS_SELECCIONADOS[@]}"; do
             ;;
         "brave")
             if ! command -v brave-browser &> /dev/null; then
-                echo "Instalando: Brave Browser..."
                 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
                     curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg > /dev/null 2>&1
                     echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" | tee /etc/apt/sources.list.d/brave-browser-release.list > /dev/null
@@ -1023,7 +926,6 @@ for PROGRAMA in "${PROGRAMAS_SELECCIONADOS[@]}"; do
             ;;
         "chrome")
             if ! command -v google-chrome &> /dev/null; then
-                echo "Instalando: Google Chrome..."
                 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
                     wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor | sudo tee /usr/share/keyrings/google-chrome.gpg > /dev/null
                     echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list > /dev/null
@@ -1045,25 +947,19 @@ for PROGRAMA in "${PROGRAMAS_SELECCIONADOS[@]}"; do
             echo "Programa desconocido seleccionado: $PROGRAMA. Saltando."
             ;;
     esac
-    sleep 1 # Pequeña pausa para visualizar los mensajes de instalación
+    sleep 1
 done
-echo "XXX"
 
 # 100% - Simulando finalización
-echo "XXX"
-echo "100"
-echo "Configuraciones finales completadas."
-echo "XXX"
+update_progress 100 "Configuraciones finales completadas."
 
 ) | dialog --gauge "Iniciando instalación de LAMP y Laravel. Por favor, espera..." 10 70 0
 
 clear
 
-# Mensaje final condicional
 if $INSTALL_FAILED; then
     dialog --title "Instalación con Errores" --msgbox "La instalación de LAMP y Laravel ha finalizado, pero se detectaron errores en algunos pasos. Por favor, revisa la salida de la consola para más detalles." 10 70
 else
-    # Construir el mensaje para el cuadro de diálogo final
     MESSAGE="¡La instalación de LAMP y Laravel se ha completado con éxito!\n\n"
     MESSAGE+="\Z1**Datos de tu proyecto:**\Z0\n"
     MESSAGE+="-   **URL del Proyecto:** http://${PROYECTO}.test\n"
@@ -1082,4 +978,4 @@ else
     dialog --title "Instalación Completada con Éxito" --msgbox "$MESSAGE" 25 80
 fi
 
-clear # Limpia la pantalla después de que el usuario presione Enter
+clear
