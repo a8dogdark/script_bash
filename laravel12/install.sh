@@ -111,14 +111,13 @@ PASSROOT=$(dialog --clear --stdout \
                 --inputbox "Ingresa la contraseña para el usuario root de la base de datos:" 10 60)
 check_input "$PASSROOT" "Contraseña Root" $?
 
-# Cuadro de selección de versión de PHP
+# Cuadro de selección de versión de PHP (radiolist)
 PHP_VERSION=$(dialog --clear --stdout \
                      --title "Selección de Versión de PHP" \
-                     --menu "Laravel 12 es compatible con PHP 8.2 y superior. Selecciona la versión de PHP a instalar:" 15 50 3 \
-                     "8.2" "Recomendada para Laravel 12" \
-                     "8.3" "Versión más reciente con mejoras" \
-                     "8.4" "Versión en desarrollo (no recomendada para producción)" \
-                     --default-item "8.2") # Establece 8.2 como la opción por defecto
+                     --radiolist "Laravel 12 es compatible con PHP 8.2 y superior. Selecciona la versión de PHP a instalar:" 15 50 3 \
+                     "8.2" "Recomendada para Laravel 12" ON \
+                     "8.3" "Versión más reciente con mejoras" OFF \
+                     "8.4" "Versión en desarrollo (no recomendada para producción)" OFF )
 
 php_choice_exit_code=$?
 if [ "$php_choice_exit_code" -eq 1 ] || [ "$php_choice_exit_code" -eq 255 ]; then # Solo si Cancel o ESC
