@@ -32,7 +32,7 @@ case "$DISTRO" in
             exit 1
         fi
         DB_PACKAGE="mysql-server"
-        DB_TYPE="MySQL" # Variable para el tipo de DB
+        DB_TYPE="MySQL"
         DB_ROOT_USER="mysql"
         ;;
     debian)
@@ -41,7 +41,7 @@ case "$DISTRO" in
             exit 1
         fi
         DB_PACKAGE="mariadb-server"
-        DB_TYPE="MariaDB" # Variable para el tipo de DB
+        DB_TYPE="MariaDB"
         DB_ROOT_USER="mariadb"
         ;;
     almalinux)
@@ -50,7 +50,7 @@ case "$DISTRO" in
             exit 1
         fi
         DB_PACKAGE="mariadb-server"
-        DB_TYPE="MariaDB" # Variable para el tipo de DB
+        DB_TYPE="MariaDB"
         DB_ROOT_USER="mariadb"
         ;;
     *)
@@ -139,6 +139,25 @@ if [ -z "$DB_ROOT_PASSWORD" ]; then
     dialog --clear --backtitle "Instalador de Sistema v$VEROS" \
     --title "Error" \
     --msgbox "\nNo se ha especificado una contraseña para el usuario root de la base de datos. Saliendo del instalador." 8 50
+    clear
+    exit 1
+fi
+
+# Seleccionar la versión de PHP para phpMyAdmin
+PHP_VERSION=$(dialog --clear --backtitle "Instalador de Sistema v$VEROS" \
+--title "Version de PHP para phpMyAdmin" \
+--radiolist "\nSelecciona la version de PHP a usar para phpMyAdmin (Recomendado para Laravel 12: PHP 8.3):" 15 60 3 \
+"8.2" "PHP 8.2" OFF \
+"8.3" "PHP 8.3" ON \
+"8.4" "PHP 8.4" OFF \
+3>&1 1>&2 2>&3)
+
+# Verificar si el usuario canceló la selección
+if [ -z "$PHP_VERSION" ]; then
+    clear
+    dialog --clear --backtitle "Instalador de Sistema v$VEROS" \
+    --title "Error" \
+    --msgbox "\nNo se ha seleccionado una version de PHP para phpMyAdmin. Saliendo del instalador." 8 60
     clear
     exit 1
 fi
