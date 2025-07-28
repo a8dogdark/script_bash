@@ -121,4 +121,21 @@ if [ $response -ne 0 ] || [ -z "$PROJECT_NAME" ]; then
 fi
 
 clear
-echo "Nombre del proyecto: $PROJECT_NAME"
+
+# Preguntar contraseña para usuario phpMyAdmin
+dialog --title "Contraseña phpMyAdmin" \
+       --passwordbox "Ingresa la contraseña para el usuario phpMyAdmin de la base de datos ($DB_SERVER):" 10 60 2> /tmp/pmadmin_pass
+
+response=$?
+PMADMIN_PASS=$(cat /tmp/pmadmin_pass)
+rm -f /tmp/pmadmin_pass
+
+if [ $response -ne 0 ] || [ -z "$PMADMIN_PASS" ]; then
+    dialog --title "Error" \
+           --msgbox "No ingresaste ninguna contraseña para phpMyAdmin." 8 50
+    clear
+    echo "Instalación cancelada por falta de contraseña."
+    exit 0
+fi
+
+clear
