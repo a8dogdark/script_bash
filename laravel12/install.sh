@@ -121,7 +121,7 @@ PHP_VERSION=$(dialog --clear --stdout \
                      --default-item "8.2") # Establece 8.2 como la opción por defecto
 
 php_choice_exit_code=$?
-if [ "$php_choice_exit_code" -ne 0 ]; then
+if [ "$php_choice_exit_code" -eq 1 ] || [ "$php_choice_exit_code" -eq 255 ]; then # Solo si Cancel o ESC
     clear
     echo "Instalación cancelada por el usuario."
     exit 0
