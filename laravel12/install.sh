@@ -397,14 +397,24 @@ PHP_EXTENSIONS=(
 
 NUM_EXTENSIONS=${#PHP_EXTENSIONS[@]}
 # Se suma 1 por el paso inicial de "base_and_remi"
-PHP_STEP_INCREMENT=$(awk "BEGIN {print ($PHP_END_PERCENT - $PHP_START_PERCENT) / ($NUM_EXTENSIONS + 1)}") 
+PHP_STEP_COUNT=$((NUM_EXTENSIONS + 1)) 
+# Calcular el incremento con bc para mayor precisión y redondearlo a 2 decimales para evitar desbordamientos
+PHP_STEP_INCREMENT=$(echo "scale=2; ($PHP_END_PERCENT - $PHP_START_PERCENT) / $PHP_STEP_COUNT" | bc)
 
 CURRENT_PERCENT=$PHP_START_PERCENT
 
 install_php_base_and_remi() {
     local base_installed=false
     echo "XXX"
-    echo "$CURRENT_PERCENT"
+    # Calcular y redondear el porcentaje
+    CURRENT_PERCENT=$(echo "scale=2; $CURRENT_PERCENT + $PHP_STEP_INCREMENT" | bc)
+    PERCENT_ROUNDED=$(printf "%.0f" "$CURRENT_PERCENT" 2>/dev/null || echo "$PHP_START_PERCENT")
+    if (( $(echo "$PERCENT_ROUNDED < $PHP_START_PERCENT" | bc -l) )); then PERCENT_ROUNDED=$PHP_START_PERCENT; fi
+    if (( $(echo "$PERCENT_ROUNDED > $PHP_END_PERCENT" | bc -l) )); then PERCENT_ROUNDED=$PHP_END_PERCENT; fi
+    if (( $(echo "$PERCENT_ROUNDED > 100" | bc -l) )); then PERCENT_ROUNDED=100; fi
+    if (( $(echo "$PERCENT_ROUNDED < 0" | bc -l) )); then PERCENT_ROUNDED=0; fi
+
+    echo "$PERCENT_ROUNDED"
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         if ! dpkg -s "php${PHP_VERSION}-cli" &> /dev/null; then
             echo "Instalando base de PHP ${PHP_VERSION} (cli)..."
@@ -444,21 +454,16 @@ install_php_extension() {
     local ALMALINUX_PACKAGE="$3"
 
     # Incrementa el porcentaje antes de cada paso
-    CURRENT_PERCENT=$(awk "BEGIN {print $CURRENT_PERCENT + $PHP_STEP_INCREMENT}")
+    CURRENT_PERCENT=$(echo "scale=2; $CURRENT_PERCENT + $PHP_STEP_INCREMENT" | bc)
     
-    # Redondea el porcentaje a un entero. Redirige stderr para evitar mensajes de error de printf en la barra de progreso.
-    PERCENT_ROUNDED=$(printf "%.0f" "$CURRENT_PERCENT" 2>/dev/null)
+    # Redondea el porcentaje a un entero de forma segura.
+    PERCENT_ROUNDED=$(printf "%.0f" "$CURRENT_PERCENT" 2>/dev/null || echo "$PHP_START_PERCENT")
     
-    # Validación adicional: Si PERCENT_ROUNDED está vacío o no es numérico, usa el valor anterior o un valor por defecto.
-    if ! [[ "$PERCENT_ROUNDED" =~ ^[0-9]+$ ]]; then
-        # Intenta redondear de nuevo, si falla (e.g., CURRENT_PERCENT es inválido), usa PHP_START_PERCENT
-        PERCENT_ROUNDED=$(printf "%.0f" "$CURRENT_PERCENT" 2>/dev/null || echo "$PHP_START_PERCENT")
-        if (( $(echo "$PERCENT_ROUNDED < $PHP_START_PERCENT" | bc -l) )); then PERCENT_ROUNDED=$PHP_START_PERCENT; fi
-    fi
-
-    if (( PERCENT_ROUNDED > PHP_END_PERCENT )); then PERCENT_ROUNDED=$PHP_END_PERCENT; fi # No exceder el límite del rango PHP (40%)
-    if (( PERCENT_ROUNDED > 100 )); then PERCENT_ROUNDED=100; fi # No exceder el 100% total
-    if (( PERCENT_ROUNDED < 0 )); then PERCENT_ROUNDED=0; fi # No ser menor a 0%
+    # Asegurarse de que el porcentaje esté dentro de los límites
+    if (( $(echo "$PERCENT_ROUNDED < $PHP_START_PERCENT" | bc -l) )); then PERCENT_ROUNDED=$PHP_START_PERCENT; fi
+    if (( $(echo "$PERCENT_ROUNDED > $PHP_END_PERCENT" | bc -l) )); then PERCENT_ROUNDED=$PHP_END_PERCENT; fi
+    if (( $(echo "$PERCENT_ROUNDED > 100" | bc -l) )); then PERCENT_ROUNDED=100; fi
+    if (( $(echo "$PERCENT_ROUNDED < 0" | bc -l) )); then PERCENT_ROUNDED=0; fi
 
     echo "XXX"
     echo "$PERCENT_ROUNDED" # Usa el porcentaje redondeado
