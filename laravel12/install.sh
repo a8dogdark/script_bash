@@ -26,7 +26,7 @@ if [[ "$ARCH" != "x86_64" && "$ARCH" != "amd64" ]]; then
   exit 1
 fi
 
-# Validar distribución y versión
+# Validar distribución, versión y definir base de datos
 if [ -f /etc/os-release ]; then
   . /etc/os-release
   OS_NAME=$ID
@@ -40,7 +40,7 @@ case "$OS_NAME" in
   ubuntu)
     UBUNTU_MAJOR=$(echo "$OS_VERSION" | cut -d '.' -f1)
     if [[ "$UBUNTU_MAJOR" -ge 22 && "$UBUNTU_MAJOR" -le 24 ]]; then
-      :
+      DB_SERVER="mysql-server"
     else
       echo -e "\e[31mUbuntu versión no soportada. Solo 22.x, 23.x o 24.x son permitidos. Saliendo...\e[0m"
       exit 1
@@ -48,14 +48,14 @@ case "$OS_NAME" in
     ;;
   debian)
     if [[ "$OS_VERSION" == "11" || "$OS_VERSION" == "12" ]]; then
-      :
+      DB_SERVER="mariadb-server"
     else
       echo -e "\e[31mDebian versión no soportada. Solo 11 o 12 son permitidos. Saliendo...\e[0m"
       exit 1
     fi
     ;;
   almalinux)
-    # AlmaLinux aceptado cualquier versión
+    DB_SERVER="mariadb-server"
     ;;
   *)
     echo -e "\e[31mDistribución $OS_NAME no soportada. Saliendo...\e[0m"
@@ -66,7 +66,7 @@ esac
 # Mostrar cuadro de bienvenida con dialog
 dialog --backtitle "Instalador LAMP para Laravel 12" \
        --yes-label "Continuar" --no-label "Salir" \
-       --yesno "Bienvenido al instalador LAMP para Laravel 12.\n\n¿Deseas continuar?" 10 50
+       --yesno "Bienvenido al instalador de LAMP, para Laravel 12.\n\nSe instalarán los siguientes programas:\n- Apache\n- PHP\n- $DB_SERVER\n- PhpMyAdmin\n- Composer\n- NodeJs\n- Programas de creación del proyecto" 15 60
 
 response=$?
 
