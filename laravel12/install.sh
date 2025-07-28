@@ -8,6 +8,7 @@ PROYECTO=""
 DBASE=""
 PHP_VERSION="" # Nueva variable para almacenar la versión de PHP seleccionada
 PROGRAMAS_SELECCIONADOS=() # Array para almacenar los programas seleccionados
+INSTALL_FAILED=false # Bandera para indicar si alguna instalación falló
 
 # Valida si el script se está ejecutando como root
 if [ "$(id -u)" -ne 0 ]; then
@@ -44,9 +45,9 @@ fi
 # Validar e instalar dialog si no está presente
 if ! command -v dialog &> /dev/null; then
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-        apt-get install -y dialog > /dev/null
+        apt-get install -y dialog > /dev/null 2>&1
     elif [ "$DISTRO" = "AlmaLinux" ]; then
-        yum install -y dialog > /dev/null
+        yum install -y dialog > /dev/null 2>&1
     fi
     if ! command -v dialog &> /dev/null; then
         echo "Error: No se pudo instalar dialog. Abortando."
@@ -153,9 +154,11 @@ echo "1"
 echo "Preparando el sistema: Actualizando índices de paquetes..."
 echo "XXX"
 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-    apt-get update -qq > /dev/null
+    apt-get update -qq > /dev/null 2>&1
+    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al actualizar índices."; fi
 elif [ "$DISTRO" = "AlmaLinux" ]; then
-    yum makecache -y > /dev/null
+    yum makecache -y > /dev/null 2>&1
+    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al actualizar índices."; fi
 fi
 
 # 2% - Preparación del sistema: Actualizando paquetes
@@ -164,9 +167,11 @@ echo "2"
 echo "Preparando el sistema: Actualizando paquetes..."
 echo "XXX"
 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-    DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -qq > /dev/null
+    DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -qq > /dev/null 2>&1
+    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al actualizar paquetes."; fi
 elif [ "$DISTRO" = "AlmaLinux" ]; then
-    yum update -y -q > /dev/null
+    yum update -y -q > /dev/null 2>&1
+    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al actualizar paquetes."; fi
 fi
 
 # 3% - Instalando utilidades esenciales: curl
@@ -175,9 +180,11 @@ echo "3"
 if ! command -v curl &> /dev/null; then
     echo "Instalando: curl..." # Mensaje visible en la barra de progreso
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl > /dev/null
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al instalar curl."; fi
     elif [ "$DISTRO" = "AlmaLinux" ]; then
-        yum install -y -q curl > /dev/null
+        yum install -y -q curl > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al instalar curl."; fi
     fi
 else
     echo "curl ya está instalado." # Mensaje visible si ya está instalado
@@ -190,9 +197,11 @@ echo "4"
 if ! command -v wget &> /dev/null; then
     echo "Instalando: wget..." # Mensaje visible en la barra de progreso
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq wget > /dev/null
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq wget > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al instalar wget."; fi
     elif [ "$DISTRO" = "AlmaLinux" ]; then
-        yum install -y -q wget > /dev/null
+        yum install -y -q wget > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al instalar wget."; fi
     fi
 else
     echo "wget ya está instalado." # Mensaje visible si ya está instalado
@@ -205,9 +214,11 @@ echo "5"
 if ! command -v unzip &> /dev/null; then
     echo "Instalando: unzip..." # Mensaje visible en la barra de progreso
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq unzip > /dev/null
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq unzip > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al instalar unzip."; fi
     elif [ "$DISTRO" = "AlmaLinux" ]; then
-        yum install -y -q unzip > /dev/null
+        yum install -y -q unzip > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al instalar unzip."; fi
     fi
 else
     echo "unzip ya está instalado." # Mensaje visible si ya está instalado
@@ -220,9 +231,11 @@ echo "6"
 if ! command -v zip &> /dev/null; then
     echo "Instalando: zip..." # Mensaje visible en la barra de progreso
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq zip > /dev/null
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq zip > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al instalar zip."; fi
     elif [ "$DISTRO" = "AlmaLinux" ]; then
-        yum install -y -q zip > /dev/null
+        yum install -y -q zip > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al instalar zip."; fi
     fi
 else
     echo "zip ya está instalado." # Mensaje visible si ya está instalado
@@ -246,4 +259,10 @@ echo "XXX"
 ) | dialog --gauge "Iniciando instalación de LAMP y Laravel. Por favor, espera..." 10 70 0
 
 clear
-dialog --title "Instalación Completada" --msgbox "La instalación de LAMP y Laravel se ha completado con éxito, o ha sido cancelada si hubo errores." 10 50
+
+# Mensaje final condicional
+if $INSTALL_FAILED; then
+    dialog --title "Instalación con Errores" --msgbox "La instalación de LAMP y Laravel ha finalizado, pero se detectaron errores en algunos pasos. Por favor, revisa la salida de la consola para más detalles." 10 70
+else
+    dialog --title "Instalación Completada" --msgbox "La instalación de LAMP y Laravel se ha completado con éxito." 10 50
+fi
