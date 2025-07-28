@@ -6,6 +6,7 @@ PASSPHP=""
 PASSROOT=""
 PROYECTO=""
 DBASE=""
+PHP_VERSION="" # Nueva variable para almacenar la versión de PHP seleccionada
 
 # Valida si el script se está ejecutando como root
 if [ "$(id -u)" -ne 0 ]; then
@@ -108,6 +109,21 @@ PASSROOT=$(dialog --clear --stdout \
                 --title "Contraseña para Usuario Root de MySQL/MariaDB" \
                 --inputbox "Ingresa la contraseña para el usuario root de la base de datos:" 10 60)
 check_input "$PASSROOT" "Contraseña Root" $?
+
+# Cuadro de selección de versión de PHP
+PHP_VERSION=$(dialog --clear --stdout \
+                     --title "Selección de Versión de PHP" \
+                     --menu "Laravel 12 es compatible con PHP 8.2 y superior. Selecciona la versión de PHP a instalar:" 15 50 3 \
+                     "8.2" "Recomendada para Laravel 12" \
+                     "8.3" "Versión más reciente con mejoras" \
+                     "8.4" "Versión en desarrollo (no recomendada para producción)" )
+
+php_choice_exit_code=$?
+if [ "$php_choice_exit_code" -ne 0 ]; then
+    clear
+    echo "Instalación cancelada por el usuario."
+    exit 0
+fi
 
 # Este script instalará LAMP y las dependencias necesarias para Laravel 12.
 # Está diseñado para ser ejecutado en Ubuntu 24 y es compatible con Ubuntu 23, 22, Debian 11, 12 y AlmaLinux.
