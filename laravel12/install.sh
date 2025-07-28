@@ -64,7 +64,6 @@ echo "Versión del script: $VERSION_SCRIPT"
 
 # Instalar dialog si no está instalado (en segundo plano)
 if ! command -v dialog &> /dev/null; then
-    echo "dialog no encontrado, instalando en segundo plano..."
     (
         apt-get install -y dialog
     ) &
@@ -79,7 +78,6 @@ else
     DB_SERVER="MySQL"
 fi
 
-# Mensaje para dialog
 WELCOME_MSG="Bienvenido al instalador de Laravel con LAMP.\n
 Se instalarán los siguientes paquetes:\n
 - Apache2\n
@@ -91,69 +89,47 @@ Se instalarán los siguientes paquetes:\n
 - Programas adicionales\n
 - Proyecto Laravel 12"
 
-# Mostrar cuadro de diálogo de bienvenida
 dialog --title "Bienvenida" \
        --yesno "$WELCOME_MSG" 15 60
-
 response=$?
 if [ $response -ne 0 ]; then
     clear
-    echo "Instalación cancelada por el usuario."
     exit 0
 fi
-
 clear
 
-# Preguntar nombre del proyecto Laravel
 dialog --title "Nombre del Proyecto" \
        --inputbox "Ingresa el nombre del proyecto Laravel que deseas crear:" 10 60 2> /tmp/project_name
-
 response=$?
 PROJECT_NAME=$(cat /tmp/project_name)
 rm -f /tmp/project_name
-
 if [ $response -ne 0 ] || [ -z "$PROJECT_NAME" ]; then
-    dialog --title "Error" \
-           --msgbox "No ingresaste ningún nombre de proyecto." 8 50
+    dialog --title "Error" --msgbox "No ingresaste ningún nombre de proyecto." 8 50
     clear
-    echo "Instalación cancelada por falta de nombre de proyecto."
     exit 0
 fi
-
 clear
 
-# Preguntar contraseña para usuario phpMyAdmin (visible input)
 dialog --title "Contraseña phpMyAdmin" \
        --inputbox "Ingresa la contraseña para el usuario phpMyAdmin de la base de datos ($DB_SERVER):" 10 60 2> /tmp/pmadmin_pass
-
 response=$?
 PMADMIN_PASS=$(cat /tmp/pmadmin_pass)
 rm -f /tmp/pmadmin_pass
-
 if [ $response -ne 0 ] || [ -z "$PMADMIN_PASS" ]; then
-    dialog --title "Error" \
-           --msgbox "No ingresaste ninguna contraseña para phpMyAdmin." 8 50
+    dialog --title "Error" --msgbox "No ingresaste ninguna contraseña para phpMyAdmin." 8 50
     clear
-    echo "Instalación cancelada por falta de contraseña."
     exit 0
 fi
-
 clear
 
-# Preguntar contraseña para usuario root de la base de datos (visible input)
 dialog --title "Contraseña Root DB" \
        --inputbox "Ingresa la contraseña para el usuario root de la base de datos ($DB_SERVER):" 10 60 2> /tmp/rootdb_pass
-
 response=$?
 ROOTDB_PASS=$(cat /tmp/rootdb_pass)
 rm -f /tmp/rootdb_pass
-
 if [ $response -ne 0 ] || [ -z "$ROOTDB_PASS" ]; then
-    dialog --title "Error" \
-           --msgbox "No ingresaste ninguna contraseña para el usuario root de la base de datos." 8 60
+    dialog --title "Error" --msgbox "No ingresaste ninguna contraseña para el usuario root de la base de datos." 8 60
     clear
-    echo "Instalación cancelada por falta de contraseña root."
     exit 0
 fi
-
 clear
