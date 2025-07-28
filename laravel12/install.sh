@@ -112,7 +112,7 @@ check_input "$PASSPHP" "Contraseña phpMyAdmin" $?
 PASSROOT=$(dialog --clear --stdout \
                 --backtitle "Instalador LAMP Laravel 12 - Versión $VERSION" \
                 --title "Contraseña para Usuario Root de MySQL/MariaDB" \
-                --inputbox "Ingresa la contraseña para el usuario root de la base de datos:" 10 60)
+               --inputbox "Ingresa la contraseña para el usuario root de la base de datos:" 10 60)
 check_input "$PASSROOT" "Contraseña Root" $?
 
 # Cuadro de selección de versión de PHP (radiolist)
@@ -255,7 +255,7 @@ else
     sleep 1 # Pausa para visualizar el mensaje
 fi
 
-# 7% - Instalando gpg (necesario para repositorios con claves)
+# 7% - Instalando gpg (gnupg)
 update_progress 7 "Instalando: gnupg (gpg)..."
 if ! command -v gpg &> /dev/null; then
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
@@ -270,9 +270,24 @@ else
     sleep 1
 fi
 
-# 8% - Añadiendo PPA de Ondrej para PHP (Solo Ubuntu/Debian)
+# 8% - Instalando apt-transport-https (solo si es Ubuntu/Debian)
 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-    update_progress 8 "Añadiendo repositorio PHP de Ondrej PPA..."
+    update_progress 8 "Instalando: apt-transport-https..."
+    if ! dpkg -s apt-transport-https &> /dev/null; then
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq apt-transport-https > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar apt-transport-https."; fi
+    else
+        echo "apt-transport-https ya está instalado."
+        sleep 1
+    fi
+else
+    update_progress 8 "Saltando: apt-transport-https (No es Ubuntu/Debian)."
+fi
+
+
+# 9% - Añadiendo PPA de Ondrej para PHP (Solo Ubuntu/Debian)
+if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+    update_progress 9 "Añadiendo repositorio PHP de Ondrej PPA..."
     if ! grep -q "ondrej/php" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
         # Instalar software-properties-common si no está instalado (necesario para add-apt-repository)
         if ! command -v add-apt-repository &> /dev/null; then
@@ -292,7 +307,7 @@ if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         sleep 1 # Pausa para visualizar el mensaje
     fi
 else
-    update_progress 8 "Saltando: Ondrej PPA (No es Ubuntu/Debian)."
+    update_progress 9 "Saltando: Ondrej PPA (No es Ubuntu/Debian)."
 fi
 
 
@@ -356,8 +371,7 @@ else
     sleep 1
 fi
 
-# Rango de 12% a 40% para PHP y extensiones
-# Reajustado: De 12% a 38%
+# Rango de 12% a 38% para PHP y extensiones
 PHP_START_PERCENT=12
 PHP_END_PERCENT=38
 
@@ -583,6 +597,7 @@ fi
 update_progress 50 "Instalando: phpMyAdmin..."
 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
     if ! dpkg -s phpmyadmin &> /dev/null; then
+        # Pre-seed debconf selections for phpMyAdmin for unattended installation
         echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
         echo "phpmyadmin phpmyadmin/app-password-confirm password $PASSPHP" | debconf-set-selections
         echo "phpmyadmin phpmyadmin/mysql/admin-pass password $PASSROOT" | debconf-set-selections
@@ -882,35 +897,41 @@ if [ "$PROGRAMS_TOTAL" -gt 0 ]; then
 fi
 
 for PROGRAMA in "${PROGRAMAS_SELECCIONADOS[@]}"; do
-    CURRENT_PERCENT=$(( CURRENT_PERCENT + PROGRAM_INCREMENT ))
-    if [ "$CURRENT_PERCENT" -gt 98 ]; then CURRENT_PERCENT=98; fi # Limitar al max para esta sección
-
+    # Ajustar el porcentaje antes de cada programa para que no quede estancado
+    # Asegurar que no supere el 98% antes del último programa
+    CURRENT_PERCENT=$(( CURRENT_PERCENT < 98 ? CURRENT_PERCENT + PROGRAM_INCREMENT : 98 ))
     update_progress "$CURRENT_PERCENT" "Instalando programa: $PROGRAMA..."
 
     case "$PROGRAMA" in
         "vscode")
             if ! command -v code &> /dev/null; then
                 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-                    # Asegurarse de que el directorio /etc/apt/keyrings exista
-                    mkdir -p /etc/apt/keyrings > /dev/null 2>&1
-                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al crear el directorio /etc/apt/keyrings."; fi
-                    
-                    if ! $INSTALL_FAILED; then
-                        # Descargar la clave GPG y almacenarla directamente en el keyring de apt
-                        curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /etc/apt/keyrings/microsoft.gpg > /dev/null 2>&1
-                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al descargar o procesar la clave GPG de Microsoft."; fi
-                    fi
+                    # Eliminar cualquier clave antigua si existe
+                    rm -f microsoft.gpg > /dev/null 2>&1
+                    rm -f /usr/share/keyrings/microsoft.gpg > /dev/null 2>&1
+
+                    wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al descargar o procesar la clave GPG de Microsoft."; fi
 
                     if ! $INSTALL_FAILED; then
-                        # Asegurar los permisos correctos para la clave GPG
-                        chmod a+r /etc/apt/keyrings/microsoft.gpg > /dev/null 2>&1
-                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al establecer permisos para la clave GPG de Microsoft."; fi
+                        install -D -o root -g root -m 644 microsoft.gpg /usr/share/keyrings/microsoft.gpg
+                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar la clave GPG de Microsoft en /usr/share/keyrings."; fi
+                    fi
+                    rm -f microsoft.gpg > /dev/null 2>&1 # Limpiar archivo temporal
 
-                        # Añadir el repositorio de VS Code
-                        echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/vscode stable main" | tee /etc/apt/sources.list.d/vscode.list > /dev/null
-                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al añadir el repositorio de VS Code."; fi
+                    # Paso 2: Crear el archivo .sources para el repositorio
+                    if ! $INSTALL_FAILED; then
+                        VSCODE_SOURCES_FILE="/etc/apt/sources.list.d/vscode.sources"
+                        echo "Types: deb" > "$VSCODE_SOURCES_FILE"
+                        echo "URIs: https://packages.microsoft.com/repos/code" >> "$VSCODE_SOURCES_FILE"
+                        echo "Suites: stable" >> "$VSCODE_SOURCES_FILE"
+                        echo "Components: main" >> "$VSCODE_SOURCES_FILE"
+                        echo "Architectures: amd64,arm64,armhf" >> "$VSCODE_SOURCES_FILE"
+                        echo "Signed-By: /usr/share/keyrings/microsoft.gpg" >> "$VSCODE_SOURCES_FILE"
+                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al crear el archivo de repositorio de VS Code."; fi
                     fi
 
+                    # Paso 3: Actualizar y instalar
                     if ! $INSTALL_FAILED; then
                         apt-get update -qq > /dev/null 2>&1
                         if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al actualizar los índices de paquetes después de añadir el repositorio de VS Code."; fi
@@ -934,26 +955,27 @@ for PROGRAMA in "${PROGRAMAS_SELECCIONADOS[@]}"; do
         "sublime")
             if ! command -v subl &> /dev/null; then
                 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-                    # Asegurarse de que el directorio /etc/apt/keyrings exista
-                    mkdir -p /etc/apt/keyrings > /dev/null 2>&1
-                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al crear el directorio /etc/apt/keyrings para Sublime."; fi
+                    # Nuevo proceso de instalación para Sublime Text
+                    # Eliminar cualquier clave o archivo de repositorio antiguo
+                    rm -f /etc/apt/keyrings/sublimehq-pub.asc > /dev/null 2>&1
+                    rm -f /etc/apt/sources.list.d/sublime-text.list > /dev/null 2>&1 # Asegurarse de limpiar el .list viejo
+                    rm -f /etc/apt/sources.list.d/sublime-text.sources > /dev/null 2>&1 # Limpiar también el nuevo tipo si existe
 
+                    # Paso 1: Descargar y guardar la clave GPG
+                    wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | tee /etc/apt/keyrings/sublimehq-pub.asc > /dev/null
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al descargar o guardar la clave GPG de Sublime Text."; fi
+
+                    # Paso 2: Crear el archivo .sources para el repositorio
                     if ! $INSTALL_FAILED; then
-                        # Descargar la clave GPG y almacenarla directamente en el keyring de apt para Sublime
-                        curl -fsSL https://download.sublimetext.com/sublimehq-pub.gpg | gpg --dearmor -o /etc/apt/keyrings/sublimehq-archive.gpg > /dev/null 2>&1
-                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al descargar o procesar la clave GPG de Sublime Text."; fi
+                        SUBLIME_SOURCES_FILE="/etc/apt/sources.list.d/sublime-text.sources"
+                        echo "Types: deb" > "$SUBLIME_SOURCES_FILE"
+                        echo "URIs: https://download.sublimetext.com/" >> "$SUBLIME_SOURCES_FILE"
+                        echo "Suites: apt/stable/" >> "$SUBLIME_SOURCES_FILE"
+                        echo "Signed-By: /etc/apt/keyrings/sublimehq-pub.asc" >> "$SUBLIME_SOURCES_FILE"
+                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al crear el archivo de repositorio de Sublime Text."; fi
                     fi
 
-                    if ! $INSTALL_FAILED; then
-                        # Asegurar los permisos correctos para la clave GPG
-                        chmod a+r /etc/apt/keyrings/sublimehq-archive.gpg > /dev/null 2>&1
-                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al establecer permisos para la clave GPG de Sublime Text."; fi
-
-                        # Añadir el repositorio de Sublime Text
-                        echo "deb [signed-by=/etc/apt/keyrings/sublimehq-archive.gpg] https://download.sublimetext.com/ apt/stable/" | tee /etc/apt/sources.list.d/sublime-text.list > /dev/null
-                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al añadir el repositorio de Sublime Text."; fi
-                    fi
-
+                    # Paso 3: Actualizar e instalar
                     if ! $INSTALL_FAILED; then
                         apt-get update -qq > /dev/null 2>&1
                         if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al actualizar los índices de paquetes después de añadir el repositorio de Sublime Text."; fi
@@ -1030,18 +1052,18 @@ if $INSTALL_FAILED; then
     dialog --title "Instalación con Errores" --msgbox "La instalación de LAMP y Laravel ha finalizado, pero se detectaron errores en algunos pasos. Por favor, revisa la salida de la consola para más detalles." 10 70
 else
     MESSAGE="¡La instalación de LAMP y Laravel se ha completado con éxito!\n\n"
-    MESSAGE+="\Z1**Datos de tu proyecto:**\Z0\n"
-    MESSAGE+="-   **URL del Proyecto:** http://${PROYECTO}.test\n"
-    MESSAGE+="-   **Ubicación del Proyecto:** ${PROJECT_PATH}\n"
-    MESSAGE+="-   **Verificación PHP:** http://TU_IP/info.php\n"
-    MESSAGE+="-   **phpMyAdmin:** http://TU_IP/phpmyadmin\n\n"
-    MESSAGE+="\Z1**Credenciales de Base de Datos:**\Z0\n"
-    MESSAGE+="-   **Usuario Root (${DBASE}):** root\n"
-    MESSAGE+="-   **Contraseña Root (${DBASE}):** ${PASSROOT}\n"
-    MESSAGE+="-   **Usuario phpMyAdmin:** phpmyadmin\n"
-    MESSAGE+="-   **Contraseña phpMyAdmin:** ${PASSPHP}\n\n"
-    MESSAGE+="\Z1**¡IMPORTANTE!**\Z0 En tu equipo local (no en el servidor), debes añadir la siguiente línea a tu archivo \`/etc/hosts\` (o \`C:\\Windows\\System32\\drivers\\etc\\hosts\` en Windows) para que el dominio \`${PROYECTO}.test\` funcione:\n"
-    MESSAGE+="    \Z4**127.0.0.1    ${PROYECTO}.test**\Z0\n\n"
+    MESSAGE+="Datos de tu proyecto:\n"
+    MESSAGE+="-   URL del Proyecto: http://${PROYECTO}.test\n"
+    MESSAGE+="-   Ubicación del Proyecto: ${PROJECT_PATH}\n"
+    MESSAGE+="-   Verificación PHP: http://TU_IP/info.php\n"
+    MESSAGE+="-   phpMyAdmin: http://TU_IP/phpmyadmin\n\n"
+    MESSAGE+="Credenciales de Base de Datos:\n"
+    MESSAGE+="-   Usuario Root (${DBASE}): root\n"
+    MESSAGE+="-   Contraseña Root (${DBASE}): ${PASSROOT}\n"
+    MESSAGE+="-   Usuario phpMyAdmin: phpmyadmin\n"
+    MESSAGE+="-   Contraseña phpMyAdmin: ${PASSPHP}\n\n"
+    MESSAGE+="¡IMPORTANTE! En tu equipo local (no en el servidor), debes añadir la siguiente línea a tu archivo `/etc/hosts` (o `C:\\Windows\\System32\\drivers\\etc\\hosts` en Windows) para que el dominio `${PROYECTO}.test` funcione:\n"
+    MESSAGE+="    127.0.0.1    ${PROYECTO}.test\n\n"
     MESSAGE+="Presiona ENTER para limpiar la pantalla."
 
     dialog --title "Instalación Completada con Éxito" --msgbox "$MESSAGE" 25 80
