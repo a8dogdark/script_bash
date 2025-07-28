@@ -62,10 +62,12 @@ fi
 echo "Sistema detectado: $DISTRO $VERSION_SO ($PRETTY_NAME)"
 echo "Versión del script: $VERSION_SCRIPT"
 
-# Instalar dialog en segundo plano si no está instalado
+# Instalar dialog si no está instalado (en segundo plano)
 if ! command -v dialog &> /dev/null; then
     echo "dialog no encontrado, instalando en segundo plano..."
-    (apt-get update && apt-get install -y dialog) &
+    (
+        apt-get install -y dialog
+    ) &
     PID=$!
     wait $PID
 fi
@@ -99,4 +101,5 @@ if [ $response -ne 0 ]; then
     echo "Instalación cancelada por el usuario."
     exit 0
 fi
+
 clear
