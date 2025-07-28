@@ -133,3 +133,21 @@ if [ $response -ne 0 ] || [ -z "$ROOTDB_PASS" ]; then
     exit 0
 fi
 clear
+
+# Menú para seleccionar versión de PHP
+dialog --title "Selecciona la versión de PHP" \
+       --menu "Elige una versión de PHP para Laravel 12 (solo una opción):" 10 60 3 \
+       8.2 "PHP 8.2" \
+       8.3 "PHP 8.3" \
+       8.4 "PHP 8.4" 2> /tmp/php_version
+
+response=$?
+PHP_VERSION=$(cat /tmp/php_version)
+rm -f /tmp/php_version
+
+if [ $response -ne 0 ] || [ -z "$PHP_VERSION" ]; then
+    dialog --title "Error" --msgbox "No seleccionaste ninguna versión de PHP." 8 50
+    clear
+    exit 0
+fi
+clear
