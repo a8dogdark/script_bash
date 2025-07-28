@@ -2,6 +2,7 @@
 
 VERSION="2.0"
 DISTRO=""
+DBASE="" # Se inicializará según la distribución
 PASSPHP=""
 PASSROOT=""
 PROYECTO=""
@@ -30,11 +31,13 @@ else
     exit 1
 fi
 
-# Detectar qué base de datos se utilizará según la distribución
-if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-    DBASE="MariaDB"
+# Detectar qué base de datos se utilizará según la distribución y la nueva regla
+if [ "$DISTRO" = "Ubuntu" ]; then
+    DBASE="MySQL" # Por solicitud del usuario
+elif [ "$DISTRO" = "Debian" ]; then
+    DBASE="MariaDB" # Recomendada para Debian
 elif [ "$DISTRO" = "AlmaLinux" ]; then
-    DBASE="MySQL" # AlmaLinux usa MySQL por defecto o se puede instalar MariaDB
+    DBASE="MySQL" # Recomendada para AlmaLinux
 fi
 
 # Validar que el sistema sea de 64 bits
@@ -503,17 +506,20 @@ if [ "$DBASE" = "MariaDB" ]; then
         if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
             DEBIAN_FRONTEND=noninteractive apt-get install -y -qq mariadb-server mariadb-client > /dev/null 2>&1
             if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar MariaDB."; fi
-        elif [ "$DISTRO" = "AlmaLinux" ]; then
-            yum install -y -q mariadb-server mariadb > /dev/null 2>&1
-            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar MariaDB."; fi
+        # El bloque AlmaLinux aquí no es necesario porque DBASE será MySQL para AlmaLinux
         fi
     else
         DB_INSTALLED_FLAG=true
     fi
-elif [ "$DBASE" = "MySQL" ]; then
-    if ! rpm -q mysql-server &> /dev/null; then
-        yum install -y -q mysql-server > /dev/null 2>&1
-        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar MySQL."; fi
+elif [ "$DBASE" = "MySQL" ]; then # Este bloque maneja tanto Ubuntu (ahora) como AlmaLinux
+    if ! rpm -q mysql-server &> /dev/null && ! dpkg -s mysql-server &> /dev/null; then
+        if [ "$DISTRO" = "Ubuntu" ]; then
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq mysql-server mysql-client > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar MySQL."; fi
+        elif [ "$DISTRO" = "AlmaLinux" ]; then
+            yum install -y -q mysql-server > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar MySQL."; fi
+        fi
     else
         DB_INSTALLED_FLAG=true
     fi
@@ -554,8 +560,10 @@ EOF_MYSQL_SECURE
             if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al ejecutar mysql_secure_installation. Revisa la consola para errores."; fi
 
             if ! $INSTALL_FAILED; then
+                # Adaptar comandos SQL según la base de datos
                 if [ "$DBASE" = "MariaDB" ]; then
                     mysql -u root -p"$PASSROOT" <<EOF_SQL
+-- MariaDB specific: ensure root uses mysql_native_password for compatibility
 UPDATE mysql.user SET plugin='mysql_native_password' WHERE User='root' AND Host='localhost';
 FLUSH PRIVILEGES;
 CREATE USER 'phpmyadmin'@'localhost' IDENTIFIED BY '$PASSPHP';
@@ -565,6 +573,7 @@ EOF_SQL
                     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al configurar MariaDB con usuario phpmyadmin."; fi
                 elif [ "$DBASE" = "MySQL" ]; then
                     mysql -u root -p"$PASSROOT" <<EOF_SQL
+-- MySQL specific: default plugin (caching_sha2_password) is usually fine.
 CREATE USER 'phpmyadmin'@'localhost' IDENTIFIED BY '$PASSPHP';
 GRANT ALL PRIVILEGES ON *.* TO 'phpmyadmin'@'localhost' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
@@ -793,6 +802,9 @@ if ! $INSTALL_FAILED; then
             # Temporalmente dar permisos de escritura para sed
             chmod 664 "$ENV_FILE" > /dev/null 2>&1
             
+            sed -i "s/^DB_CONNECTION=.*/DB_CONNECTION=mysql/" "$ENV_FILE" # Asegura que la conexión es MySQL
+            sed -i "s/^DB_HOST=.*/DB_HOST=127.0.0.1/" "$ENV_FILE"
+            sed -i "s/^DB_PORT=.*/DB_PORT=3306/" "$ENV_FILE"
             sed -i "s/^DB_DATABASE=.*/DB_DATABASE=${PROYECTO}/" "$ENV_FILE"
             sed -i "s/^DB_USERNAME=.*/DB_USERNAME=root/" "$ENV_FILE"
             sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=${PASSROOT}/" "$ENV_FILE"
