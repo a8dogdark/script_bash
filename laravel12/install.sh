@@ -597,6 +597,7 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
         update_progress "Configurando PHP-FPM y Apache para AlmaLinux..."
         systemctl enable --now php-fpm > /dev/null 2>&1
         systemctl is-active --quiet php-fpm || systemctl start php-fpm > /dev/null 2>&1
+        systemctl is-enabled --quiet php-fpm || systemctl enable php-fpm > /dev/null 2>&1
         # Añadir configuración ProxyPassMatch solo si no existe para evitar duplicados
         if ! grep -q "ProxyPassMatch" /etc/httpd/conf.d/php-fpm.conf &> /dev/null; then
             echo "<FilesMatch \.php$>" | tee -a /etc/httpd/conf.d/php-fpm.conf > /dev/null
@@ -730,6 +731,14 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     update_progress "Creando proyecto Laravel '$PROJECT_NAME' con Pest en /var/www/laravel..."
     # Mover al directorio donde se creará el proyecto
     cd /var/www/laravel/ > /dev/null 2>&1
+
+    # --- INICIO DE DEPURACION ---
+    # Imprime el valor de PROJECT_NAME. Esto aparecerá en la terminal debajo del diálogo.
+    echo "DEBUG: Valor de PROJECT_NAME antes de laravel new: '$PROJECT_NAME'"
+    # Imprime el comando que se va a ejecutar
+    echo "DEBUG: Comando a ejecutar: laravel new \"$PROJECT_NAME\" --no-interaction --pest"
+    # --- FIN DE DEPURACION ---
+
     # *** IMPORTANTE: Se ha quitado > /dev/null 2>&1 para depuración ***
     laravel new "$PROJECT_NAME" --no-interaction --pest
     sleep 2
