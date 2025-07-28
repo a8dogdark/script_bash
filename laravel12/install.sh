@@ -62,7 +62,7 @@ case "$DISTRO" in
         ;;
 esac
 
-# Validar e instalar 'dialog' en segundo plano si no está presente
+# Validar e instalar 'dialog' en segundo plano si no está presente (curl se instala más adelante)
 if ! command -v dialog &> /dev/null; then
     case "$DISTRO" in
         ubuntu|debian)
@@ -81,7 +81,7 @@ fi
 # Cuadro de bienvenida con información de paquetes y opciones Aceptar/Salir
 dialog --clear --backtitle "Instalador de Sistema v$VEROS" \
 --title "Bienvenido al Instalador de Laravel 12" \
---yesno "\nEste script preparara tu sistema para Laravel 12.\n\nSe instalaran los siguientes paquetes:\n- Apache2\n- PHP (y extensiones necesarias)\n- $DB_PACKAGE\n- phpMyAdmin\n- Node.js\n\n¿Deseas continuar con la instalacion?" 18 70
+--yesno "\nEste script preparara tu sistema para Laravel 12.\n\nSe instalaran los siguientes paquetes:\n- Apache2\n- PHP (y extensiones necesarias)\n- $DB_PACKAGE\n- phpMyAdmin\n- Node.js\n- Git, Unzip y Curl (utilidades esenciales)\n\n¿Deseas continuar con la instalacion?" 18 70
 
 response=$?
 case $response in
@@ -183,9 +183,9 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
 # Inicializar la barra de progreso en segundo plano
 (
     current_progress=0
-    # Estimación de pasos base (sin software adicional): 48 pasos
+    # Estimación de pasos base (sin software adicional): 48 pasos + 1 (git, unzip, curl) = 49
     # Cada software adicional seleccionado añade 1 paso (instalación o verificación/omisión)
-    total_steps=48 # Base
+    total_steps=49 # Base ajustada
     if [[ "$ADDITIONAL_SOFTWARE" == *"vscode"* ]]; then total_steps=$((total_steps + 1)); fi
     if [[ "$ADDITIONAL_SOFTWARE" == *"sublime"* ]]; then total_steps=$((total_steps + 1)); fi
     if [[ "$ADDITIONAL_SOFTWARE" == *"brave"* ]]; then total_steps=$((total_steps + 1)); fi
@@ -228,7 +228,19 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     esac
     sleep 1
 
-    # 3. Añadir repositorio PPA de Ondrej (Solo para Debian/Ubuntu, si no existe)
+    # 3. Instalar utilidades esenciales: curl, unzip, git (después de update/upgrade)
+    update_progress "Instalando utilidades esenciales (curl, unzip, git)..." 1
+    case "$DISTRO" in
+        ubuntu|debian)
+            apt install -y curl unzip git > /dev/null 2>&1
+            ;;
+        almalinux)
+            dnf install -y curl unzip git > /dev/null 2>&1
+            ;;
+    esac
+    sleep 1
+
+    # 4. Añadir repositorio PPA de Ondrej (Solo para Debian/Ubuntu, si no existe)
     if [[ "$DISTRO" == "ubuntu" || "$DISTRO" == "debian" ]]; then
         update_progress "Verificando e integrando PPA de Ondrej..." 1
         if ! grep -q "ondrej/php" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
@@ -241,7 +253,7 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
         sleep 0.5 # Mínimo sleep para consistencia de progreso
     fi
 
-    # 4. Añadir repositorio de NodeSource para Node.js 20 (LTS)
+    # 5. Añadir repositorio de NodeSource para Node.js 20 (LTS)
     update_progress "Añadiendo repositorio de Node.js 20 (LTS)..." 2
     if ! command -v node &> /dev/null || [[ "$(node -v)" != "v20."* ]]; then
         case "$DISTRO" in
@@ -255,7 +267,7 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     fi
     sleep 1
 
-    # 5. Instalar Node.js y npm
+    # 6. Instalar Node.js y npm
     update_progress "Instalando Node.js y npm..." 2
     if ! command -v node &> /dev/null || [[ "$(node -v)" != "v20."* ]]; then
         case "$DISTRO" in
@@ -269,7 +281,7 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     fi
     sleep 1
 
-    # 6. Instalar Apache2 (si no está instalado)
+    # 7. Instalar Apache2 (si no está instalado)
     update_progress "Verificando e instalando Apache2..." 2
     case "$DISTRO" in
         ubuntu|debian)
@@ -288,7 +300,7 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     esac
     sleep 1
 
-    # 7. Habilitar módulo mod_rewrite para Apache
+    # 8. Habilitar módulo mod_rewrite para Apache
     update_progress "Habilitando mod_rewrite y reiniciando Apache..." 1
     case "$DISTRO" in
         ubuntu|debian)
@@ -301,7 +313,7 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     esac
     sleep 1
 
-    # 8. Instalar PHP y extensiones (granular)
+    # 9. Instalar PHP y extensiones (granular)
     case "$DISTRO" in
         ubuntu|debian)
             # Instalación del paquete principal de PHP
@@ -452,7 +464,7 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     esac
     sleep 1 # Un sleep final para el bloque de PHP
 
-    # 9. Instalar la base de datos (MySQL/MariaDB)
+    # 10. Instalar la base de datos (MySQL/MariaDB)
     update_progress "Verificando e instalando $DB_TYPE..." 3
     case "$DISTRO" in
         ubuntu|debian)
@@ -471,7 +483,7 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     esac
     sleep 1
 
-    # 10. Configurar contraseña para el usuario root de la base de datos
+    # 11. Configurar contraseña para el usuario root de la base de datos
     update_progress "Configurando contraseña de root para $DB_TYPE..." 2
     case "$DISTRO" in
         ubuntu|debian)
@@ -489,7 +501,7 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     esac
     sleep 1
 
-    # 11. Instalar phpMyAdmin
+    # 12. Instalar phpMyAdmin
     update_progress "Verificando e instalando phpMyAdmin..." 2
     case "$DISTRO" in
         ubuntu|debian)
@@ -515,7 +527,7 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     esac
     sleep 1
 
-    # 12. Configurar phpMyAdmin y crear usuario de base de datos
+    # 13. Configurar phpMyAdmin y crear usuario de base de datos
     update_progress "Configurando phpMyAdmin y usuario de base de datos..." 2
     case "$DISTRO" in
         ubuntu|debian)
@@ -547,7 +559,7 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     esac
     sleep 1
 
-    # 13. Instalar Composer
+    # 14. Instalar Composer
     update_progress "Verificando e instalando Composer..." 1
     if ! command -v composer &> /dev/null; then
         php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" > /dev/null 2>&1
@@ -556,7 +568,7 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     fi
     sleep 1
 
-    # 14. Configurar PATH para el instalador global de Composer (Laravel Installer)
+    # 15. Configurar PATH para el instalador global de Composer (Laravel Installer)
     update_progress "Configurando PATH para Laravel Installer..." 1
     # Directorio de binarios globales de Composer
     COMPOSER_BIN_DIR="$HOME/.config/composer/vendor/bin"
@@ -574,26 +586,26 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     # Nota: El usuario tendrá que recargar .bashrc o abrir una nueva terminal para que esto surta efecto.
     sleep 1
 
-    # 15. Instalar Laravel Installer
+    # 16. Instalar Laravel Installer
     update_progress "Instalando Laravel Installer..." 1
     if ! command -v laravel &> /dev/null; then
         composer global require laravel/installer > /dev/null 2>&1
     fi
     sleep 1
 
-    # 16. Crear directorio /var/www/laravel
+    # 17. Crear directorio /var/www/laravel
     update_progress "Creando directorio /var/www/laravel..." 1
     mkdir -p /var/www/laravel > /dev/null 2>&1
     sleep 1
 
-    # 17. Crear proyecto Laravel dentro de /var/www/laravel con Pest
+    # 18. Crear proyecto Laravel dentro de /var/www/laravel con Pest
     update_progress "Creando proyecto Laravel '$PROJECT_NAME' con Pest en /var/www/laravel..." 3
     # Mover al directorio donde se creará el proyecto
     cd /var/www/laravel/ > /dev/null 2>&1
     laravel new "$PROJECT_NAME" --no-interaction --pest > /dev/null 2>&1
     sleep 2
 
-    # 18. Configurar .env del proyecto Laravel para la base de datos
+    # 19. Configurar .env del proyecto Laravel para la base de datos
     update_progress "Configurando archivo .env para la base de datos..." 2
     PROJECT_PATH="/var/www/laravel/$PROJECT_NAME"
     DB_NAME=$(echo "$PROJECT_NAME" | tr '-' '_' | tr '.' '_') # Convierte el nombre del proyecto a un nombre de BD válido
@@ -607,46 +619,46 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     sed -i "/^DB_PORT=/c\DB_PORT=$DB_PORT" "$PROJECT_PATH/.env" > /dev/null 2>&1
     sleep 1
 
-    # 19. Crear la base de datos para el proyecto
+    # 20. Crear la base de datos para el proyecto
     update_progress "Creando base de datos '$DB_NAME' para el proyecto..." 2
     mysql -u $DB_ROOT_USER -p"$DB_ROOT_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS $DB_NAME;" > /dev/null 2>&1
     sleep 1
 
-    # 20. Ejecutar php artisan migrate
+    # 21. Ejecutar php artisan migrate
     update_progress "Ejecutando migraciones de Laravel..." 2
     cd "$PROJECT_PATH" > /dev/null 2>&1
     php artisan migrate --force > /dev/null 2>&1
     sleep 2
 
-    # 21. Instalar paquete de idioma español para Laravel
+    # 22. Instalar paquete de idioma español para Laravel
     update_progress "Instalando paquete de idioma español (laravel-lang/lang)..." 2
     cd "$PROJECT_PATH" > /dev/null 2>&1
     composer require laravel-lang/lang --no-interaction > /dev/null 2>&1
     sleep 2
 
-    # 22. Publicar archivos de idioma español
+    # 23. Publicar archivos de idioma español
     update_progress "Publicando archivos de idioma español..." 2
     php artisan lang:publish es --no-interaction > /dev/null 2>&1
     sleep 1
 
-    # 23. Configurar el idioma por defecto en config/app.php
+    # 24. Configurar el idioma por defecto en config/app.php
     update_progress "Configurando idioma por defecto a español en config/app.php..." 1
     sed -i "s/^    'locale' => 'en',/    'locale' => 'es',/" "$PROJECT_PATH/config/app.php" > /dev/null 2>&1
     sleep 0.5
 
-    # 24. Ejecutar npm install
+    # 25. Ejecutar npm install
     update_progress "Ejecutando npm install para dependencias frontend..." 3
     cd "$PROJECT_PATH" > /dev/null 2>&1
     npm install --silent > /dev/null 2>&1
     sleep 3
 
-    # 25. Ejecutar npm run build (o npm run dev)
+    # 26. Ejecutar npm run build (o npm run dev)
     update_progress "Compilando assets frontend con npm run build..." 3
     cd "$PROJECT_PATH" > /dev/null 2>&1
     npm run build --silent > /dev/null 2>&1
     sleep 3
 
-    # 26. Configurar permisos del proyecto Laravel
+    # 27. Configurar permisos del proyecto Laravel
     update_progress "Configurando permisos del proyecto Laravel..." 2
     # Establecer propietario del directorio del proyecto al usuario de Apache
     case "$DISTRO" in
@@ -662,7 +674,7 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     chmod -R 775 "/var/www/laravel/$PROJECT_NAME/bootstrap/cache" > /dev/null 2>&1
     sleep 1
 
-    # 27. Configurar Virtual Host de Apache para el proyecto Laravel
+    # 28. Configurar Virtual Host de Apache para el proyecto Laravel
     update_progress "Configurando Virtual Host de Apache para '$PROJECT_NAME.test'..." 2
     # El nombre de dominio local
     LOCAL_DOMAIN="$PROJECT_NAME.test"
@@ -694,7 +706,7 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     esac
     sleep 1
 
-    # 28. Modificar el archivo /etc/hosts para el dominio local
+    # 29. Modificar el archivo /etc/hosts para el dominio local
     update_progress "Agregando '$PROJECT_NAME.test' al archivo /etc/hosts..." 1
     LOCAL_HOSTS_ENTRY="127.0.0.1\t$LOCAL_DOMAIN"
     # Verificar si la entrada ya existe para evitar duplicados
@@ -711,7 +723,8 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
             # Comandos de instalación para VS Code
             case "$DISTRO" in
                 ubuntu|debian)
-                    apt install -y wget apt-transport-https > /dev/null 2>&1
+                    # wget ya está disponible por el paso anterior
+                    apt install -y apt-transport-https > /dev/null 2>&1
                     wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
                     install -D -o -g -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg > /dev/null 2>&1
                     echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/vscode stable main" | tee /etc/apt/sources.list.d/vscode.list > /dev/null
@@ -720,6 +733,7 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
                     apt install -y code > /dev/null 2>&1
                     ;;
                 almalinux)
+                    # wget ya está disponible por el paso anterior
                     rpm --import https://packages.microsoft.com/keys/microsoft.asc > /dev/null 2>&1
                     echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" | tee /etc/yum.repos.d/vscode.repo > /dev/null
                     dnf check-update > /dev/null 2>&1
@@ -740,7 +754,8 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
             # Comandos de instalación para Sublime Text
             case "$DISTRO" in
                 ubuntu|debian)
-                    apt install -y wget apt-transport-https > /dev/null 2>&1
+                    # wget ya está disponible por el paso anterior
+                    apt install -y apt-transport-https > /dev/null 2>&1
                     wget -qO - https://download.sublimetext.com/apt/rpm-pub-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/sublimehq-archive.gpg > /dev/null
                     echo "deb https://download.sublimetext.com/apt/stable/" | tee /etc/apt/sources.list.d/sublime-text.list > /dev/null
                     apt update > /dev/null 2>&1
@@ -766,14 +781,14 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
             # Comandos de instalación para Brave Browser
             case "$DISTRO" in
                 ubuntu|debian)
-                    apt install -y curl > /dev/null 2>&1
+                    # curl ya está disponible por el paso anterior
                     curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg > /dev/null 2>&1
                     echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" | tee /etc/apt/sources.list.d/brave-browser-release.list > /dev/null
                     apt update > /dev/null 2>&1
                     apt install -y brave-browser > /dev/null 2>&1
                     ;;
                 almalinux)
-                    dnf install -y curl > /dev/null 2>&1
+                    # curl ya está disponible por el paso anterior
                     rpm --import https://brave-browser-rpm-release.s3.brave.com/brave-core.asc > /dev/null 2>&1
                     echo -e "[brave-browser]\nname=Brave Browser\nbaseurl=https://brave-browser-rpm-release.s3.brave.com/x86_64/\nenabled=1\ngpgcheck=1\ngpgkey=https://brave-browser-rpm-release.s3.brave.com/brave-core.asc" | tee /etc/yum.repos.d/brave-browser.repo > /dev/null
                     dnf install -y brave-browser > /dev/null 2>&1
@@ -793,8 +808,8 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
             # Comandos de instalación para Google Chrome
             case "$DISTRO" in
                 ubuntu|debian)
-                    # Instalar paquetes necesarios para añadir el repositorio
-                    apt install -y wget apt-transport-https gnupg > /dev/null 2>&1
+                    # wget y gnupg ya están disponibles por el paso anterior
+                    apt install -y apt-transport-https > /dev/null 2>&1
                     # Descargar la clave de Google
                     wget -qO- https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor | tee /etc/apt/keyrings/google-chrome.gpg > /dev/null
                     # Añadir el repositorio de Google Chrome
@@ -804,7 +819,7 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
                     apt install -y google-chrome-stable > /dev/null 2>&1
                     ;;
                 almalinux)
-                    dnf install -y wget > /dev/null 2>&1
+                    # wget ya está disponible por el paso anterior
                     # Añadir el repositorio de Google Chrome para Fedora/RHEL
                     echo -e "[google-chrome]\nname=google-chrome\nbaseurl=https://dl.google.com/linux/chrome/rpm/stable/x86_64\nenabled=1\ngpgcheck=1\ngpgkey=https://dl.google.com/linux/linux_signing_key.pub" | tee /etc/yum.repos.d/google-chrome.repo > /dev/null
                     dnf install -y google-chrome-stable > /dev/null 2>&1
