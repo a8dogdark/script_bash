@@ -7,6 +7,7 @@ PASSROOT=""
 PROYECTO=""
 DBASE=""
 PHP_VERSION="" # Nueva variable para almacenar la versión de PHP seleccionada
+PROGRAMAS_SELECCIONADOS=() # Array para almacenar los programas seleccionados
 
 # Valida si el script se está ejecutando como root
 if [ "$(id -u)" -ne 0 ]; then
@@ -116,7 +117,8 @@ PHP_VERSION=$(dialog --clear --stdout \
                      --menu "Laravel 12 es compatible con PHP 8.2 y superior. Selecciona la versión de PHP a instalar:" 15 50 3 \
                      "8.2" "Recomendada para Laravel 12" \
                      "8.3" "Versión más reciente con mejoras" \
-                     "8.4" "Versión en desarrollo (no recomendada para producción)" )
+                     "8.4" "Versión en desarrollo (no recomendada para producción)" \
+                     --default-item "8.2") # Establece 8.2 como la opción por defecto
 
 php_choice_exit_code=$?
 if [ "$php_choice_exit_code" -ne 0 ]; then
@@ -124,6 +126,26 @@ if [ "$php_choice_exit_code" -ne 0 ]; then
     echo "Instalación cancelada por el usuario."
     exit 0
 fi
+
+# Cuadro de selección de programas
+PROGRAMAS_SELECCIONADOS_STR=$(dialog --clear --stdout \
+                                     --title "Selección de Programas Adicionales" \
+                                     --checklist "Selecciona uno o más programas para instalar:" 18 60 4 \
+                                     "vscode" "Visual Studio Code" OFF \
+                                     "sublime" "Sublime Text" OFF \
+                                     "brave" "Brave Browser" OFF \
+                                     "chrome" "Google Chrome" OFF )
+
+programs_choice_exit_code=$?
+if [ "$programs_choice_exit_code" -ne 0 ]; then
+    clear
+    echo "Instalación cancelada por el usuario."
+    exit 0
+fi
+
+# Convertir la cadena de programas seleccionados en un array
+IFS=' ' read -r -a PROGRAMAS_SELECCIONADOS <<< "$PROGRAMAS_SELECCIONADOS_STR"
+
 
 # Este script instalará LAMP y las dependencias necesarias para Laravel 12.
 # Está diseñado para ser ejecutado en Ubuntu 24 y es compatible con Ubuntu 23, 22, Debian 11, 12 y AlmaLinux.
