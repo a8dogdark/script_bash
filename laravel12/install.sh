@@ -366,28 +366,27 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     fi
     sleep 1
 
-    # 3. Instalar utilidades esenciales: curl, unzip, git (con validación)
+    # 3. Instalar utilidades esenciales: curl, unzip, git (con validación y más robusto)
     update_progress "Instalando utilidades esenciales (curl, unzip, git)..."
+    INSTALL_PACKAGES=""
     if is_ubuntu_debian; then
-        INSTALL_PACKAGES=""
         if ! command -v curl &> /dev/null; then INSTALL_PACKAGES+=" curl"; fi
         if ! command -v unzip &> /dev/null; then INSTALL_PACKAGES+=" unzip"; fi
         if ! command -v git &> /dev/null; then INSTALL_PACKAGES+=" git"; fi
-        
         if [ -n "$INSTALL_PACKAGES" ]; then
+            # Instalar en el mismo paso que la actualización inicial para asegurar que estén disponibles
             apt install -y $INSTALL_PACKAGES > /dev/null 2>&1
         fi
     elif is_almalinux; then
-        INSTALL_PACKAGES=""
         if ! command -v curl &> /dev/null; then INSTALL_PACKAGES+=" curl"; fi
         if ! command -v unzip &> /dev/null; then INSTALL_PACKAGES+=" unzip"; fi
         if ! command -v git &> /dev/null; then INSTALL_PACKAGES+=" git"; fi
-
         if [ -n "$INSTALL_PACKAGES" ]; then
             dnf install -y $INSTALL_PACKAGES > /dev/null 2>&1
         fi
     fi
     sleep 1
+
 
     # 4. Añadir repositorio PPA de Ondrej (Solo para Debian/Ubuntu, si no existe)
     if is_ubuntu_debian; then
@@ -414,6 +413,7 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
 
     # 5. Añadir repositorio de NodeSource para Node.js 20 (LTS)
     update_progress "Añadiendo repositorio de Node.js 20 (LTS)..."
+    # La comprobación para `curl` se hizo antes, así que debería estar disponible ahora.
     if ! command -v node &> /dev/null || [[ "$(node -v)" != "v20."* ]]; then
         if is_ubuntu_debian; then
             curl -fsSL https://deb.nodesource.com/setup_20.x | bash - > /dev/null 2>&1
@@ -698,27 +698,51 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
 
     # 15. Configurar PATH para el instalador global de Composer (Laravel Installer)
     update_progress "Configurando PATH para Laravel Installer..."
-    # Directorio de binarios globales de Composer
-    COMPOSER_BIN_DIR="$HOME/.config/composer/vendor/bin"
-    if [ ! -d "$COMPOSER_BIN_DIR" ]; then
-        COMPOSER_BIN_DIR="$HOME/.composer/vendor/bin" # Ubicación alternativa para versiones antiguas de Composer
+    # Directorio de binarios globales de Composer (para el usuario root)
+    # Composer puede usar $HOME/.composer/vendor/bin o $HOME/.config/composer/vendor/bin
+    COMPOSER_BIN_DIR=""
+    if [ -d "/root/.config/composer/vendor/bin" ]; then
+        COMPOSER_BIN_DIR="/root/.config/composer/vendor/bin"
+    elif [ -d "/root/.composer/vendor/bin" ]; then
+        COMPOSER_BIN_DIR="/root/.composer/vendor/bin"
     fi
 
-    # Línea a agregar al .bashrc
+    if [ -n "$COMPOSER_BIN_DIR" ] && [[ ":$PATH:" != *":$COMPOSER_BIN_DIR:"* ]]; then
+        export PATH="$PATH:$COMPOSER_BIN_DIR"
+    fi
+    # Nota: La línea del .bashrc se mantiene para futuras sesiones del usuario root,
+    # pero el 'export PATH' directo es crucial para esta ejecución del script.
     EXPORT_PATH_LINE="export PATH=\"\$PATH:$COMPOSER_BIN_DIR\""
-
-    # Verificar si la línea ya existe en .bashrc para evitar duplicados
-    if ! grep -qxF "$EXPORT_PATH_LINE" "$HOME/.bashrc"; then
-        echo "$EXPORT_PATH_LINE" >> "$HOME/.bashrc"
+    if [ -n "$COMPOSER_BIN_DIR" ] && ! grep -qxF "$EXPORT_PATH_LINE" "/root/.bashrc"; then
+        echo "$EXPORT_PATH_LINE" >> "/root/.bashrc"
     fi
-    # Nota: El usuario tendrá que recargar .bashrc o abrir una nueva terminal para que esto surta efecto.
     sleep 1
 
     # 16. Instalar Laravel Installer
     update_progress "Instalando Laravel Installer..."
     if ! command -v laravel &> /dev/null; then
-        # *** CORRECCIÓN: Añadido --no-interaction aquí ***
+        # Asegurarse de que Composer esté disponible en el PATH antes de usarlo
+        if ! command -v composer &> /dev/null; then
+            echo "ERROR: Composer no encontrado en PATH. Revisa la instalación de Composer."
+            echo 100
+            echo "XXX"
+            echo "ERROR: Composer no encontrado."
+            echo "XXX"
+            sleep 2
+            exit 1
+        fi
         composer global require laravel/installer --no-interaction > /dev/null 2>&1
+        # Después de instalar, es posible que necesitemos recargar el PATH de nuevo si el instalador
+        # crea el directorio binario o lo cambia de alguna manera.
+        # Volvemos a chequear y exportar por si acaso.
+        if [ -d "/root/.config/composer/vendor/bin" ]; then
+            COMPOSER_BIN_DIR="/root/.config/composer/vendor/bin"
+        elif [ -d "/root/.composer/vendor/bin" ]; then
+            COMPOSER_BIN_DIR="/root/.composer/vendor/bin"
+        fi
+        if [ -n "$COMPOSER_BIN_DIR" ] && [[ ":$PATH:" != *":$COMPOSER_BIN_DIR:"* ]]; then
+            export PATH="$PATH:$COMPOSER_BIN_DIR"
+        fi
     fi
     sleep 1
 
@@ -734,13 +758,24 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
 
     # --- INICIO DE DEPURACION ---
     # Imprime el valor de PROJECT_NAME. Esto aparecerá en la terminal debajo del diálogo.
-    echo "DEBUG: Valor de PROJECT_NAME antes de laravel new: '$PROJECT_NAME'"
+    echo "DEBUG: Valor de PROJECT_NAME antes de laravel new: '$PROJECT_NAME'" > /dev/stderr
     # Imprime el comando que se va a ejecutar
-    echo "DEBUG: Comando a ejecutar: laravel new \"$PROJECT_NAME\" --no-interaction --pest"
+    echo "DEBUG: Comando a ejecutar: laravel new \"$PROJECT_NAME\" --no-interaction --pest" > /dev/stderr
     # --- FIN DE DEPURACION ---
 
-    # *** IMPORTANTE: Se ha quitado > /dev/null 2>&1 para depuración ***
+    # Ejecutar el comando laravel new. La salida no se redirige a /dev/null para ver errores.
     laravel new "$PROJECT_NAME" --no-interaction --pest
+    # Verificar el código de salida del comando anterior
+    if [ $? -ne 0 ]; then
+        echo "ERROR: Falló la creación del proyecto Laravel con 'laravel new \"$PROJECT_NAME\"'. Revisa los mensajes de error anteriores." > /dev/stderr
+        echo 100
+        echo "XXX"
+        echo "ERROR: Falló la creación del proyecto Laravel."
+        echo "XXX"
+        sleep 2
+        exit 1
+    fi
+
     sleep 2
 
     # 19. Configurar .env del proyecto Laravel para la base de datos
@@ -759,7 +794,7 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
 
     # 20. Crear la base de datos para el proyecto
     update_progress "Creando base de datos '$DB_NAME' para el proyecto..."
-    mysql -u $DB_ROOT_USER -p"$DB_ROOT_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS $DB_NAME;" > /dev/null 2>&1
+    mysql -u "$DB_ROOT_USER" -p"$DB_ROOT_PASSWORD" -e "CREATE DATABASE IF NOT EXISTS $DB_NAME;" > /dev/null 2>&1
     sleep 1
 
     # 21. Ejecutar php artisan migrate
@@ -787,14 +822,14 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     # 25. Ejecutar npm install
     update_progress "Ejecutando npm install para dependencias frontend..."
     cd "$PROJECT_PATH" > /dev/null 2>&1
-    # *** IMPORTANTE: Se ha quitado > /dev/null 2>&1 para depuración ***
+    # La salida no se redirige a /dev/null para ver errores.
     npm install --silent
     sleep 3
 
     # 26. Ejecutar npm run build (o npm run dev)
     update_progress "Compilando assets frontend con npm run build..."
     cd "$PROJECT_PATH" > /dev/null 2>&1
-    # *** IMPORTANTE: Se ha quitado > /dev/null 2>&1 para depuración ***
+    # La salida no se redirige a /dev/null para ver errores.
     npm run build --silent
     sleep 3
 
