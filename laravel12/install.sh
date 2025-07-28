@@ -488,7 +488,7 @@ if ! $INSTALL_FAILED; then
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         # Deshabilitar otras versiones de PHP FPM si existen y habilitar la seleccionada
         INSTALLED_PHP_FPM_VERSIONS=$(dpkg -l | grep -oP 'php\d\.\d-fpm' | sed 's/php//;s/-fpm//' | sort -rV)
-        for version in $INSTALLED_PHP_FPM_VERSions; do
+        for version in $INSTALLED_PHP_FPM_VERSIONS; do
             if [ "$version" != "$PHP_VERSION" ]; then
                 a2dismod "php${version}" > /dev/null 2>&1
                 systemctl stop "php${version}-fpm" > /dev/null 2>&1
@@ -545,12 +545,32 @@ echo "Instalando: Node.js..."
 sleep 1 # Simula el tiempo de instalación
 echo "XXX"
 
-# 90% - Creando proyecto Laravel...
+# 85% - Creando proyecto Laravel...
 echo "XXX"
-echo "90"
+echo "85"
 echo "Creando proyecto Laravel: $PROYECTO..."
 # Placeholder for Laravel project creation logic
 sleep 1 # Simula el tiempo de instalación
+echo "XXX"
+
+# 90% - Creando archivo info.php para verificación de PHP...
+echo "XXX"
+echo "90"
+if [ -f "/var/www/html/info.php" ]; then
+    echo "El archivo info.php ya existe. Saltando creación."
+    sleep 1 # Pequeña pausa para que el mensaje sea visible
+else
+    echo "Creando archivo info.php en el directorio web de Apache..."
+    echo "<?php phpinfo(); ?>" > /var/www/html/info.php
+    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al crear /var/www/html/info.php."; fi
+    # Asegurarse de que Apache pueda leer el archivo
+    if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+        chown www-data:www-data /var/www/html/info.php > /dev/null 2>&1
+    elif [ "$DISTRO" = "AlmaLinux" ]; then
+        chown apache:apache /var/www/html/info.php > /dev/null 2>&1
+    fi
+    chmod 644 /var/www/html/info.php > /dev/null 2>&1
+fi
 echo "XXX"
 
 # 98% - Instalando programas adicionales...
@@ -575,5 +595,5 @@ clear
 if $INSTALL_FAILED; then
     dialog --title "Instalación con Errores" --msgbox "La instalación de LAMP y Laravel ha finalizado, pero se detectaron errores en algunos pasos. Por favor, revisa la salida de la consola para más detalles." 10 70
 else
-    dialog --title "Instalación Completada" --msgbox "La instalación de LAMP y Laravel se ha completado con éxito." 10 50
+    dialog --title "Instalación Completada" --msgbox "La instalación de LAMP y Laravel se ha completado con éxito. Puedes verificar la instalación de PHP visitando http://TU_IP/info.php en tu navegador." 10 70
 fi
