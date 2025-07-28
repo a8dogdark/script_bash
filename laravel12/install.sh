@@ -793,32 +793,21 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
             # Comandos de instalación para Google Chrome
             case "$DISTRO" in
                 ubuntu|debian)
-                    apt install -y wget > /dev/null 2>&1
-                    GOOGLE_CHROME_DEB="/tmp/google-chrome-stable_current_amd64.deb"
-                    wget -q -O "$GOOGLE_CHROME_DEB" https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb > /dev/null 2>&1
-
-                    # **Nueva verificación aquí**
-                    if [ -f "$GOOGLE_CHROME_DEB" ]; then
-                        dpkg -i "$GOOGLE_CHROME_DEB" > /dev/null 2>&1
-                        apt --fix-broken install -y > /dev/null 2>&1 # Para arreglar dependencias si las hubiera
-                        rm "$GOOGLE_CHROME_DEB" > /dev/null 2>&1
-                    else
-                        echo "¡Error! No se pudo descargar el paquete de Google Chrome. Saltando instalación." >&2
-                        sleep 1 # Pequeño retardo para que el mensaje sea visible en la salida (si no es redirectado)
-                    fi
+                    # Instalar paquetes necesarios para añadir el repositorio
+                    apt install -y wget apt-transport-https gnupg > /dev/null 2>&1
+                    # Descargar la clave de Google
+                    wget -qO- https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor | tee /etc/apt/keyrings/google-chrome.gpg > /dev/null
+                    # Añadir el repositorio de Google Chrome
+                    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | tee /etc/apt/sources.list.d/google-chrome.list > /dev/null
+                    # Actualizar listas de paquetes e instalar Google Chrome
+                    apt update > /dev/null 2>&1
+                    apt install -y google-chrome-stable > /dev/null 2>&1
                     ;;
                 almalinux)
                     dnf install -y wget > /dev/null 2>&1
-                    GOOGLE_CHROME_RPM="/tmp/google-chrome-stable_current_x86_64.rpm"
-                    wget -q -O "$GOOGLE_CHROME_RPM" https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm > /dev/null 2>&1
-
-                    if [ -f "$GOOGLE_CHROME_RPM" ]; then
-                        dnf localinstall -y "$GOOGLE_CHROME_RPM" > /dev/null 2>&1
-                        rm "$GOOGLE_CHROME_RPM" > /dev/null 2>&1
-                    else
-                        echo "¡Error! No se pudo descargar el paquete de Google Chrome. Saltando instalación." >&2
-                        sleep 1
-                    fi
+                    # Añadir el repositorio de Google Chrome para Fedora/RHEL
+                    echo -e "[google-chrome]\nname=google-chrome\nbaseurl=https://dl.google.com/linux/chrome/rpm/stable/x86_64\nenabled=1\ngpgcheck=1\ngpgkey=https://dl.google.com/linux/linux_signing_key.pub" | tee /etc/yum.repos.d/google-chrome.repo > /dev/null
+                    dnf install -y google-chrome-stable > /dev/null 2>&1
                     ;;
             esac
             sleep 3
