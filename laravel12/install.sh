@@ -224,8 +224,8 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     # Definición de las tareas y sus "pesos" relativos
     declare -A TASK_WEIGHTS
     TASK_WEIGHTS["Actualizando listas de paquetes..."]=2
+    TASK_WEIGHTS["Instalando utilidades esenciales (curl, unzip, git)..."]=3 # Mover esto antes de Node.js
     TASK_WEIGHTS["Actualizando paquetes del sistema..."]=2
-    TASK_WEIGHTS["Instalando utilidades esenciales (curl, unzip, git)..."]=3
     TASK_WEIGHTS["Verificando e integrando PPA de Ondrej..."]=3
     TASK_WEIGHTS["Añadiendo repositorio de Node.js 20 (LTS)..."]=3
     TASK_WEIGHTS["Instalando Node.js y npm..."]=5
@@ -333,7 +333,6 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
              echo "ADVERTENCIA: Mensaje de progreso no mapeado: '$message'" >/dev/stderr
              return
         fi
-
         current_progress=$((current_progress + increment_weight))
         
         # Asegurarse de que el porcentaje no exceda 100
@@ -351,24 +350,15 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     # 1. Actualizar listas de paquetes
     update_progress "Actualizando listas de paquetes..."
     if is_ubuntu_debian; then
-        apt update > /dev/null 2>&1
+        apt update -y > /dev/null 2>&1
     elif is_almalinux; then
         dnf check-update > /dev/null 2>&1
     fi
     sleep 1
 
-    # 2. Actualizar paquetes del sistema
-    update_progress "Actualizando paquetes del sistema..."
-    if is_ubuntu_debian; then
-        apt upgrade -y > /dev/null 2>&1
-    elif is_almalinux; then
-        dnf upgrade -y > /dev/null 2>&1
-    fi
-    sleep 1
-
-    # 3. Instalar utilidades esenciales: curl, unzip, git (con validación y más robusto)
+    # 2. Instalar utilidades esenciales: curl, unzip, git (priorizado)
     # ***********************************************************************************
-    # ESTE ES EL PASO CLAVE PARA CURL, NO OMITIR
+    # ESTE ES EL PASO CLAVE PARA CURL, AHORA ES UNO DE LOS PRIMEROS PASOS
     # ***********************************************************************************
     update_progress "Instalando utilidades esenciales (curl, unzip, git)..."
     INSTALL_PACKAGES=""
@@ -389,6 +379,14 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     fi
     sleep 1
 
+    # 3. Actualizar paquetes del sistema
+    update_progress "Actualizando paquetes del sistema..."
+    if is_ubuntu_debian; then
+        apt upgrade -y > /dev/null 2>&1
+    elif is_almalinux; then
+        dnf upgrade -y > /dev/null 2>&1
+    fi
+    sleep 1
 
     # 4. Añadir repositorio PPA de Ondrej (Solo para Debian/Ubuntu, si no existe)
     if is_ubuntu_debian; then
@@ -415,7 +413,7 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
 
     # 5. Añadir repositorio de NodeSource para Node.js 20 (LTS)
     update_progress "Añadiendo repositorio de Node.js 20 (LTS)..."
-    # La comprobación para `curl` se hizo antes, así que debería estar disponible ahora.
+    # curl ya está instalado en el paso 2
     if ! command -v node &> /dev/null || [[ "$(node -v)" != "v20."* ]]; then
         if is_ubuntu_debian; then
             curl -fsSL https://deb.nodesource.com/setup_20.x | bash - > /dev/null 2>&1
@@ -868,8 +866,8 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
         AllowOverride All
         Require all granted
     </Directory>
-    ErrorLog \${APACHE_LOG_DIR}/error.log
-    CustomLog \${APACHE_LOG_DIR}/access.log combined
+    ErrorLog /var/log/apache2/error.log
+    CustomLog /var/log/apache2/access.log combined
 </VirtualHost>"
 
     if is_ubuntu_debian; then
@@ -958,13 +956,13 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
         if ! command -v brave-browser &> /dev/null; then
             # Comandos de instalación para Brave Browser
             if is_ubuntu_debian; then
-                # curl ya se instala en el paso 3
+                # curl ya se instala en el paso 2
                 curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg > /dev/null 2>&1
                 echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" | tee /etc/apt/sources.list.d/brave-browser-release.list > /dev/null
                 apt update > /dev/null 2>&1
                 apt install -y brave-browser > /dev/null 2>&1
             elif is_almalinux; then
-                # curl ya se instala en el paso 3
+                # curl ya se instala en el paso 2
                 rpm --import https://brave-browser-rpm-release.s3.brave.com/brave-core.asc > /dev/null 2>&1
                 echo -e "[brave-browser]\nname=Brave Browser\nbaseurl=https://brave-browser-rpm-release.s3.brave.com/x86_64/\nenabled=1\ngpgcheck=1\ngpgkey=https://brave-browser-rpm-release.s3.brave.com/brave-core.asc" | tee /etc/yum.repos.d/brave-browser.repo > /dev/null
                 dnf install -y brave-browser > /dev/null 2>&1
