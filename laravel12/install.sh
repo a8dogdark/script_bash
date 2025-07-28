@@ -183,8 +183,14 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
 # Inicializar la barra de progreso en segundo plano
 (
     current_progress=0
-    # Estimación de pasos: Update, Upgrade, Ondrej PPA (si aplica), NodeSource Repo, Node.js, Apache, Mod_Rewrite, PHP Core, PHP CLI, PHP MySQL, PHP XML, PHP MBString, PHP ZIP, PHP GD, PHP cURL, PHP FPM, Apache PHP Module (Debian/Ubuntu), DB, DB Root Password, phpMyAdmin, phpMyAdmin config, Composer, Composer PATH, Laravel Installer, Create Laravel Dir, Laravel Project (con Pest), Configure .env, Create DB for Project, Migrate DB, Install Laravel-lang, Publish Laravel-lang, Configure app.php locale, Npm Install, Npm Run Build, Permissions, Apache Virtual Host, Update Hosts File, X (opcionales), Configuraciones
-    total_steps=48 # Ajustado para incluir la modificación del archivo hosts
+    # Estimación de pasos base (sin software adicional): 48 pasos
+    # Cada software adicional seleccionado añade 1 paso (instalación o verificación/omisión)
+    total_steps=48 # Base
+    if [[ "$ADDITIONAL_SOFTWARE" == *"vscode"* ]]; then total_steps=$((total_steps + 1)); fi
+    if [[ "$ADDITIONAL_SOFTWARE" == *"sublime"* ]]; then total_steps=$((total_steps + 1)); fi
+    if [[ "$ADDITIONAL_SOFTWARE" == *"brave"* ]]; then total_steps=$((total_steps + 1)); fi
+    if [[ "$ADDITIONAL_SOFTWARE" == *"chrome"* ]]; then total_steps=$((total_steps + 1)); fi
+
 
     # Función para actualizar la barra de progreso
     update_progress() {
@@ -697,87 +703,114 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
     fi
     sleep 0.5
 
-    # Lógica para software adicional (ejemplo)
+    # Lógica para software adicional (ahora solo si el usuario lo seleccionó)
     if [[ "$ADDITIONAL_SOFTWARE" == *"vscode"* ]]; then
-        update_progress "Instalando Visual Studio Code..." 1
-        # Comandos de instalación para VS Code
-        case "$DISTRO" in
-            ubuntu|debian)
-                apt install -y wget apt-transport-https > /dev/null 2>&1
-                wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
-                install -D -o -g -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg > /dev/null 2>&1
-                echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/vscode stable main" | tee /etc/apt/sources.list.d/vscode.list > /dev/null
-                rm packages.microsoft.gpg
-                apt update > /dev/null 2>&1
-                apt install -y code > /dev/null 2>&1
-                ;;
-            almalinux)
-                rpm --import https://packages.microsoft.com/keys/microsoft.asc > /dev/null 2>&1
-                echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" | tee /etc/yum.repos.d/vscode.repo > /dev/null
-                dnf check-update > /dev/null 2>&1
-                dnf install -y code > /dev/null 2>&1
-                ;;
-        esac
-        sleep 3
+        # Verificar si VS Code ya está instalado
+        if ! command -v code &> /dev/null; then
+            update_progress "Instalando Visual Studio Code..." 1
+            # Comandos de instalación para VS Code
+            case "$DISTRO" in
+                ubuntu|debian)
+                    apt install -y wget apt-transport-https > /dev/null 2>&1
+                    wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+                    install -D -o -g -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg > /dev/null 2>&1
+                    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/vscode stable main" | tee /etc/apt/sources.list.d/vscode.list > /dev/null
+                    rm packages.microsoft.gpg
+                    apt update > /dev/null 2>&1
+                    apt install -y code > /dev/null 2>&1
+                    ;;
+                almalinux)
+                    rpm --import https://packages.microsoft.com/keys/microsoft.asc > /dev/null 2>&1
+                    echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" | tee /etc/yum.repos.d/vscode.repo > /dev/null
+                    dnf check-update > /dev/null 2>&1
+                    dnf install -y code > /dev/null 2>&1
+                    ;;
+            esac
+            sleep 3
+        else
+            update_progress "Visual Studio Code ya está instalado. Omitiendo..." 1
+            sleep 0.5
+        fi
     fi
+
     if [[ "$ADDITIONAL_SOFTWARE" == *"sublime"* ]]; then
-        update_progress "Instalando Sublime Text..." 1
-        # Comandos de instalación para Sublime Text
-        case "$DISTRO" in
-            ubuntu|debian)
-                apt install -y wget apt-transport-https > /dev/null 2>&1
-                wget -qO - https://download.sublimetext.com/apt/rpm-pub-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/sublimehq-archive.gpg > /dev/null
-                echo "deb https://download.sublimetext.com/apt/stable/" | tee /etc/apt/sources.list.d/sublime-text.list > /dev/null
-                apt update > /dev/null 2>&1
-                apt install -y sublime-text > /dev/null 2>&1
-                ;;
-            almalinux)
-                rpm -v --import https://download.sublimetext.com/rpm/rpmkey.gpg > /dev/null 2>&1
-                echo -e "[sublime-text]\nname=Sublime Text\nbaseurl=https://download.sublimetext.com/rpm/stable/\nenabled=1\ngpgcheck=1\nrpm_gpg_check=1" | tee /etc/yum.repos.d/sublime-text.repo > /dev/null
-                dnf install -y sublime-text > /dev/null 2>&1
-                ;;
-        esac
-        sleep 3
+        # Verificar si Sublime Text ya está instalado
+        if ! command -v subl &> /dev/null; then # 'subl' es el comando para Sublime Text
+            update_progress "Instalando Sublime Text..." 1
+            # Comandos de instalación para Sublime Text
+            case "$DISTRO" in
+                ubuntu|debian)
+                    apt install -y wget apt-transport-https > /dev/null 2>&1
+                    wget -qO - https://download.sublimetext.com/apt/rpm-pub-key.gpg | gpg --dearmor | tee /etc/apt/trusted.gpg.d/sublimehq-archive.gpg > /dev/null
+                    echo "deb https://download.sublimetext.com/apt/stable/" | tee /etc/apt/sources.list.d/sublime-text.list > /dev/null
+                    apt update > /dev/null 2>&1
+                    apt install -y sublime-text > /dev/null 2>&1
+                    ;;
+                almalinux)
+                    rpm -v --import https://download.sublimetext.com/rpm/rpmkey.gpg > /dev/null 2>&1
+                    echo -e "[sublime-text]\nname=Sublime Text\nbaseurl=https://download.sublimetext.com/rpm/stable/\nenabled=1\ngpgcheck=1\nrpm_gpg_check=1" | tee /etc/yum.repos.d/sublime-text.repo > /dev/null
+                    dnf install -y sublime-text > /dev/null 2>&1
+                    ;;
+            esac
+            sleep 3
+        else
+            update_progress "Sublime Text ya está instalado. Omitiendo..." 1
+            sleep 0.5
+        fi
     fi
+
     if [[ "$ADDITIONAL_SOFTWARE" == *"brave"* ]]; then
-        update_progress "Instalando Brave Browser..." 1
-        # Comandos de instalación para Brave Browser
-        case "$DISTRO" in
-            ubuntu|debian)
-                apt install -y curl > /dev/null 2>&1
-                curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg > /dev/null 2>&1
-                echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" | tee /etc/apt/sources.list.d/brave-browser-release.list > /dev/null
-                apt update > /dev/null 2>&1
-                apt install -y brave-browser > /dev/null 2>&1
-                ;;
-            almalinux)
-                dnf install -y curl > /dev/null 2>&1
-                rpm --import https://brave-browser-rpm-release.s3.brave.com/brave-core.asc > /dev/null 2>&1
-                echo -e "[brave-browser]\nname=Brave Browser\nbaseurl=https://brave-browser-rpm-release.s3.brave.com/x86_64/\nenabled=1\ngpgcheck=1\ngpgkey=https://brave-browser-rpm-release.s3.brave.com/brave-core.asc" | tee /etc/yum.repos.d/brave-browser.repo > /dev/null
-                dnf install -y brave-browser > /dev/null 2>&1
-                ;;
-        esac
-        sleep 3
+        # Verificar si Brave Browser ya está instalado
+        if ! command -v brave-browser &> /dev/null; then
+            update_progress "Instalando Brave Browser..." 1
+            # Comandos de instalación para Brave Browser
+            case "$DISTRO" in
+                ubuntu|debian)
+                    apt install -y curl > /dev/null 2>&1
+                    curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg > /dev/null 2>&1
+                    echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" | tee /etc/apt/sources.list.d/brave-browser-release.list > /dev/null
+                    apt update > /dev/null 2>&1
+                    apt install -y brave-browser > /dev/null 2>&1
+                    ;;
+                almalinux)
+                    dnf install -y curl > /dev/null 2>&1
+                    rpm --import https://brave-browser-rpm-release.s3.brave.com/brave-core.asc > /dev/null 2>&1
+                    echo -e "[brave-browser]\nname=Brave Browser\nbaseurl=https://brave-browser-rpm-release.s3.brave.com/x86_64/\nenabled=1\ngpgcheck=1\ngpgkey=https://brave-browser-rpm-release.s3.brave.com/brave-core.asc" | tee /etc/yum.repos.d/brave-browser.repo > /dev/null
+                    dnf install -y brave-browser > /dev/null 2>&1
+                    ;;
+            esac
+            sleep 3
+        else
+            update_progress "Brave Browser ya está instalado. Omitiendo..." 1
+            sleep 0.5
+        fi
     fi
+
     if [[ "$ADDITIONAL_SOFTWARE" == *"chrome"* ]]; then
-        update_progress "Instalando Google Chrome..." 1
-        # Comandos de instalación para Google Chrome
-        case "$DISTRO" in
-            ubuntu|debian)
-                apt install -y wget > /dev/null 2>&1
-                wget -q -O /tmp/google-chrome-stable_current_amd64.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb > /dev/null 2>&1
-                dpkg -i /tmp/google-chrome-stable_current_amd64.deb > /dev/null 2>&1
-                apt --fix-broken install -y > /dev/null 2>&1 # Para arreglar dependencias si las hubiera
-                rm /tmp/google-chrome-stable_current_amd64.deb > /dev/null 2>&1
-                ;;
-            almalinux)
-                dnf install -y wget > /dev/null 2>&1
-                wget -q -O /tmp/google-chrome-stable_current_x86_64.rpm https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm > /dev/null 2>&1
-                dnf localinstall -y /tmp/google-chrome-stable_current_x86_64.rpm > /dev/null 2>&1
-                rm /tmp/google-chrome-stable_current_x86_64.rpm > /dev/null 2>&1
-                ;;
-        esac
-        sleep 3
+        # Verificar si Google Chrome ya está instalado
+        if ! command -v google-chrome &> /dev/null; then
+            update_progress "Instalando Google Chrome..." 1
+            # Comandos de instalación para Google Chrome
+            case "$DISTRO" in
+                ubuntu|debian)
+                    apt install -y wget > /dev/null 2>&1
+                    wget -q -O /tmp/google-chrome-stable_current_amd64.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb > /dev/null 2>&1
+                    dpkg -i /tmp/google-chrome-stable_current_amd64.deb > /dev/null 2>&1
+                    apt --fix-broken install -y > /dev/null 2>&1 # Para arreglar dependencias si las hubiera
+                    rm /tmp/google-chrome-stable_current_amd64.deb > /dev/null 2>&1
+                    ;;
+                almalinux)
+                    dnf install -y wget > /dev/null 2>&1
+                    wget -q -O /tmp/google-chrome-stable_current_x86_64.rpm https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm > /dev/null 2>&1
+                    dnf localinstall -y /tmp/google-chrome-stable_current_x86_64.rpm > /dev/null 2>&1
+                    rm /tmp/google-chrome-stable_current_x86_64.rpm > /dev/null 2>&1
+                    ;;
+            esac
+            sleep 3
+        else
+            update_progress "Google Chrome ya está instalado. Omitiendo..." 1
+            sleep 0.5
+        fi
     fi
 
     update_progress "Finalizando configuraciones..." 1
