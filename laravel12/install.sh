@@ -25,6 +25,15 @@ else
     exit 1
 fi
 
+# Detectar si MySQL o MariaDB está instalado
+if command -v mysql &> /dev/null; then
+    if mysql -V 2>&1 | grep -q "MariaDB"; then
+        DBASE="MariaDB"
+    elif mysql -V 2>&1 | grep -q "MySQL"; then
+        DBASE="MySQL"
+    fi
+fi
+
 # Validar que el sistema sea de 64 bits
 if [ "$(uname -m)" != "x86_64" ]; then
     echo "Este script solo puede ejecutarse en sistemas de 64 bits (x86_64)."
@@ -45,9 +54,9 @@ if ! command -v dialog &> /dev/null; then
 fi
 
 # Cuadro de bienvenida
-dialog --title "Bienvenido al Instalador LAMP para Laravel 12" \
+dialog --title "Bienvenido al Instalador y creador de proyectos Laravel 12" \
 --backtitle "Instalador LAMP Laravel 12 - Versión $VERSION" \
---yesno "\nEste script instalará Apache, MySQL, PHP y las dependencias necesarias para Laravel 12.\n\n¿Deseas continuar?" 15 60
+--yesno "\nSe instalarán los siguientes paquetes:\n\n- Apache\n- PHP\n- MySQL o MariaDB (se elegirá)\n- phpMyAdmin\n- Composer\n- Node.js\n- Programas del proyecto\n\n¿Deseas continuar?" 18 70
 
 response=$?
 case $response in
