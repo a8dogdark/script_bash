@@ -125,7 +125,7 @@ PHP_VERSION=$(dialog --clear --stdout \
                      "8.4" "Versión en desarrollo (no recomendada para producción)" OFF )
 
 php_choice_exit_code=$?
-if [ "$php_choice_exit_code" -eq 1 ] || [ "$php_choice_exit_code" -eq 255 ]; then # Solo si Cancel o ESC
+if [ "$php_choice_exit_code" -eq 1 ] || [ "$php_choice_exit_code" -eq 255 ]; then # Solo if Cancel or ESC
     clear
     echo "Instalación cancelada por el usuario."
     exit 0
@@ -875,14 +875,35 @@ for PROGRAMA in "${PROGRAMAS_SELECCIONADOS[@]}"; do
         "vscode")
             if ! command -v code &> /dev/null; then
                 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-                    wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
-                    install -D -o -g 0 -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
-                    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/vscode stable main" | tee /etc/apt/sources.list.d/vscode.list > /dev/null
-                    rm packages.microsoft.gpg
+                    # Asegurarse de que el directorio /etc/apt/keyrings exista
+                    mkdir -p /etc/apt/keyrings > /dev/null 2>&1
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al crear el directorio /etc/apt/keyrings."; fi
+                    
+                    if ! $INSTALL_FAILED; then
+                        # Descargar la clave GPG y almacenarla directamente en el keyring de apt
+                        curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /etc/apt/keyrings/microsoft.gpg > /dev/null 2>&1
+                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al descargar o procesar la clave GPG de Microsoft."; fi
+                    fi
 
-                    apt-get update -qq > /dev/null 2>&1
-                    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq code > /dev/null 2>&1
-                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Visual Studio Code."; fi
+                    if ! $INSTALL_FAILED; then
+                        # Asegurar los permisos correctos para la clave GPG
+                        chmod a+r /etc/apt/keyrings/microsoft.gpg > /dev/null 2>&1
+                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al establecer permisos para la clave GPG de Microsoft."; fi
+
+                        # Añadir el repositorio de VS Code
+                        echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/repos/vscode stable main" | tee /etc/apt/sources.list.d/vscode.list > /dev/null
+                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al añadir el repositorio de VS Code."; fi
+                    fi
+
+                    if ! $INSTALL_FAILED; then
+                        apt-get update -qq > /dev/null 2>&1
+                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al actualizar los índices de paquetes después de añadir el repositorio de VS Code."; fi
+                    fi
+
+                    if ! $INSTALL_FAILED; then
+                        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq code > /dev/null 2>&1
+                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Visual Studio Code."; fi
+                    fi
                 elif [ "$DISTRO" = "AlmaLinux" ]; then
                     rpm --import https://packages.microsoft.com/keys/microsoft.asc > /dev/null 2>&1
                     echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo
