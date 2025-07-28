@@ -403,7 +403,7 @@ install_php_base_and_remi() {
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         if ! dpkg -s "php${PHP_VERSION}-cli" &> /dev/null; then
             echo "Instalando base de PHP ${PHP_VERSION} (cli)..."
-            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "php${PHP_VERSION}" > /dev/null 2>&1 # Instala la meta-paquete phpX.Y
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "php${PHP_VERSION}" > /dev/null 2>&1
             if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar la base de PHP ${PHP_VERSION}."; fi
         else
             echo "Base de PHP ${PHP_VERSION} (cli) ya está instalada."
@@ -422,7 +422,7 @@ install_php_base_and_remi() {
         # En AlmaLinux, `php` es el paquete principal una vez que el módulo Remi está habilitado.
         if ! rpm -q "php-cli" &> /dev/null; then # Más robusto para verificar RPMs para php-cli
             echo "Instalando base de PHP ${PHP_VERSION} (cli/fpm)..."
-            yum install -y -q php php-cli php-fpm > /dev/null 2>&1 # Instala los paquetes base de PHP
+            yum install -y -q php php-cli php-fpm > /dev/null 2>&1
             if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar la base de PHP ${PHP_VERSION} en AlmaLinux."; fi
         else
             echo "Base de PHP ${PHP_VERSION} (cli/fpm) ya está instalada."
@@ -512,50 +512,407 @@ else
 fi
 echo "XXX"
 
-# 50% - Instalando $DBASE...
+# 45% - Instalando y configurando la base de datos (MariaDB o MySQL)
+echo "XXX"
+echo "45"
+echo "Instalando y configurando: $DBASE..."
+DB_PACKAGE_INSTALLED=false
+if [ "$DBASE" = "MariaDB" ]; then
+    if ! dpkg -s mariadb-server &> /dev/null; then
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq mariadb-server mariadb-client > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar MariaDB."; fi
+    else
+        echo "MariaDB ya está instalado."
+        DB_PACKAGE_INSTALLED=true
+    fi
+elif [ "$DBASE" = "MySQL" ]; then
+    if ! rpm -q mysql-server &> /dev/null; then
+        yum install -y -q mysql-server > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar MySQL."; fi
+    else
+        echo "MySQL ya está instalado."
+        DB_PACKAGE_INSTALLED=true
+    fi
+fi
+
+if ! $INSTALL_FAILED && ! $DB_PACKAGE_INSTALLED; then # Solo configurar si se instaló ahora o si no estaba y no hubo error.
+    echo "Habilitando e iniciando $DBASE..."
+    if [ "$DBASE" = "MariaDB" ]; then
+        systemctl enable mariadb > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al habilitar MariaDB."; fi
+        systemctl start mariadb > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al iniciar MariaDB."; fi
+    elif [ "$DBASE" = "MySQL" ]; then
+        systemctl enable mysqld > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al habilitar MySQL."; fi
+        systemctl start mysqld > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al iniciar MySQL."; fi
+    fi
+
+    # Configuración de contraseñas de la base de datos (solo si no hay errores previos)
+    if ! $INSTALL_FAILED; then
+        echo "Configurando contraseñas de $DBASE..."
+        if [ "$DBASE" = "MariaDB" ]; then
+            # Secure installation for MariaDB
+            mysql -u root <<EOF_SQL
+ALTER USER 'root'@'localhost' IDENTIFIED BY '$PASSROOT';
+DELETE FROM mysql.user WHERE User='';
+DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
+DROP DATABASE IF EXISTS test;
+DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
+FLUSH PRIVILEGES;
+CREATE USER 'phpmyadmin'@'localhost' IDENTIFIED BY '$PASSPHP';
+GRANT ALL PRIVILEGES ON *.* TO 'phpmyadmin'@'localhost' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+EOF_SQL
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al configurar MariaDB con contraseñas."; fi
+        elif [ "$DBASE" = "MySQL" ]; then
+            # Secure installation for MySQL
+            mysql -u root <<EOF_SQL
+ALTER USER 'root'@'localhost' IDENTIFIED BY '$PASSROOT';
+DELETE FROM mysql.user WHERE User='';
+DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
+DROP DATABASE IF EXISTS test;
+DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
+FLUSH PRIVILEGES;
+CREATE USER 'phpmyadmin'@'localhost' IDENTIFIED BY '$PASSPHP';
+GRANT ALL PRIVILEGES ON *.* TO 'phpmyadmin'@'localhost' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+EOF_SQL
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al configurar MySQL con contraseñas."; fi
+        fi
+    fi
+else
+    echo "Saltando configuración de $DBASE debido a errores o porque ya estaba instalado."
+    sleep 1
+fi
+echo "XXX"
+
+# 50% - Instalando phpMyAdmin...
 echo "XXX"
 echo "50"
-echo "Instalando: $DBASE..."
-# Placeholder for MariaDB/MySQL installation logic
-sleep 1 # Simula el tiempo de instalación
+if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+    if ! dpkg -s phpmyadmin &> /dev/null; then
+        echo "Instalando: phpMyAdmin (Ubuntu/Debian)..."
+        # Pre-configurar debconf para instalación silenciosa
+        echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
+        echo "phpmyadmin phpmyadmin/app-password-confirm password $PASSPHP" | debconf-set-selections
+        echo "phpmyadmin phpmyadmin/mysql/admin-pass password $PASSROOT" | debconf-set-selections
+        echo "phpmyadmin phpmyadmin/mysql/app-pass password $PASSPHP" | debconf-set-selections
+        echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
+        
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq phpmyadmin > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar phpMyAdmin."; fi
+    else
+        echo "phpMyAdmin ya está instalado."
+        sleep 1
+    fi
+elif [ "$DISTRO" = "AlmaLinux" ]; then
+    if ! rpm -q phpmyadmin &> /dev/null; then
+        echo "Instalando: phpMyAdmin (AlmaLinux)..."
+        yum install -y -q phpmyadmin > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar phpMyAdmin."; fi
+
+        # Configurar Apache para phpMyAdmin en AlmaLinux (si no existe ya)
+        if ! grep -q "Include /etc/httpd/conf.d/phpMyAdmin.conf" /etc/httpd/conf/httpd.conf; then
+            echo "Alias /phpmyadmin /usr/share/phpmyadmin" > /etc/httpd/conf.d/phpMyAdmin.conf
+            echo "<Directory /usr/share/phpmyadmin>" >> /etc/httpd/conf.d/phpMyAdmin.conf
+            echo "    AddType application/x-httpd-php .php" >> /etc/httpd/conf.d/phpMyAdmin.conf
+            echo "    DirectoryIndex index.php" >> /etc/httpd/conf.d/phpMyAdmin.conf
+            echo "    Require all granted" >> /etc/httpd/conf.d/phpMyAdmin.conf
+            echo "</Directory>" >> /etc/httpd/conf.d/phpMyAdmin.conf
+            
+            # Reiniciar Apache para aplicar la configuración
+            systemctl restart httpd > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al reiniciar Apache después de configurar phpMyAdmin."; fi
+        else
+            echo "Configuración de phpMyAdmin para Apache ya existe."
+        fi
+    else
+        echo "phpMyAdmin ya está instalado."
+        sleep 1
+    fi
+fi
 echo "XXX"
 
-
-# 60% - Instalando phpMyAdmin...
+# 60% - Instalando Composer...
 echo "XXX"
 echo "60"
-echo "Instalando: phpMyAdmin..."
-# Placeholder for phpMyAdmin installation logic
-sleep 1 # Simula el tiempo de instalación
+if ! command -v composer &> /dev/null; then
+    echo "Instalando: Composer..."
+    php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al descargar el instalador de Composer."; fi
+    php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Composer."; fi
+    rm composer-setup.php
+    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al eliminar el instalador de Composer."; fi
+else
+    echo "Composer ya está instalado."
+    sleep 1
+fi
 echo "XXX"
 
-# 70% - Instalando Composer...
+# 70% - Instalando Node.js...
 echo "XXX"
 echo "70"
-echo "Instalando: Composer..."
-# Placeholder for Composer installation logic
-sleep 1 # Simula el tiempo de instalación
+if ! command -v node &> /dev/null; then
+    echo "Instalando: Node.js..."
+    if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+        # Usar Node.js 20 para Ubuntu/Debian (LTS actual)
+        curl -fsSL https://deb.nodesource.com/setup_20.x | bash - > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al añadir el repositorio de NodeSource."; fi
+        if ! $INSTALL_FAILED; then
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq nodejs > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Node.js."; fi
+        fi
+    elif [ "$DISTRO" = "AlmaLinux" ]; then
+        # Usar Node.js 20 para AlmaLinux (LTS actual)
+        curl -fsSL https://rpm.nodesource.com/setup_20.x | bash - > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al añadir el repositorio de NodeSource."; fi
+        if ! $INSTALL_FAILED; then
+            yum install -y -q nodejs > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Node.js."; fi
+        fi
+    fi
+else
+    echo "Node.js ya está instalado."
+    sleep 1
+fi
 echo "XXX"
 
-# 80% - Instalando Node.js...
+# 80% - Creando la carpeta de proyectos Laravel y el proyecto en sí...
 echo "XXX"
 echo "80"
-echo "Instalando: Node.js..."
-# Placeholder for Node.js installation logic
-sleep 1 # Simula el tiempo de instalación
+echo "Creando estructura de directorios para proyectos Laravel..."
+
+LARAVEL_PROJECTS_DIR="/var/www/laravel"
+PROJECT_PATH="${LARAVEL_PROJECTS_DIR}/${PROYECTO}"
+VIRTUAL_HOST_CONF=""
+
+# Crear la carpeta base /var/www/laravel si no existe
+if [ ! -d "$LARAVEL_PROJECTS_DIR" ]; then
+    mkdir -p "$LARAVEL_PROJECTS_DIR" > /dev/null 2>&1
+    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al crear el directorio $LARAVEL_PROJECTS_DIR."; fi
+else
+    echo "Directorio $LARAVEL_PROJECTS_DIR ya existe."
+    sleep 1
+fi
+
+if ! $INSTALL_FAILED; then
+    # Crear proyecto Laravel si la carpeta no existe
+    if [ ! -d "$PROJECT_PATH" ]; then
+        echo "Creando proyecto Laravel: $PROYECTO en $PROJECT_PATH (esto puede tardar unos minutos)..."
+        # Usamos `sudo -u www-data` para que el proyecto se cree con los permisos correctos de Apache
+        # En AlmaLinux, el usuario de Apache es 'apache'
+        APACHE_USER=""
+        if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+            APACHE_USER="www-data"
+        elif [ "$DISTRO" = "AlmaLinux" ]; then
+            APACHE_USER="apache"
+        fi
+
+        if [ -n "$APACHE_USER" ]; then
+            sudo -u "$APACHE_USER" composer create-project laravel/laravel "$PROJECT_PATH" > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al crear el proyecto Laravel."; fi
+        else
+            INSTALL_FAILED=true; echo "ERROR: Usuario de Apache no definido para la distribución.";
+        fi
+
+        if ! $INSTALL_FAILED; then
+            echo "Estableciendo permisos adecuados para el proyecto Laravel..."
+            chown -R "$APACHE_USER":"$APACHE_USER" "$PROJECT_PATH" > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al establecer propietario de Laravel."; fi
+            chmod -R 755 "$PROJECT_PATH" > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al establecer permisos de Laravel."; fi
+            chmod -R 775 "${PROJECT_PATH}/storage" "${PROJECT_PATH}/bootstrap/cache" > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al establecer permisos de escritura para storage/cache."; fi
+
+            # Ejecutar npm install y npm run build dentro del proyecto Laravel
+            echo "Ejecutando 'npm install' en el proyecto Laravel (esto puede tardar)..."
+            (cd "$PROJECT_PATH" && sudo -u "$APACHE_USER" npm install > /dev/null 2>&1)
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al ejecutar 'npm install' en el proyecto Laravel."; fi
+
+            if ! $INSTALL_FAILED; then
+                echo "Ejecutando 'npm run build' en el proyecto Laravel..."
+                (cd "$PROJECT_PATH" && sudo -u "$APACHE_USER" npm run build > /dev/null 2>&1)
+                if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al ejecutar 'npm run build' en el proyecto Laravel."; fi
+            fi
+        fi
+    else
+        echo "El proyecto Laravel '$PROYECTO' ya existe en $PROJECT_PATH. Saltando creación."
+        sleep 1
+    fi
+else
+    echo "Saltando creación de proyecto Laravel debido a errores previos."
+    sleep 1
+fi
 echo "XXX"
 
-# 85% - Creando proyecto Laravel...
+# 85% - Configurando base de datos y ejecutando migraciones para Laravel
 echo "XXX"
 echo "85"
-echo "Creando proyecto Laravel: $PROYECTO..."
-# Placeholder for Laravel project creation logic
-sleep 1 # Simula el tiempo de instalación
+if ! $INSTALL_FAILED; then
+    echo "Creando base de datos '${PROYECTO}' y configurando .env..."
+    # Crear la base de datos si no existe
+    mysql -u root -p"$PASSROOT" -e "CREATE DATABASE IF NOT EXISTS \`${PROYECTO}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" > /dev/null 2>&1
+    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al crear la base de datos '${PROYECTO}'. Asegúrate de que $DBASE esté corriendo y la contraseña root sea correcta."; fi
+
+    if ! $INSTALL_FAILED; then
+        # Actualizar el archivo .env del proyecto Laravel
+        ENV_FILE="${PROJECT_PATH}/.env"
+        
+        # Primero, asegurar que .env existe y tiene permisos de escritura temporales para root
+        if [ ! -f "$ENV_FILE" ]; then
+            echo "Advertencia: .env no encontrado en $PROJECT_PATH. Creando desde .env.example."
+            cp "${PROJECT_PATH}/.env.example" "$ENV_FILE" > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al copiar .env.example a .env."; fi
+        fi
+        
+        if ! $INSTALL_FAILED; then
+            # Temporalmente dar permisos de escritura para que `sed` pueda modificarlo
+            # Luego se restauran los permisos para el usuario de Apache
+            chmod 664 "$ENV_FILE" > /dev/null 2>&1
+            
+            sed -i "s/^DB_DATABASE=.*/DB_DATABASE=${PROYECTO}/" "$ENV_FILE"
+            sed -i "s/^DB_USERNAME=.*/DB_USERNAME=root/" "$ENV_FILE"
+            sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=${PASSROOT}/" "$ENV_FILE"
+            
+            # Restaurar permisos y propietario al usuario de Apache
+            chmod 644 "$ENV_FILE" > /dev/null 2>&1
+            chown "$APACHE_USER":"$APACHE_USER" "$ENV_FILE" > /dev/null 2>&1
+
+            # Ejecutar migraciones de Laravel
+            echo "Ejecutando migraciones de Laravel..."
+            (cd "$PROJECT_PATH" && sudo -u "$APACHE_USER" php artisan migrate --force > /dev/null 2>&1)
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al ejecutar 'php artisan migrate'."; fi
+        fi
+    fi
+else
+    echo "Saltando configuración de base de datos y migraciones debido a errores previos."
+    sleep 1
+fi
 echo "XXX"
 
-# 90% - Creando archivo info.php para verificación de PHP...
+# 90% - Configurando idioma español en Laravel
 echo "XXX"
 echo "90"
+if ! $INSTALL_FAILED; then
+    echo "Configurando idioma español para el proyecto Laravel..."
+    # Instalar el paquete de traducciones de Laravel
+    (cd "$PROJECT_PATH" && sudo -u "$APACHE_USER" composer require laravel-lang/lang > /dev/null 2>&1)
+    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar el paquete laravel-lang/lang."; fi
+
+    if ! $INSTALL_FAILED; then
+        # Publicar los archivos de idioma
+        (cd "$PROJECT_PATH" && sudo -u "$APACHE_USER" php artisan lang:publish es > /dev/null 2>&1)
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al publicar las traducciones en español."; fi
+    fi
+
+    if ! $INSTALL_FAILED; then
+        # Cambiar el locale por defecto en config/app.php
+        APP_CONFIG_FILE="${PROJECT_PATH}/config/app.php"
+        if [ -f "$APP_CONFIG_FILE" ]; then
+            # Temporalmente dar permisos de escritura
+            chmod 664 "$APP_CONFIG_FILE" > /dev/null 2>&1
+            
+            sed -i "s/'locale' => 'en'/'locale' => 'es'/" "$APP_CONFIG_FILE"
+            sed -i "s/'faker_locale' => 'en_US'/'faker_locale' => 'es_ES'/" "$APP_CONFIG_FILE"
+            
+            # Restaurar permisos y propietario
+            chmod 644 "$APP_CONFIG_FILE" > /dev/null 2>&1
+            chown "$APACHE_USER":"$APACHE_USER" "$APP_CONFIG_FILE" > /dev/null 2>&1
+            echo "Idioma español configurado correctamente en config/app.php."
+        else
+            INSTALL_FAILED=true; echo "ERROR: Archivo config/app.php no encontrado en $PROJECT_PATH.";
+        fi
+    fi
+else
+    echo "Saltando configuración de idioma español debido a errores previos."
+    sleep 1
+fi
+echo "XXX"
+
+
+# 93% - Configurando Virtual Host para Laravel...
+echo "XXX"
+echo "93"
+if ! $INSTALL_FAILED; then
+    echo "Configurando Virtual Host para ${PROYECTO}.test..."
+    # Configuración de Virtual Host para Apache
+    if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+        VIRTUAL_HOST_CONF="/etc/apache2/sites-available/${PROYECTO}.conf"
+        
+        # Eliminar archivo de configuración si ya existe (para evitar duplicados en re-ejecuciones)
+        if [ -f "$VIRTUAL_HOST_CONF" ]; then
+            a2dissite "${PROYECTO}.conf" > /dev/null 2>&1
+            rm "$VIRTUAL_HOST_CONF" > /dev/null 2>&1
+            if [ $? -ne 0 ]; then echo "Advertencia: Fallo al limpiar configuración antigua de Virtual Host."; fi
+        fi
+
+        echo "<VirtualHost *:80>" > "$VIRTUAL_HOST_CONF"
+        echo "    ServerName ${PROYECTO}.test" >> "$VIRTUAL_HOST_CONF"
+        echo "    DocumentRoot ${PROJECT_PATH}/public" >> "$VIRTUAL_HOST_CONF"
+        echo "    <Directory ${PROJECT_PATH}/public>" >> "$VIRTUAL_HOST_CONF"
+        echo "        AllowOverride All" >> "$VIRTUAL_HOST_CONF"
+        echo "        Require all granted" >> "$VIRTUAL_HOST_CONF"
+        echo "    </Directory>" >> "$VIRTUAL_HOST_CONF"
+        echo "    ErrorLog \${APACHE_LOG_DIR}/${PROYECTO}_error.log" >> "$VIRTUAL_HOST_CONF"
+        echo "    CustomLog \${APACHE_LOG_DIR}/${PROYECTO}_access.log combined" >> "$VIRTUAL_HOST_CONF"
+        echo "</VirtualHost>" >> "$VIRTUAL_HOST_CONF"
+
+        a2ensite "${PROYECTO}.conf" > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al habilitar Virtual Host."; fi
+        systemctl restart apache2 > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al reiniciar Apache después de configurar Virtual Host."; fi
+
+    elif [ "$DISTRO" = "AlmaLinux" ]; then
+        VIRTUAL_HOST_CONF="/etc/httpd/conf.d/${PROYECTO}.conf"
+
+        # Eliminar archivo de configuración si ya existe
+        if [ -f "$VIRTUAL_HOST_CONF" ]; then
+            rm "$VIRTUAL_HOST_CONF" > /dev/null 2>&1
+            if [ $? -ne 0 ]; then echo "Advertencia: Fallo al limpiar configuración antigua de Virtual Host."; fi
+        fi
+
+        echo "<VirtualHost *:80>" > "$VIRTUAL_HOST_CONF"
+        echo "    ServerName ${PROYECTO}.test" >> "$VIRTUAL_HOST_CONF"
+        echo "    DocumentRoot ${PROJECT_PATH}/public" >> "$VIRTUAL_HOST_CONF"
+        echo "    <Directory ${PROJECT_PATH}/public>" >> "$VIRTUAL_HOST_CONF"
+        echo "        AllowOverride All" >> "$VIRTUAL_HOST_CONF"
+        echo "        Require all granted" >> "$VIRTUAL_HOST_CONF"
+        echo "    </Directory>" >> "$VIRTUAL_HOST_CONF"
+        echo "    ErrorLog /var/log/httpd/${PROYECTO}_error.log" >> "$VIRTUAL_HOST_CONF"
+        echo "    CustomLog /var/log/httpd/${PROYECTO}_access.log combined" >> "$VIRTUAL_HOST_CONF"
+        echo "</VirtualHost>" >> "$VIRTUAL_HOST_CONF"
+
+        systemctl restart httpd > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al reiniciar Apache después de configurar Virtual Host."; fi
+        
+        # Enforce SELinux contexts for new directories
+        echo "Aplicando contexto SELinux para el proyecto Laravel..."
+        semanage fcontext -a -t httpd_sys_rw_content_t "${PROJECT_PATH}/storage(/.*)?" > /dev/null 2>&1
+        semanage fcontext -a -t httpd_sys_rw_content_t "${PROJECT_PATH}/bootstrap/cache(/.*)?" > /dev/null 2>&1
+        restorecon -Rv "${PROJECT_PATH}" > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al aplicar contexto SELinux. Esto podría causar problemas de permisos."; fi
+    fi
+    
+    # Añadir entrada a /etc/hosts si no existe
+    if ! grep -q "${PROYECTO}.test" /etc/hosts; then
+        echo "Añadiendo entrada a /etc/hosts para ${PROYECTO}.test..."
+        echo "127.0.0.1    ${PROYECTO}.test" >> /etc/hosts
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al añadir entrada a /etc/hosts."; fi
+    else
+        echo "Entrada para ${PROYECTO}.test ya existe en /etc/hosts."
+    fi
+else
+    echo "Saltando configuración de Virtual Host debido a errores previos."
+    sleep 1
+fi
+echo "XXX"
+
+# 95% - Creando archivo info.php para verificación de PHP...
+echo "XXX"
+echo "95"
 if [ -f "/var/www/html/info.php" ]; then
     echo "El archivo info.php ya existe. Saltando creación."
     sleep 1 # Pequeña pausa para que el mensaje sea visible
@@ -573,12 +930,102 @@ else
 fi
 echo "XXX"
 
-# 98% - Instalando programas adicionales...
+# 98% - Instalando programas adicionales seleccionados...
 echo "XXX"
 echo "98"
 echo "Instalando programas seleccionados: ${PROGRAMAS_SELECCIONADOS[*]}..."
-# Placeholder for additional program installation logic
-sleep 1 # Simula el tiempo de instalación
+
+for PROGRAMA in "${PROGRAMAS_SELECCIONADOS[@]}"; do
+    case "$PROGRAMA" in
+        "vscode")
+            if ! command -v code &> /dev/null; then
+                echo "Instalando: Visual Studio Code..."
+                if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+                    wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+                    install -D -o -g 0 -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg
+                    echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/vscode stable main" | tee /etc/apt/sources.list.d/vscode.list > /dev/null
+                    rm packages.microsoft.gpg
+
+                    apt-get update -qq > /dev/null 2>&1
+                    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq code > /dev/null 2>&1
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Visual Studio Code."; fi
+                elif [ "$DISTRO" = "AlmaLinux" ]; then
+                    rpm --import https://packages.microsoft.com/keys/microsoft.asc > /dev/null 2>&1
+                    echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo
+                    yum check-update -q > /dev/null 2>&1
+                    yum install -y -q code > /dev/null 2>&1
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Visual Studio Code."; fi
+                fi
+            else
+                echo "Visual Studio Code ya está instalado."
+            fi
+            ;;
+        "sublime")
+            if ! command -v subl &> /dev/null; then
+                echo "Instalando: Sublime Text..."
+                if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+                    wget -qO - https://download.sublimetext.com/apt/rpm-pub-key.gpg | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/sublimehq-archive.gpg > /dev/null
+                    echo "deb https://download.sublimetext.com/apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list > /dev/null
+                    apt-get update -qq > /dev/null 2>&1
+                    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sublime-text > /dev/null 2>&1
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Sublime Text."; fi
+                elif [ "$DISTRO" = "AlmaLinux" ]; then
+                    rpm -v --import https://download.sublimetext.com/rpm/rpmkey.gpg > /dev/null 2>&1
+                    yum-config-manager --add-repo https://download.sublimetext.com/rpm/stable/x86_64/sublime-text.repo > /dev/null 2>&1
+                    yum check-update -q > /dev/null 2>&1
+                    yum install -y -q sublime-text > /dev/null 2>&1
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Sublime Text."; fi
+                fi
+            else
+                echo "Sublime Text ya está instalado."
+            fi
+            ;;
+        "brave")
+            if ! command -v brave-browser &> /dev/null; then
+                echo "Instalando: Brave Browser..."
+                if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+                    curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg > /dev/null 2>&1
+                    echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" | tee /etc/apt/sources.list.d/brave-browser-release.list > /dev/null
+                    apt-get update -qq > /dev/null 2>&1
+                    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq brave-browser > /dev/null 2>&1
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Brave Browser."; fi
+                elif [ "$DISTRO" = "AlmaLinux" ]; then
+                    rpm --import https://brave-browser-rpm-release.s3.brave.com/brave-core.asc > /dev/null 2>&1
+                    yum-config-manager --add-repo https://brave-browser-rpm-release.s3.brave.com/x86_64/ > /dev/null 2>&1
+                    yum check-update -q > /dev/null 2>&1
+                    yum install -y -q brave-browser brave-keyring > /dev/null 2>&1
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Brave Browser."; fi
+                fi
+            else
+                echo "Brave Browser ya está instalado."
+            fi
+            ;;
+        "chrome")
+            if ! command -v google-chrome &> /dev/null; then
+                echo "Instalando: Google Chrome..."
+                if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+                    wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor | sudo tee /usr/share/keyrings/google-chrome.gpg > /dev/null
+                    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list > /dev/null
+                    apt-get update -qq > /dev/null 2>&1
+                    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq google-chrome-stable > /dev/null 2>&1
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Google Chrome."; fi
+                elif [ "$DISTRO" = "AlmaLinux" ]; then
+                    curl https://dl.google.com/linux/linux_signing_key.pub | sudo rpm --import - > /dev/null 2>&1
+                    echo -e "[google-chrome]\nname=google-chrome\nbaseurl=http://dl.google.com/linux/chrome/rpm/stable/x86_64\nenabled=1\ngpgcheck=1\ngpgkey=https://dl.google.com/linux/linux_signing_key.pub" > /etc/yum.repos.d/google-chrome.repo
+                    yum check-update -q > /dev/null 2>&1
+                    yum install -y -q google-chrome-stable > /dev/null 2>&1
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Google Chrome."; fi
+                fi
+            else
+                echo "Google Chrome ya está instalado."
+            fi
+            ;;
+        *)
+            echo "Programa desconocido seleccionado: $PROGRAMA. Saltando."
+            ;;
+    esac
+    sleep 1 # Pequeña pausa para visualizar los mensajes de instalación
+done
 echo "XXX"
 
 # 100% - Simulando finalización
@@ -595,5 +1042,5 @@ clear
 if $INSTALL_FAILED; then
     dialog --title "Instalación con Errores" --msgbox "La instalación de LAMP y Laravel ha finalizado, pero se detectaron errores en algunos pasos. Por favor, revisa la salida de la consola para más detalles." 10 70
 else
-    dialog --title "Instalación Completada" --msgbox "La instalación de LAMP y Laravel se ha completado con éxito. Puedes verificar la instalación de PHP visitando http://TU_IP/info.php en tu navegador." 10 70
+    dialog --title "Instalación Completada" --msgbox "La instalación de LAMP y Laravel se ha completado con éxito. Puedes acceder a tu proyecto Laravel visitando http://${PROYECTO}.test en tu navegador. También puedes verificar la instalación de PHP en http://TU_IP/info.php y acceder a phpMyAdmin en http://TU_IP/phpmyadmin. No olvides que en tu equipo local (no en el servidor) debes añadir la línea '127.0.0.1    ${PROYECTO}.test' a tu archivo /etc/hosts (o C:\\Windows\\System32\\drivers\\etc\\hosts en Windows) para que el dominio funcione." 10 70
 fi
