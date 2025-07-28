@@ -82,14 +82,14 @@ fi
 # Mensaje para dialog
 WELCOME_MSG="Bienvenido al instalador de Laravel con LAMP.\n
 Se instalarán los siguientes paquetes:\n
-- apache2\n
-- php y librerías\n
+- Apache2\n
+- PHP y librerías\n
 - $DB_SERVER\n
-- phpmyadmin\n
-- composer\n
-- nodejs\n
-- programas adicionales\n
-- proyecto Laravel 12"
+- PhpMyAdmin\n
+- Composer\n
+- Node.js\n
+- Programas adicionales\n
+- Proyecto Laravel 12"
 
 # Mostrar cuadro de diálogo de bienvenida
 dialog --title "Bienvenida" \
@@ -103,3 +103,19 @@ if [ $response -ne 0 ]; then
 fi
 
 clear
+
+# Preguntar nombre del proyecto Laravel
+dialog --title "Nombre del Proyecto" \
+       --inputbox "Ingresa el nombre del proyecto Laravel que deseas crear:" 10 60 2> /tmp/project_name
+
+if [ $? -ne 0 ]; then
+    clear
+    echo "Instalación cancelada por el usuario."
+    exit 0
+fi
+
+PROJECT_NAME=$(cat /tmp/project_name)
+rm -f /tmp/project_name
+
+clear
+echo "Nombre del proyecto: $PROJECT_NAME"
