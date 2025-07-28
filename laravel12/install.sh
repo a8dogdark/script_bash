@@ -794,16 +794,31 @@ trap "rm -f $PROGRESS_FILE; clear" EXIT
             case "$DISTRO" in
                 ubuntu|debian)
                     apt install -y wget > /dev/null 2>&1
-                    wget -q -O /tmp/google-chrome-stable_current_amd64.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb > /dev/null 2>&1
-                    dpkg -i /tmp/google-chrome-stable_current_amd64.deb > /dev/null 2>&1
-                    apt --fix-broken install -y > /dev/null 2>&1 # Para arreglar dependencias si las hubiera
-                    rm /tmp/google-chrome-stable_current_amd64.deb > /dev/null 2>&1
+                    GOOGLE_CHROME_DEB="/tmp/google-chrome-stable_current_amd64.deb"
+                    wget -q -O "$GOOGLE_CHROME_DEB" https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb > /dev/null 2>&1
+
+                    # **Nueva verificación aquí**
+                    if [ -f "$GOOGLE_CHROME_DEB" ]; then
+                        dpkg -i "$GOOGLE_CHROME_DEB" > /dev/null 2>&1
+                        apt --fix-broken install -y > /dev/null 2>&1 # Para arreglar dependencias si las hubiera
+                        rm "$GOOGLE_CHROME_DEB" > /dev/null 2>&1
+                    else
+                        echo "¡Error! No se pudo descargar el paquete de Google Chrome. Saltando instalación." >&2
+                        sleep 1 # Pequeño retardo para que el mensaje sea visible en la salida (si no es redirectado)
+                    fi
                     ;;
                 almalinux)
                     dnf install -y wget > /dev/null 2>&1
-                    wget -q -O /tmp/google-chrome-stable_current_x86_64.rpm https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm > /dev/null 2>&1
-                    dnf localinstall -y /tmp/google-chrome-stable_current_x86_64.rpm > /dev/null 2>&1
-                    rm /tmp/google-chrome-stable_current_x86_64.rpm > /dev/null 2>&1
+                    GOOGLE_CHROME_RPM="/tmp/google-chrome-stable_current_x86_64.rpm"
+                    wget -q -O "$GOOGLE_CHROME_RPM" https://dl.google.com/linux/direct/google-chrome-stable_current_x86_64.rpm > /dev/null 2>&1
+
+                    if [ -f "$GOOGLE_CHROME_RPM" ]; then
+                        dnf localinstall -y "$GOOGLE_CHROME_RPM" > /dev/null 2>&1
+                        rm "$GOOGLE_CHROME_RPM" > /dev/null 2>&1
+                    else
+                        echo "¡Error! No se pudo descargar el paquete de Google Chrome. Saltando instalación." >&2
+                        sleep 1
+                    fi
                     ;;
             esac
             sleep 3
