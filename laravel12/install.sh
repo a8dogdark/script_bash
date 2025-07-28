@@ -73,7 +73,7 @@ check_input() {
 # Cuadro de bienvenida
 dialog --title "Bienvenido al Instalador y creador de proyectos Laravel 12" \
 --backtitle "Instalador LAMP Laravel 12 - Versión $VERSION" \
---yesno "\nSe instalarán los siguientes paquetes:\n\n- Apache\n- PHP\n- MySQL o MariaDB (se elegirá)\n- phpMyAdmin\n- Composer\n- Node.js\n- Programas del proyecto\n\n¿Deseas continuar?" 18 70
+--yesno "\nSe instalarán los siguientes paquetes:\n\n- Apache\n- PHP\n- $DBASE\n- phpMyAdmin\n- Composer\n- Node.js\n- Programas del proyecto\n\n¿Deseas continuar?" 18 70
 
 response=$?
 case $response in
