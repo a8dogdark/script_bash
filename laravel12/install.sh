@@ -34,7 +34,6 @@ fi
 # Validar e instalar dialog si no está presente
 if ! command -v dialog &> /dev/null; then
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-        apt-get update -y > /dev/null
         apt-get install -y dialog > /dev/null
     elif [ "$DISTRO" = "AlmaLinux" ]; then
         yum install -y dialog > /dev/null
