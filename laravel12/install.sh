@@ -32,6 +32,7 @@ case "$DISTRO" in
             exit 1
         fi
         DB_PACKAGE="mysql-server"
+        DB_ROOT_USER="mysql" # Para Ubuntu/MySQL, el usuario root es 'mysql' por defecto
         ;;
     debian)
         if ! (( $(echo "$VERSION >= 11" | bc -l) )); then
@@ -39,6 +40,7 @@ case "$DISTRO" in
             exit 1
         fi
         DB_PACKAGE="mariadb-server"
+        DB_ROOT_USER="mariadb" # Para Debian/MariaDB, el usuario root es 'mariadb' por defecto
         ;;
     almalinux)
         if ! [[ "$VERSION" =~ ^(8|9)\.[0-9]+$ ]]; then
@@ -46,6 +48,7 @@ case "$DISTRO" in
             exit 1
         fi
         DB_PACKAGE="mariadb-server"
+        DB_ROOT_USER="mariadb" # Para AlmaLinux/MariaDB, el usuario root es 'mariadb' por defecto
         ;;
     *)
         clear
@@ -102,6 +105,36 @@ if [ -z "$PROJECT_NAME" ]; then
     dialog --clear --backtitle "Instalador de Sistema v$VEROS" \
     --title "Error" \
     --msgbox "\nNo se ha especificado un nombre de proyecto. Saliendo del instalador." 8 50
+    clear
+    exit 1
+fi
+
+# Solicitar la contraseña para el usuario de phpMyAdmin
+PHPMYADMIN_PASSWORD=$(dialog --clear --backtitle "Instalador de Sistema v$VEROS" \
+--title "Contraseña de phpMyAdmin" \
+--passwordbox "\nIngresa la contraseña para el usuario 'phpmyadmin':" 10 60 3>&1 1>&2 2>&3)
+
+# Verificar si el usuario canceló o dejó la contraseña vacía
+if [ -z "$PHPMYADMIN_PASSWORD" ]; then
+    clear
+    dialog --clear --backtitle "Instalador de Sistema v$VEROS" \
+    --title "Error" \
+    --msgbox "\nNo se ha especificado una contraseña para phpMyAdmin. Saliendo del instalador." 8 50
+    clear
+    exit 1
+fi
+
+# Solicitar la contraseña para el usuario root de la base de datos
+DB_ROOT_PASSWORD=$(dialog --clear --backtitle "Instalador de Sistema v$VEROS" \
+--title "Contraseña Root de $DB_PACKAGE" \
+--passwordbox "\nIngresa la contraseña para el usuario root de $DB_ROOT_USER:" 10 60 3>&1 1>&2 2>&3)
+
+# Verificar si el usuario canceló o dejó la contraseña vacía
+if [ -z "$DB_ROOT_PASSWORD" ]; then
+    clear
+    dialog --clear --backtitle "Instalador de Sistema v$VEROS" \
+    --title "Error" \
+    --msgbox "\nNo se ha especificado una contraseña para el usuario root de la base de datos. Saliendo del instalador." 8 50
     clear
     exit 1
 fi
