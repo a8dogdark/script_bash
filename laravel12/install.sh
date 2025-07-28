@@ -62,10 +62,12 @@ fi
 echo "Sistema detectado: $DISTRO $VERSION_SO ($PRETTY_NAME)"
 echo "Versión del script: $VERSION_SCRIPT"
 
-# Verificar si dialog está instalado, si no instalarlo
+# Instalar dialog en segundo plano si no está instalado
 if ! command -v dialog &> /dev/null; then
-    echo "dialog no encontrado, instalando..."
-    apt-get update && apt-get install -y dialog
+    echo "dialog no encontrado, instalando en segundo plano..."
+    (apt-get update && apt-get install -y dialog) &
+    PID=$!
+    wait $PID
 fi
 
 # Determinar qué servidor de base de datos se instalará según distro
