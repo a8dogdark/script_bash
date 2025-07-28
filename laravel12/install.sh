@@ -347,13 +347,12 @@ else
 fi
 echo "XXX"
 
-# Rango de 12% a 40% para PHP y extensiones (ampliado para más extensiones)
+# Rango de 12% a 40% para PHP y extensiones (se mantiene, pero se ajustará internamente)
 PHP_START_PERCENT=12
 PHP_END_PERCENT=40
 
 # Lista de extensiones a instalar con sus nombres de paquetes.
-# Formato: "Nombre legible" "paquete-ubuntu-debian" "paquete-almalinux" "requiere_fpm_first" (boolean, si depende de php-fpm)
-# Consideramos que 'php' y 'php-cli' son la base y se instalan primero.
+# Formato: "Nombre legible" "paquete-ubuntu-debian" "paquete-almalinux"
 PHP_EXTENSIONS=(
     "Core/Base CLI" "php${PHP_VERSION}-cli" "php-cli"
     "FPM" "php${PHP_VERSION}-fpm" "php-fpm"
@@ -366,30 +365,28 @@ PHP_EXTENSIONS=(
     "BCMath" "php${PHP_VERSION}-bcmath" "php-bcmath"
     "GD" "php${PHP_VERSION}-gd" "php-gd"
     "Curl" "php${PHP_VERSION}-curl" "php-curl"
-    "JSON" "php${PHP_VERSION}-json" "php-json" # Generalmente incluido en common, pero lo forzamos.
-    "PDO" "php${PHP_VERSION}-pdo" "php-pdo" # Generalmente incluido en common
+    "JSON" "php${PHP_VERSION}-json" "php-json"
+    "PDO" "php${PHP_VERSION}-pdo" "php-pdo"
     "BZ2" "php${PHP_VERSION}-bz2" "php-bz2"
     "Calendar" "php${PHP_VERSION}-calendar" "php-calendar"
-    "Ctype" "php${PHP_VERSION}-ctype" "php-ctype" # Generalmente incluido en common
+    "Ctype" "php${PHP_VERSION}-ctype" "php-ctype"
     "DOM" "php${PHP_VERSION}-dom" "php-dom"
-    #"FXIF" "php${PHP_VERSION}-fxif" "php-fxif" # Esta extensión es muy rara, no estándar, la omitimos.
     "FFI" "php${PHP_VERSION}-ffi" "php-ffi"
     "Fileinfo" "php${PHP_VERSION}-fileinfo" "php-fileinfo"
     "FTP" "php${PHP_VERSION}-ftp" "php-ftp"
     "Gettext" "php${PHP_VERSION}-gettext" "php-gettext"
-    "Iconv" "php${PHP_VERSION}-iconv" "php-iconv" # Generalmente incluido en common
-    #"Mcrypt" "php${PHP_VERSION}-mcrypt" "php-mcrypt" # Obsoleta, eliminada en PHP 7.2. La omitimos.
+    "Iconv" "php${PHP_VERSION}-iconv" "php-iconv"
     "MySQLi" "php${PHP_VERSION}-mysqli" "php-mysqli"
-    "Phar" "php${PHP_VERSION}-phar" "php-phar" # Generalmente parte de php-cli
-    "Posix" "php${PHP_VERSION}-posix" "php-posix" # Generalmente parte de php-common
+    "Phar" "php${PHP_VERSION}-phar" "php-phar"
+    "Posix" "php${PHP_VERSION}-posix" "php-posix"
     "Readline" "php${PHP_VERSION}-readline" "php-readline"
     "Shmop" "php${PHP_VERSION}-shmop" "php-shmop"
-    "SimpleXML" "php${PHP_VERSION}-simplexml" "php-xml" # SimpleXML es parte de php-xml
+    "SimpleXML" "php${PHP_VERSION}-simplexml" "php-xml"
     "Sockets" "php${PHP_VERSION}-sockets" "php-sockets"
     "Sysvmsg" "php${PHP_VERSION}-sysvmsg" "php-sysvmsg"
-    "Tokenizer" "php${PHP_VERSION}-tokenizer" "php-tokenizer" # Generalmente parte de php-common
-    "XMLReader" "php${PHP_VERSION}-xmlreader" "php-xml" # XMLReader es parte de php-xml
-    "XMLWriter" "php${PHP_VERSION}-xmlwriter" "php-xml" # XMLWriter es parte de php-xml
+    "Tokenizer" "php${PHP_VERSION}-tokenizer" "php-tokenizer"
+    "XMLReader" "php${PHP_VERSION}-xmlreader" "php-xml"
+    "XMLWriter" "php${PHP_VERSION}-xmlwriter" "php-xml"
     "XSL" "php${PHP_VERSION}-xsl" "php-xsl"
 )
 
@@ -491,7 +488,7 @@ if ! $INSTALL_FAILED; then
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         # Deshabilitar otras versiones de PHP FPM si existen y habilitar la seleccionada
         INSTALLED_PHP_FPM_VERSIONS=$(dpkg -l | grep -oP 'php\d\.\d-fpm' | sed 's/php//;s/-fpm//' | sort -rV)
-        for version in $INSTALLED_PHP_FPM_VERSIONS; do
+        for version in $INSTALLED_PHP_FPM_VERSions; do
             if [ "$version" != "$PHP_VERSION" ]; then
                 a2dismod "php${version}" > /dev/null 2>&1
                 systemctl stop "php${version}-fpm" > /dev/null 2>&1
