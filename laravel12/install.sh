@@ -32,6 +32,7 @@ case "$DISTRO" in
             exit 1
         fi
         DB_PACKAGE="mysql-server"
+        DB_TYPE="MySQL" # Variable para el tipo de DB
         DB_ROOT_USER="mysql"
         ;;
     debian)
@@ -40,6 +41,7 @@ case "$DISTRO" in
             exit 1
         fi
         DB_PACKAGE="mariadb-server"
+        DB_TYPE="MariaDB" # Variable para el tipo de DB
         DB_ROOT_USER="mariadb"
         ;;
     almalinux)
@@ -48,6 +50,7 @@ case "$DISTRO" in
             exit 1
         fi
         DB_PACKAGE="mariadb-server"
+        DB_TYPE="MariaDB" # Variable para el tipo de DB
         DB_ROOT_USER="mariadb"
         ;;
     *)
@@ -83,6 +86,7 @@ response=$?
 case $response in
     0) # Codigo de retorno 0 = Yes/Aceptar
         clear
+        # El script continuaria aqui con las siguientes acciones de instalacion
         ;;
     1) # Codigo de retorno 1 = No/Salir
         clear
@@ -112,7 +116,7 @@ fi
 # Solicitar la contraseña para el usuario de phpMyAdmin (visible)
 PHPMYADMIN_PASSWORD=$(dialog --clear --backtitle "Instalador de Sistema v$VEROS" \
 --title "Contraseña de phpMyAdmin" \
---inputbox "\nIngresa la contraseña para el usuario 'phpmyadmin':" 10 60 "" 3>&1 1>&2 2>&3)
+--inputbox "\nIngresa la contraseña para el usuario 'phpmyadmin' de $DB_TYPE:" 10 60 "" 3>&1 1>&2 2>&3)
 
 # Verificar si el usuario canceló o dejó la contraseña vacía
 if [ -z "$PHPMYADMIN_PASSWORD" ]; then
