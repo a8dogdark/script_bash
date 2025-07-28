@@ -255,9 +255,24 @@ else
     sleep 1 # Pausa para visualizar el mensaje
 fi
 
-# 7% - Añadiendo PPA de Ondrej para PHP (Solo Ubuntu/Debian)
+# 7% - Instalando gpg (necesario para repositorios con claves)
+update_progress 7 "Instalando: gnupg (gpg)..."
+if ! command -v gpg &> /dev/null; then
+    if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq gnupg > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar gnupg."; fi
+    elif [ "$DISTRO" = "AlmaLinux" ]; then
+        yum install -y -q gnupg > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar gnupg."; fi
+    fi
+else
+    echo "gnupg (gpg) ya está instalado."
+    sleep 1
+fi
+
+# 8% - Añadiendo PPA de Ondrej para PHP (Solo Ubuntu/Debian)
 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-    update_progress 7 "Añadiendo repositorio PHP de Ondrej PPA..."
+    update_progress 8 "Añadiendo repositorio PHP de Ondrej PPA..."
     if ! grep -q "ondrej/php" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
         # Instalar software-properties-common si no está instalado (necesario para add-apt-repository)
         if ! command -v add-apt-repository &> /dev/null; then
@@ -277,12 +292,12 @@ if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         sleep 1 # Pausa para visualizar el mensaje
     fi
 else
-    update_progress 7 "Saltando: Ondrej PPA (No es Ubuntu/Debian)."
+    update_progress 8 "Saltando: Ondrej PPA (No es Ubuntu/Debian)."
 fi
 
 
-# 9% - Instalando Apache
-update_progress 9 "Instalando: Apache..."
+# 10% - Instalando Apache
+update_progress 10 "Instalando: Apache..."
 # Primero, comprueba si Apache (httpd o apache2) ya está instalado
 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
     if ! command -v apache2 &> /dev/null; then
@@ -302,8 +317,8 @@ elif [ "$DISTRO" = "AlmaLinux" ]; then
     fi
 fi
 
-# 10% - Habilitando mod_rewrite y reiniciando Apache
-update_progress 10 "Habilitando módulo mod_rewrite y configurando Apache..."
+# 11% - Habilitando mod_rewrite y reiniciando Apache
+update_progress 11 "Habilitando módulo mod_rewrite y configurando Apache..."
 if ! $INSTALL_FAILED; then # Solo intenta configurar si no hubo un error crítico en la instalación
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         a2enmod rewrite > /dev/null 2>&1
@@ -342,8 +357,9 @@ else
 fi
 
 # Rango de 12% a 40% para PHP y extensiones
+# Reajustado: De 12% a 38%
 PHP_START_PERCENT=12
-PHP_END_PERCENT=40
+PHP_END_PERCENT=38
 
 # Lista de extensiones a instalar con sus nombres de paquetes.
 # Formato: "Nombre legible" "paquete-ubuntu-debian" "paquete-almalinux"
@@ -465,8 +481,8 @@ for (( i=0; i<${#PHP_EXTENSIONS[@]}; i+=3 )); do
 done
 
 
-# Asegurarse de que el porcentaje final de PHP sea 40%
-update_progress 40 "Configuración final de PHP y reinicio de Apache..."
+# Asegurarse de que el porcentaje final de PHP sea 38%
+update_progress 38 "Configuración final de PHP y reinicio de Apache..."
 if ! $INSTALL_FAILED; then
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         INSTALLED_PHP_FPM_VERSIONS=$(dpkg -l | grep -oP 'php\d\.\d-fpm' | sed 's/php//;s/-fpm//' | sort -rV)
@@ -493,8 +509,8 @@ else
     sleep 1
 fi
 
-# 50% - Instalando y configurando la base de datos (MariaDB o MySQL)
-update_progress 50 "Instalando y configurando: $DBASE..."
+# 45% - Instalando y configurando la base de datos (MariaDB o MySQL)
+update_progress 45 "Instalando y configurando: $DBASE..."
 DB_PACKAGE_INSTALLED=false
 if [ "$DBASE" = "MariaDB" ]; then
     if ! dpkg -s mariadb-server &> /dev/null; then
@@ -563,8 +579,8 @@ else
     sleep 1
 fi
 
-# 55% - Instalando phpMyAdmin...
-update_progress 55 "Instalando: phpMyAdmin..."
+# 50% - Instalando phpMyAdmin...
+update_progress 50 "Instalando: phpMyAdmin..."
 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
     if ! dpkg -s phpmyadmin &> /dev/null; then
         echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
@@ -603,8 +619,8 @@ elif [ "$DISTRO" = "AlmaLinux" ]; then
     fi
 fi
 
-# 60% - Instalando Composer...
-update_progress 60 "Instalando: Composer..."
+# 55% - Instalando Composer...
+update_progress 55 "Instalando: Composer..."
 if ! command -v composer &> /dev/null; then
     php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al descargar el instalador de Composer."; fi
@@ -617,8 +633,8 @@ else
     sleep 1
 fi
 
-# 70% - Instalando Node.js...
-update_progress 70 "Instalando: Node.js..."
+# 60% - Instalando Node.js...
+update_progress 60 "Instalando: Node.js..."
 if ! command -v node &> /dev/null; then
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         curl -fsSL https://deb.nodesource.com/setup_20.x | bash - > /dev/null 2>&1
@@ -640,8 +656,8 @@ else
     sleep 1
 fi
 
-# 80% - Creando la carpeta de proyectos Laravel y el proyecto en sí...
-update_progress 80 "Creando estructura de directorios y proyecto Laravel..."
+# 70% - Creando la carpeta de proyectos Laravel y el proyecto en sí...
+update_progress 70 "Creando estructura de directorios y proyecto Laravel..."
 
 LARAVEL_PROJECTS_DIR="/var/www/laravel"
 PROJECT_PATH="${LARAVEL_PROJECTS_DIR}/${PROYECTO}"
@@ -700,8 +716,8 @@ else
     sleep 1
 fi
 
-# 85% - Configurando base de datos y ejecutando migraciones para Laravel
-update_progress 85 "Configurando base de datos y ejecutando migraciones para Laravel..."
+# 80% - Configurando base de datos y ejecutando migraciones para Laravel
+update_progress 80 "Configurando base de datos y ejecutando migraciones para Laravel..."
 if ! $INSTALL_FAILED; then
     echo "Creando base de datos '${PROYECTO}' y configurando .env..."
     mysql -u root -p"$PASSROOT" -e "CREATE DATABASE IF NOT EXISTS \`${PROYECTO}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;" > /dev/null 2>&1
@@ -735,8 +751,8 @@ else
     sleep 1
 fi
 
-# 90% - Configurando idioma español en Laravel
-update_progress 90 "Configurando idioma español en Laravel..."
+# 85% - Configurando idioma español en Laravel
+update_progress 85 "Configurando idioma español en Laravel..."
 if ! $INSTALL_FAILED; then
     echo "Instalando paquete de traducciones para Laravel..."
     (cd "$PROJECT_PATH" && sudo -u "$APACHE_USER" composer require laravel-lang/lang > /dev/null 2>&1)
@@ -767,8 +783,8 @@ else
 fi
 
 
-# 93% - Configurando Virtual Host para Laravel...
-update_progress 93 "Configurando Virtual Host para Laravel..."
+# 90% - Configurando Virtual Host para Laravel...
+update_progress 90 "Configurando Virtual Host para Laravel..."
 if ! $INSTALL_FAILED; then
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         VIRTUAL_HOST_CONF="/etc/apache2/sites-available/${PROYECTO}.conf"
@@ -809,7 +825,7 @@ if ! $INSTALL_FAILED; then
         echo "    <Directory ${PROJECT_PATH}/public>" >> "$VIRTUAL_HOST_CONF"
         echo "        AllowOverride All" >> "$VIRTUAL_HOST_CONF"
         echo "        Require all granted" >> "$VIRTUAL_HOST_CONF"
-        echo "    </Directory>" >> "$VIRTUAL_HOST_CONF"
+        echo "</Directory>" >> "$VIRTUAL_HOST_CONF"
         echo "    ErrorLog /var/log/httpd/${PROYECTO}_error.log" >> "$VIRTUAL_HOST_CONF"
         echo "    CustomLog /var/log/httpd/${PROYECTO}_access.log combined" >> "$VIRTUAL_HOST_CONF"
         echo "</VirtualHost>" >> "$VIRTUAL_HOST_CONF"
@@ -836,8 +852,8 @@ else
     sleep 1
 fi
 
-# 95% - Creando archivo info.php para verificación de PHP...
-update_progress 95 "Creando archivo info.php para verificación de PHP..."
+# 93% - Creando archivo info.php para verificación de PHP...
+update_progress 93 "Creando archivo info.php para verificación de PHP..."
 if [ -f "/var/www/html/info.php" ]; then
     echo "El archivo info.php ya existe. Saltando creación."
     sleep 1
@@ -852,7 +868,7 @@ else
     chmod 644 /var/www/html/info.php > /dev/null 2>&1
 fi
 
-# 98% - Instalando programas adicionales seleccionados...
+# 95% - Instalando programas adicionales seleccionados...
 PROGRAMS_TOTAL=${#PROGRAMAS_SELECCIONADOS[@]}
 # Distribuir los puntos restantes entre los programas, asegurando un mínimo de 1% por programa si hay pocos.
 REMAINING_PERCENT=$((100 - CURRENT_PERCENT))
@@ -918,11 +934,35 @@ for PROGRAMA in "${PROGRAMAS_SELECCIONADOS[@]}"; do
         "sublime")
             if ! command -v subl &> /dev/null; then
                 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-                    wget -qO - https://download.sublimetext.com/apt/rpm-pub-key.gpg | gpg --dearmor | sudo tee /etc/apt/trusted.gpg.d/sublimehq-archive.gpg > /dev/null
-                    echo "deb https://download.sublimetext.com/apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list > /dev/null
-                    apt-get update -qq > /dev/null 2>&1
-                    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sublime-text > /dev/null 2>&1
-                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Sublime Text."; fi
+                    # Asegurarse de que el directorio /etc/apt/keyrings exista
+                    mkdir -p /etc/apt/keyrings > /dev/null 2>&1
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al crear el directorio /etc/apt/keyrings para Sublime."; fi
+
+                    if ! $INSTALL_FAILED; then
+                        # Descargar la clave GPG y almacenarla directamente en el keyring de apt para Sublime
+                        curl -fsSL https://download.sublimetext.com/sublimehq-pub.gpg | gpg --dearmor -o /etc/apt/keyrings/sublimehq-archive.gpg > /dev/null 2>&1
+                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al descargar o procesar la clave GPG de Sublime Text."; fi
+                    fi
+
+                    if ! $INSTALL_FAILED; then
+                        # Asegurar los permisos correctos para la clave GPG
+                        chmod a+r /etc/apt/keyrings/sublimehq-archive.gpg > /dev/null 2>&1
+                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al establecer permisos para la clave GPG de Sublime Text."; fi
+
+                        # Añadir el repositorio de Sublime Text
+                        echo "deb [signed-by=/etc/apt/keyrings/sublimehq-archive.gpg] https://download.sublimetext.com/ apt/stable/" | tee /etc/apt/sources.list.d/sublime-text.list > /dev/null
+                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al añadir el repositorio de Sublime Text."; fi
+                    fi
+
+                    if ! $INSTALL_FAILED; then
+                        apt-get update -qq > /dev/null 2>&1
+                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al actualizar los índices de paquetes después de añadir el repositorio de Sublime Text."; fi
+                    fi
+
+                    if ! $INSTALL_FAILED; then
+                        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sublime-text > /dev/null 2>&1
+                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Sublime Text."; fi
+                    fi
                 elif [ "$DISTRO" = "AlmaLinux" ]; then
                     rpm -v --import https://download.sublimetext.com/rpm/rpmkey.gpg > /dev/null 2>&1
                     yum-config-manager --add-repo https://download.sublimetext.com/rpm/stable/x86_64/sublime-text.repo > /dev/null 2>&1
