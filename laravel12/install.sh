@@ -1,153 +1,98 @@
 #!/bin/bash
 
-VERSION_SCRIPT="2.0"
+# Este script está diseñado para instalar LAMP para Laravel 12 en múltiples distribuciones Linux.
+# Trabajará en modo silencioso, y las validaciones se manejarán con 'dialog'.
 
-# Verificar si el usuario es root
+VERSION="2.0" # Versión del script
+
+# Validación de usuario root
 if [ "$EUID" -ne 0 ]; then
-    echo "Este script debe ejecutarse como root."
+  exit 1
+fi
+
+# Validación de arquitectura del sistema (64 bits)
+if ! uname -m | grep -q "64"; then
+  exit 1
+fi
+
+# Detectar y validar el sistema operativo
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS_ID=$ID
+    VERSION_ID_RAW=$VERSION_ID # Guardamos la versión ID original
+else
     exit 1
 fi
 
-# Verificar que el sistema es de 64 bits
-ARCH=$(uname -m)
-if [ "$ARCH" != "x86_64" ]; then
-    echo "Este script solo puede ejecutarse en sistemas de 64 bits (x86_64)."
-    exit 1
-fi
-
-# Detectar información del sistema
-source /etc/os-release
-
-# Determinar distribución
-DISTRO=""
-case "$ID" in
+# Asignar la variable DISTRO y validar la versión
+case "$OS_ID" in
     ubuntu)
         DISTRO="ubuntu"
+        case "$VERSION_ID_RAW" in
+            "22.04"|"23.10"|"24.10")
+                VERSION_SO="$VERSION_ID_RAW"
+                ;;
+            *)
+                exit 1 # Versión de Ubuntu no soportada
+                ;;
+        esac
         ;;
     debian)
         DISTRO="debian"
+        case "$VERSION_ID_RAW" in
+            "11"|"12")
+                VERSION_SO="$VERSION_ID_RAW"
+                ;;
+            *)
+                exit 1 # Versión de Debian no soportada
+                ;;
+        esac
         ;;
     almalinux)
         DISTRO="almalinux"
+        # AlmaLinux no necesita una validación de versión específica aquí a menos que se especifique
+        # Asignamos la versión para consistencia, aunque no la validemos estrictamente de momento.
+        VERSION_SO="$VERSION_ID_RAW"
         ;;
     *)
-        echo "Distribución no compatible: $ID"
-        exit 1
+        exit 1 # Sistema operativo no soportado
         ;;
 esac
 
-# Determinar versión simplificada
-VERSION_SO=""
-if [[ "$DISTRO" == "ubuntu" ]]; then
-    VERSION_MAJOR=$(echo "$VERSION_ID" | cut -d'.' -f1)
-    if [[ "$VERSION_MAJOR" == "22" || "$VERSION_MAJOR" == "23" || "$VERSION_MAJOR" == "24" ]]; then
-        VERSION_SO="$VERSION_MAJOR"
-    elif [[ "$VERSION_MAJOR" == "25" ]]; then
-        echo "Este script no es compatible con Ubuntu 25.x"
-        exit 1
-    else
-        echo "Versión de Ubuntu no soportada: $VERSION_ID"
-        exit 1
-    fi
-elif [[ "$DISTRO" == "debian" || "$DISTRO" == "almalinux" ]]; then
-    VERSION_MAJOR=$(echo "$VERSION_ID" | cut -d'.' -f1)
-    if [[ "$VERSION_MAJOR" == "11" || "$VERSION_MAJOR" == "12" ]]; then
-        VERSION_SO="$VERSION_MAJOR"
-    else
-        echo "Versión de $DISTRO no soportada: $VERSION_ID"
-        exit 1
-    fi
-fi
-
-echo "Sistema detectado: $DISTRO $VERSION_SO ($PRETTY_NAME)"
-echo "Versión del script: $VERSION_SCRIPT"
-
-# Instalar dialog si no está instalado (en segundo plano)
+# Instalar dialog si no está presente (en modo silencioso)
 if ! command -v dialog &> /dev/null; then
-    (
-        apt-get install -y dialog
-    ) &
-    PID=$!
-    wait $PID
+    case "$DISTRO" in
+        ubuntu|debian)
+            apt install -y dialog >/dev/null 2>&1
+            ;;
+        almalinux)
+            dnf install -y dialog >/dev/null 2>&1
+            ;;
+    esac
 fi
 
-# Determinar qué servidor de base de datos se instalará según distro
-if [[ "$DISTRO" == "almalinux" ]]; then
-    DB_SERVER="MariaDB"
-else
-    DB_SERVER="MySQL"
-fi
+# Cuadro de Bienvenida Yes/No
+dialog --backtitle "Instalador de LAMP y Laravel 12 - v$VERSION" \
+       --title "¡Bienvenido!" \
+       --yesno "Este script instalará un entorno LAMP y las dependencias necesarias para Laravel 12 en tu sistema $DISTRO $VERSION_SO.\n\n\
+Los componentes a instalar incluyen:\n\
+- Apache\n\
+- PHP y extensiones\n\
+- MySQL o MariaDB (según el sistema operativo)\n\
+- PhpMyAdmin\n\
+- Composer\n\
+- Node.js\n\
+- Programas adicionales\n\
+- Proyecto Laravel 12\n\n\
+¿Deseas continuar con la instalación?" 20 75
 
-WELCOME_MSG="Bienvenido al instalador de Laravel con LAMP.\n
-Se instalarán los siguientes paquetes:\n
-- Apache2\n
-- PHP y librerías\n
-- $DB_SERVER\n
-- PhpMyAdmin\n
-- Composer\n
-- Node.js\n
-- Programas adicionales\n
-- Proyecto Laravel 12"
-
-dialog --title "Bienvenida" \
-       --yesno "$WELCOME_MSG" 15 60
+# Capturar la respuesta del cuadro Yes/No
 response=$?
+
+# Si la respuesta es No (255 para yesno significa "No")
 if [ $response -ne 0 ]; then
-    clear
+    dialog --backtitle "Instalador de LAMP y Laravel 12 - v$VERSION" \
+           --title "Saliendo..." \
+           --msgbox "Sales de nuestro instalador. ¡Esperamos verte pronto!" 8 50
     exit 0
 fi
-clear
-
-dialog --title "Nombre del Proyecto" \
-       --inputbox "Ingresa el nombre del proyecto Laravel que deseas crear:" 10 60 2> /tmp/project_name
-response=$?
-PROJECT_NAME=$(cat /tmp/project_name)
-rm -f /tmp/project_name
-if [ $response -ne 0 ] || [ -z "$PROJECT_NAME" ]; then
-    dialog --title "Error" --msgbox "No ingresaste ningún nombre de proyecto." 8 50
-    clear
-    exit 0
-fi
-clear
-
-dialog --title "Contraseña phpMyAdmin" \
-       --inputbox "Ingresa la contraseña para el usuario phpMyAdmin de la base de datos ($DB_SERVER):" 10 60 2> /tmp/pmadmin_pass
-response=$?
-PMADMIN_PASS=$(cat /tmp/pmadmin_pass)
-rm -f /tmp/pmadmin_pass
-if [ $response -ne 0 ] || [ -z "$PMADMIN_PASS" ]; then
-    dialog --title "Error" --msgbox "No ingresaste ninguna contraseña para phpMyAdmin." 8 50
-    clear
-    exit 0
-fi
-clear
-
-dialog --title "Contraseña Root DB" \
-       --inputbox "Ingresa la contraseña para el usuario root de la base de datos ($DB_SERVER):" 10 60 2> /tmp/rootdb_pass
-response=$?
-ROOTDB_PASS=$(cat /tmp/rootdb_pass)
-rm -f /tmp/rootdb_pass
-if [ $response -ne 0 ] || [ -z "$ROOTDB_PASS" ]; then
-    dialog --title "Error" --msgbox "No ingresaste ninguna contraseña para el usuario root de la base de datos." 8 60
-    clear
-    exit 0
-fi
-clear
-
-# Menú para seleccionar versión de PHP
-dialog --title "Selecciona la versión de PHP" \
-       --menu "Elige una versión de PHP para Laravel 12 (solo una opción):" 10 60 3 \
-       8.2 "PHP 8.2" \
-       8.3 "PHP 8.3" \
-       8.4 "PHP 8.4" 2> /tmp/php_version
-
-response=$?
-PHP_VERSION=$(cat /tmp/php_version)
-rm -f /tmp/php_version
-
-if [ $response -ne 0 ] || [ -z "$PHP_VERSION" ]; then
-    dialog --title "Error" --msgbox "No seleccionaste ninguna versión de PHP." 8 50
-    clear
-    exit 0
-fi
-clear
