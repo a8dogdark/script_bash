@@ -618,10 +618,10 @@ elif [ "$DISTRO" = "AlmaLinux" ]; then
         if ! grep -q "Include /etc/httpd/conf.d/phpMyAdmin.conf" /etc/httpd/conf/httpd.conf; then
             echo "Alias /phpmyadmin /usr/share/phpmyadmin" > /etc/httpd/conf.d/phpMyAdmin.conf
             echo "<Directory /usr/share/phpmyadmin>" >> /etc/httpd/conf.d/phpMyAdmin.conf
-            echo "    AddType application/x-httpd-php .php" >> /etc/httpd/conf.d/phpMyAdmin.conf
-            echo "    DirectoryIndex index.php" >> /etc/httpd/conf.d/phpMyAdmin.conf
-            echo "    Require all granted" >> /etc/httpd/conf.d/phpMyAdmin.conf
-            echo "</Directory>" >> /etc/httpd/conf.d/phpMyAdmin.conf
+            echo "    AddType application/x-httpd-php .php" >> "/etc/httpd/conf.d/phpMyAdmin.conf"
+            echo "    DirectoryIndex index.php" >> "/etc/httpd/conf.d/phpMyAdmin.conf"
+            echo "    Require all granted" >> "/etc/httpd/conf.d/phpMyAdmin.conf"
+            echo "</Directory>" >> "/etc/httpd/conf.d/phpMyAdmin.conf"
             
             systemctl restart httpd > /dev/null 2>&1
             if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al reiniciar Apache después de configurar phpMyAdmin."; fi
@@ -905,58 +905,87 @@ for PROGRAMA in "${PROGRAMAS_SELECCIONADOS[@]}"; do
     case "$PROGRAMA" in
         "vscode")
             if ! command -v code &> /dev/null; then
+                echo "Intentando instalar Visual Studio Code..."
                 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-                    # Eliminar cualquier clave antigua si existe
-                    rm -f microsoft.gpg > /dev/null 2>&1
+                    # --- Pasos más robustos para Debian/Ubuntu ---
+                    # Limpiar cualquier configuración de repositorio existente de VS Code
+                    rm -f /etc/apt/sources.list.d/vscode.list > /dev/null 2>&1
+                    rm -f /etc/apt/sources.list.d/vscode.sources > /dev/null 2>&1
                     rm -f /usr/share/keyrings/microsoft.gpg > /dev/null 2>&1
 
-                    wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg
-                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al descargar o procesar la clave GPG de Microsoft."; fi
-
-                    if ! $INSTALL_FAILED; then
-                        install -D -o root -g root -m 644 microsoft.gpg /usr/share/keyrings/microsoft.gpg
-                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar la clave GPG de Microsoft en /usr/share/keyrings."; fi
-                    fi
-                    rm -f microsoft.gpg > /dev/null 2>&1 # Limpiar archivo temporal
-
-                    # Paso 2: Crear el archivo .sources para el repositorio
-                    if ! $INSTALL_FAILED; then
-                        VSCODE_SOURCES_FILE="/etc/apt/sources.list.d/vscode.sources"
-                        echo "Types: deb" > "$VSCODE_SOURCES_FILE"
-                        echo "URIs: https://packages.microsoft.com/repos/code" >> "$VSCODE_SOURCES_FILE"
-                        echo "Suites: stable" >> "$VSCODE_SOURCES_FILE"
-                        echo "Components: main" >> "$VSCODE_SOURCES_FILE"
-                        echo "Architectures: amd64,arm64,armhf" >> "$VSCODE_SOURCES_FILE"
-                        echo "Signed-By: /usr/share/keyrings/microsoft.gpg" >> "$VSCODE_SOURCES_FILE"
-                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al crear el archivo de repositorio de VS Code."; fi
+                    # 1. Descargar y añadir la clave GPG de Microsoft al keyring de apt
+                    # Usamos 'curl' directamente al archivo de keyring para evitar problemas de permisos con 'tee'
+                    echo "Descargando y añadiendo clave GPG de VS Code..."
+                    curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | sudo tee /usr/share/keyrings/microsoft.gpg > /dev/null
+                    if [ $? -ne 0 ]; then
+                        INSTALL_FAILED=true
+                        echo "ERROR: Fallo al descargar o añadir la clave GPG de Microsoft para VS Code."
+                        continue # Salta al siguiente programa
                     fi
 
-                    # Paso 3: Actualizar y instalar
-                    if ! $INSTALL_FAILED; then
-                        apt-get update -qq > /dev/null 2>&1
-                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al actualizar los índices de paquetes después de añadir el repositorio de VS Code."; fi
+                    # 2. Crear el archivo de repositorio '.sources'
+                    echo "Configurando repositorio de VS Code..."
+                    VSCODE_SOURCES_FILE="/etc/apt/sources.list.d/vscode.sources"
+                    {
+                        echo "Types: deb"
+                        echo "URIs: https://packages.microsoft.com/repos/code"
+                        echo "Suites: stable"
+                        echo "Components: main"
+                        echo "Architectures: amd64,arm64,armhf"
+                        echo "Signed-By: /usr/share/keyrings/microsoft.gpg"
+                    } | sudo tee "$VSCODE_SOURCES_FILE" > /dev/null
+                    if [ $? -ne 0 ]; then
+                        INSTALL_FAILED=true
+                        echo "ERROR: Fallo al crear el archivo de repositorio de VS Code en $VSCODE_SOURCES_FILE."
+                        continue
                     fi
 
-                    if ! $INSTALL_FAILED; then
-                        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq code > /dev/null 2>&1
-                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Visual Studio Code."; fi
+                    # 3. Actualizar los índices de paquetes
+                    echo "Actualizando índices de paquetes después de añadir el repositorio de VS Code..."
+                    apt-get update -qq > /dev/null 2>&1
+                    if [ $? -ne 0 ]; then
+                        INSTALL_FAILED=true
+                        echo "ERROR: Fallo al ejecutar apt update después de añadir el repositorio de VS Code. Revisa el archivo $VSCODE_SOURCES_FILE."
+                        continue
                     fi
+
+                    # 4. Instalar Visual Studio Code
+                    echo "Instalando paquete 'code'..."
+                    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq code > /dev/null 2>&1
+                    if [ $? -ne 0 ]; then
+                        INSTALL_FAILED=true
+                        echo "ERROR: Fallo al instalar Visual Studio Code. Es posible que el paquete 'code' no se encuentre o haya dependencias rotas."
+                        continue
+                    fi
+                    echo "Visual Studio Code instalado exitosamente."
+
                 elif [ "$DISTRO" = "AlmaLinux" ]; then
+                    # --- AlmaLinux (se mantiene similar, generalmente es más directo) ---
+                    echo "Configurando repositorio de VS Code para AlmaLinux..."
                     rpm --import https://packages.microsoft.com/keys/microsoft.asc > /dev/null 2>&1
-                    echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" > /etc/yum.repos.d/vscode.repo
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al importar clave RPM para VS Code."; continue; fi
+
+                    echo -e "[code]\nname=Visual Studio Code\nbaseurl=https://packages.microsoft.com/yumrepos/vscode\nenabled=1\ngpgcheck=1\ngpgkey=https://packages.microsoft.com/keys/microsoft.asc" | sudo tee /etc/yum.repos.d/vscode.repo > /dev/null
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al crear archivo de repositorio para VS Code."; continue; fi
+
+                    echo "Actualizando caché de yum para VS Code..."
                     yum check-update -q > /dev/null 2>&1
+                    if [ $? -ne 0 ]; then echo "Advertencia: Fallo en yum check-update para VS Code. Intentando instalación de todos modos."; fi
+
+                    echo "Instalando Visual Studio Code en AlmaLinux..."
                     yum install -y -q code > /dev/null 2>&1
-                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Visual Studio Code."; fi
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Visual Studio Code en AlmaLinux."; fi
+                    echo "Visual Studio Code instalado exitosamente."
                 fi
             else
-                echo "Visual Studio Code ya está instalado."
+                echo "Visual Studio Code ya está instalado. Saltando."
             fi
             ;;
         "sublime")
             if ! command -v subl &> /dev/null; then
                 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
                     # Nuevo proceso de instalación para Sublime Text
-                    # Eliminar cualquier clave o archivo de repositorio antiguo
+                    # Limpiar cualquier clave o archivo de repositorio antiguo
                     rm -f /etc/apt/keyrings/sublimehq-pub.asc > /dev/null 2>&1
                     rm -f /etc/apt/sources.list.d/sublime-text.list > /dev/null 2>&1 # Asegurarse de limpiar el .list viejo
                     rm -f /etc/apt/sources.list.d/sublime-text.sources > /dev/null 2>&1 # Limpiar también el nuevo tipo si existe
@@ -1025,7 +1054,7 @@ for PROGRAMA in "${PROGRAMAS_SELECCIONADOS[@]}"; do
                     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Google Chrome."; fi
                 elif [ "$DISTRO" = "AlmaLinux" ]; then
                     curl https://dl.google.com/linux/linux_signing_key.pub | sudo rpm --import - > /dev/null 2>&1
-                    echo -e "[google-chrome]\nname=google-chrome\nbaseurl=http://dl.google.com/linux/chrome/rpm/stable/x86_64\nenabled=1\ngpgcheck=1\ngpgkey=https://dl.google.com/linux/linux_signing_key.pub" > /etc/yum.repos.d/google-chrome.repo
+                    echo -e "[google-chrome]\nname=google-chrome\nbaseurl=http://dl.google.com/linux/chrome/rpm/stable/x86_64\nenabled=1\ngpgcheck=1\ngpgkey=https://dl.google.com/linux/linux_signing_key.pub" | sudo tee /etc/yum.repos.d/google-chrome.repo > /dev/null
                     yum check-update -q > /dev/null 2>&1
                     yum install -y -q google-chrome-stable > /dev/null 2>&1
                     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Google Chrome."; fi
