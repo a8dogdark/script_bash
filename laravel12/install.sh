@@ -32,7 +32,7 @@ case "$DISTRO" in
             exit 1
         fi
         DB_PACKAGE="mysql-server"
-        DB_ROOT_USER="mysql" # Para Ubuntu/MySQL, el usuario root es 'mysql' por defecto
+        DB_ROOT_USER="mysql"
         ;;
     debian)
         if ! (( $(echo "$VERSION >= 11" | bc -l) )); then
@@ -40,7 +40,7 @@ case "$DISTRO" in
             exit 1
         fi
         DB_PACKAGE="mariadb-server"
-        DB_ROOT_USER="mariadb" # Para Debian/MariaDB, el usuario root es 'mariadb' por defecto
+        DB_ROOT_USER="mariadb"
         ;;
     almalinux)
         if ! [[ "$VERSION" =~ ^(8|9)\.[0-9]+$ ]]; then
@@ -48,7 +48,7 @@ case "$DISTRO" in
             exit 1
         fi
         DB_PACKAGE="mariadb-server"
-        DB_ROOT_USER="mariadb" # Para AlmaLinux/MariaDB, el usuario root es 'mariadb' por defecto
+        DB_ROOT_USER="mariadb"
         ;;
     *)
         clear
@@ -109,10 +109,10 @@ if [ -z "$PROJECT_NAME" ]; then
     exit 1
 fi
 
-# Solicitar la contraseña para el usuario de phpMyAdmin
+# Solicitar la contraseña para el usuario de phpMyAdmin (visible)
 PHPMYADMIN_PASSWORD=$(dialog --clear --backtitle "Instalador de Sistema v$VEROS" \
 --title "Contraseña de phpMyAdmin" \
---passwordbox "\nIngresa la contraseña para el usuario 'phpmyadmin':" 10 60 3>&1 1>&2 2>&3)
+--inputbox "\nIngresa la contraseña para el usuario 'phpmyadmin':" 10 60 "" 3>&1 1>&2 2>&3)
 
 # Verificar si el usuario canceló o dejó la contraseña vacía
 if [ -z "$PHPMYADMIN_PASSWORD" ]; then
@@ -124,10 +124,10 @@ if [ -z "$PHPMYADMIN_PASSWORD" ]; then
     exit 1
 fi
 
-# Solicitar la contraseña para el usuario root de la base de datos
+# Solicitar la contraseña para el usuario root de la base de datos (visible)
 DB_ROOT_PASSWORD=$(dialog --clear --backtitle "Instalador de Sistema v$VEROS" \
 --title "Contraseña Root de $DB_PACKAGE" \
---passwordbox "\nIngresa la contraseña para el usuario root de $DB_ROOT_USER:" 10 60 3>&1 1>&2 2>&3)
+--inputbox "\nIngresa la contraseña para el usuario root de $DB_ROOT_USER:" 10 60 "" 3>&1 1>&2 2>&3)
 
 # Verificar si el usuario canceló o dejó la contraseña vacía
 if [ -z "$DB_ROOT_PASSWORD" ]; then
