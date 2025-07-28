@@ -5,7 +5,6 @@ DISTRO=""
 PASSPHP=""
 PASSROOT=""
 PROYECTO=""
-DBASE=""
 PHP_VERSION="" # Variable para almacenar la versión de PHP seleccionada
 PROGRAMAS_SELECCIONADOS=() # Array para almacenar los programas seleccionados
 INSTALL_FAILED=false # Bandera para indicar si alguna instalación falló
@@ -23,6 +22,9 @@ elif grep -q "Debian" /etc/os-release; then
     DISTRO="Debian"
 elif grep -q "AlmaLinux" /etc/os-release; then
     DISTRO="AlmaLinux"
+# Se puede añadir soporte para otras distros RHEL-based como Rocky Linux o CentOS
+# elif grep -q "Rocky" /etc/os-release || grep -q "CentOS" /etc/os-release; then
+#     DISTRO="AlmaLinux" # Tratar como AlmaLinux por compatibilidad de comandos dnf/yum
 else
     echo "Distribución no soportada. Este script es compatible con Ubuntu (22, 23, 24), Debian (11, 12) y AlmaLinux."
     exit 1
@@ -32,7 +34,7 @@ fi
 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
     DBASE="MariaDB"
 elif [ "$DISTRO" = "AlmaLinux" ]; then
-    DBASE="MySQL"
+    DBASE="MySQL" # AlmaLinux usa MySQL por defecto o se puede instalar MariaDB
 fi
 
 # Validar que el sistema sea de 64 bits
@@ -105,22 +107,20 @@ check_input "$PROYECTO" "Nombre del Proyecto" $?
 clear # Limpiar después de que el usuario interactúe
 
 # Input para la contraseña del usuario phpMyAdmin de la base de datos
-# *** CAMBIO: Usando --inputbox para que se vea lo que se ingresa ***
-echo "Por favor, ingresa la contraseña para el usuario phpMyAdmin de la base de datos y presiona ENTER."
+echo "Por favor, ingresa la contraseña para el usuario phpMyAdmin de la base de datos."
 PASSPHP=$(dialog --clear --stdout \
                --backtitle "Instalador LAMP Laravel 12 - Versión $VERSION" \
                --title "Contraseña para Usuario phpMyAdmin de MySQL/MariaDB" \
-               --inputbox "Ingresa la contraseña para el usuario phpMyAdmin de la base de datos:" 10 60)
+               --passwordbox "Ingresa la contraseña para el usuario phpMyAdmin de la base de datos (no se mostrará):" 10 60)
 check_input "$PASSPHP" "Contraseña phpMyAdmin" $?
 clear # Limpiar después de que el usuario interactúe
 
 # Input para la contraseña del usuario root de la base de datos
-# *** CAMBIO: Usando --inputbox para que se vea lo que se ingresa ***
-echo "Por favor, ingresa la contraseña para el usuario root de la base de datos y presiona ENTER."
+echo "Por favor, ingresa la contraseña para el usuario root de la base de datos."
 PASSROOT=$(dialog --clear --stdout \
                 --backtitle "Instalador LAMP Laravel 12 - Versión $VERSION" \
                 --title "Contraseña para Usuario Root de MySQL/MariaDB" \
-               --inputbox "Ingresa la contraseña para el usuario root de la base de datos:" 10 60)
+               --passwordbox "Ingresa la contraseña para el usuario root de la base de datos (no se mostrará):" 10 60)
 check_input "$PASSROOT" "Contraseña Root" $?
 clear # Limpiar después de que el usuario interactúe
 
@@ -499,9 +499,14 @@ fi
 update_progress 45 "Instalando y configurando: $DBASE..."
 DB_INSTALLED_FLAG=false # Nueva bandera para saber si la DB ya estaba instalada
 if [ "$DBASE" = "MariaDB" ]; then
-    if ! dpkg -s mariadb-server &> /dev/null; then
-        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq mariadb-server mariadb-client > /dev/null 2>&1
-        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar MariaDB."; fi
+    if ! dpkg -s mariadb-server &> /dev/null && ! rpm -q mariadb-server &> /dev/null; then
+        if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq mariadb-server mariadb-client > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar MariaDB."; fi
+        elif [ "$DISTRO" = "AlmaLinux" ]; then
+            yum install -y -q mariadb-server mariadb > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar MariaDB."; fi
+        fi
     else
         DB_INSTALLED_FLAG=true
     fi
@@ -533,33 +538,39 @@ if ! $INSTALL_FAILED; then # Procede solo si la instalación de la DB base no fa
             echo "Configurando contraseñas de $DBASE y plugin de autenticación para root y phpmyadmin..."
             # Esperar un momento si el servicio acaba de iniciar
             sleep 5 
-            if [ "$DBASE" = "MariaDB" ]; then
-                mysql -u root <<EOF_SQL
-ALTER USER 'root'@'localhost' IDENTIFIED BY '$PASSROOT';
+            # Contraseña actual de root (vacía por defecto en nuevas instalaciones)
+            # Luego: Set root password? (Y), Remove anonymous users? (Y), Disallow root login remotely? (Y),
+            # Remove test database and access to it? (Y), Reload privilege tables now? (Y)
+            sudo mysql_secure_installation <<EOF_MYSQL_SECURE
+
+y
+$PASSROOT
+$PASSROOT
+y
+y
+y
+y
+EOF_MYSQL_SECURE
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al ejecutar mysql_secure_installation. Revisa la consola para errores."; fi
+
+            if ! $INSTALL_FAILED; then
+                if [ "$DBASE" = "MariaDB" ]; then
+                    mysql -u root -p"$PASSROOT" <<EOF_SQL
 UPDATE mysql.user SET plugin='mysql_native_password' WHERE User='root' AND Host='localhost';
-DELETE FROM mysql.user WHERE User='';
-DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
-DROP DATABASE IF EXISTS test;
-DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
 FLUSH PRIVILEGES;
 CREATE USER 'phpmyadmin'@'localhost' IDENTIFIED BY '$PASSPHP';
 GRANT ALL PRIVILEGES ON *.* TO 'phpmyadmin'@'localhost' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 EOF_SQL
-                if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al configurar MariaDB con contraseñas y plugin."; fi
-            elif [ "$DBASE" = "MySQL" ]; then
-                mysql -u root <<EOF_SQL
-ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$PASSROOT';
-DELETE FROM mysql.user WHERE User='';
-DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
-DROP DATABASE IF EXISTS test;
-DELETE FROM mysql.db WHERE Db='test' OR Db='test\\_%';
-FLUSH PRIVILEGES;
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al configurar MariaDB con usuario phpmyadmin."; fi
+                elif [ "$DBASE" = "MySQL" ]; then
+                    mysql -u root -p"$PASSROOT" <<EOF_SQL
 CREATE USER 'phpmyadmin'@'localhost' IDENTIFIED BY '$PASSPHP';
 GRANT ALL PRIVILEGES ON *.* TO 'phpmyadmin'@'localhost' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 EOF_SQL
-                if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al configurar MySQL con contraseñas y plugin."; fi
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al configurar MySQL con usuario phpmyadmin."; fi
+                fi
             fi
         fi
     else
@@ -571,47 +582,92 @@ fi
 # 50% - Instalando phpMyAdmin...
 update_progress 50 "Instalando: phpMyAdmin..."
 if ! $INSTALL_FAILED; then
-    if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-        if ! dpkg -s phpmyadmin &> /dev/null; then
-            # Pre-seed debconf selections for phpMyAdmin for unattended installation
-            echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
-            echo "phpmyadmin phpmyadmin/app-password-confirm password $PASSPHP" | debconf-set-selections
-            echo "phpmyadmin phpmyadmin/mysql/admin-pass password $PASSROOT" | debconf-set-selections
-            echo "phpmyadmin phpmyadmin/mysql/app-pass password $PASSPHP" | debconf-set-selections
-            echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
-            
-            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq phpmyadmin > /dev/null 2>&1
-            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar phpMyAdmin."; fi
-        else
-            # Si ya está instalado, reconfiguramos para asegurarnos de que la contraseña sea la deseada.
-            echo "phpMyAdmin ya está instalado. Reconfigurando para asegurar las credenciales..."
-            echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
-            echo "phpmyadmin phpmyadmin/app-password-confirm password $PASSPHP" | debconf-set-selections
-            echo "phpmyadmin phpmyadmin/mysql/admin-pass password $PASSROOT" | debconf-set-selections
-            echo "phpmyadmin phpmyadmin/mysql/app-pass password $PASSPHP" | debconf-set-selections
-            echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
-            dpkg-reconfigure -f noninteractive phpmyadmin > /dev/null 2>&1
-            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al reconfigurar phpMyAdmin."; fi
-        fi
-    elif [ "$DISTRO" = "AlmaLinux" ]; then
-        if ! rpm -q phpmyadmin &> /dev/null; then
-            yum install -y -q phpmyadmin > /dev/null 2>&1
-            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar phpMyAdmin."; fi
+    # Descargar e instalar phpMyAdmin manualmente para mayor control y evitar problemas de dependencias
+    # con versiones de PHP específicas que el paquete oficial pueda tener.
+    PMA_VERSION="5.2.1" # Última versión estable al momento
+    PMA_TEMP_DIR="/tmp/phpmyadmin_install"
+    PMA_TARGET_DIR="/usr/share/phpmyadmin"
 
-            if ! grep -q "Include /etc/httpd/conf.d/phpMyAdmin.conf" /etc/httpd/conf/httpd.conf; then
-                echo "Creando archivo de configuración de phpMyAdmin para Apache en AlmaLinux..."
-                echo "Alias /phpmyadmin /usr/share/phpmyadmin" > /etc/httpd/conf.d/phpMyAdmin.conf
-                echo "<Directory /usr/share/phpmyadmin>" >> "/etc/httpd/conf.d/phpMyAdmin.conf"
-                echo "    AddType application/x-httpd-php .php" >> "/etc/httpd/conf.d/phpMyAdmin.conf"
-                echo "    DirectoryIndex index.php" >> "/etc/httpd/conf.d/phpMyAdmin.conf"
-                echo "    Require all granted" >> "/etc/httpd/conf.d/phpMyAdmin.conf"
-                echo "</Directory>" >> "/etc/httpd/conf.d/phpMyAdmin.conf"
-                
-                systemctl restart httpd > /dev/null 2>&1
-                if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al reiniciar Apache después de configurar phpMyAdmin."; fi
+    # Limpiar instalaciones previas para asegurar una instalación limpia
+    if [ -d "$PMA_TARGET_DIR" ]; then
+        echo "Limpiando instalación anterior de phpMyAdmin en $PMA_TARGET_DIR..."
+        rm -rf "$PMA_TARGET_DIR" > /dev/null 2>&1
+    fi
+    # También limpiar archivos de configuración de Apache que puedan existir
+    if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+        a2disconf phpmyadmin > /dev/null 2>&1 # Deshabilitar si está habilitado
+        rm -f /etc/apache2/conf-available/phpmyadmin.conf > /dev/null 2>&1
+    elif [ "$DISTRO" = "AlmaLinux" ]; then
+        rm -f /etc/httpd/conf.d/phpMyAdmin.conf > /dev/null 2>&1
+    fi
+
+    mkdir -p "$PMA_TEMP_DIR" > /dev/null 2>&1
+    wget -q "https://files.phpmyadmin.net/phpMyAdmin/${PMA_VERSION}/phpMyAdmin-${PMA_VERSION}-all-languages.tar.gz" -O "${PMA_TEMP_DIR}/phpmyadmin.tar.gz"
+    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al descargar phpMyAdmin."; fi
+
+    if ! $INSTALL_FAILED; then
+        tar -xzf "${PMA_TEMP_DIR}/phpmyadmin.tar.gz" -C "$PMA_TEMP_DIR"
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al descomprimir phpMyAdmin."; fi
+    fi
+
+    if ! $INSTALL_FAILED; then
+        mv "${PMA_TEMP_DIR}/phpMyAdmin-${PMA_VERSION}-all-languages" "$PMA_TARGET_DIR"
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al mover phpMyAdmin al directorio de destino."; fi
+    fi
+
+    if ! $INSTALL_FAILED; then
+        # Configurar config.inc.php
+        cp "${PMA_TARGET_DIR}/config.sample.inc.php" "${PMA_TARGET_DIR}/config.inc.php"
+        sed -i "s/\/\/\$cfg\['Servers'\]\[\$i\]\['host'\] = 'localhost';/\$cfg\['Servers'\]\[\$i\]\['host'\] = 'localhost';/" "${PMA_TARGET_DIR}/config.inc.php"
+        sed -i "s/\/\/\$cfg\['Servers'\]\[\$i\]\['AllowNoPassword'\] = TRUE;/\$cfg\['Servers'\]\[\$i\]\['AllowNoPassword'\] = FALSE;/" "${PMA_TARGET_DIR}/config.inc.php"
+        sed -i "s/\$cfg\['blowfish_secret'\].*/\$cfg\['blowfish_secret'\] = '$(openssl rand -base64 32)';/" "${PMA_TARGET_DIR}/config.inc.php"
+
+        # Establecer permisos y propietario
+        if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+            chown -R www-data:www-data "$PMA_TARGET_DIR"
+            chmod -R 755 "$PMA_TARGET_DIR"
+        elif [ "$DISTRO" = "AlmaLinux" ]; then
+            chown -R apache:apache "$PMA_TARGET_DIR"
+            chmod -R 755 "$PMA_TARGET_DIR"
+        fi
+
+        # Configuración de Apache para phpMyAdmin
+        if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+            VHOST_PMA_CONF="/etc/apache2/conf-available/phpmyadmin.conf"
+            echo "Alias /phpmyadmin ${PMA_TARGET_DIR}" > "$VHOST_PMA_CONF"
+            echo "<Directory ${PMA_TARGET_DIR}>" >> "$VHOST_PMA_CONF"
+            echo "    Options SymLinksIfOwnerMatch" >> "$VHOST_PMA_CONF"
+            echo "    DirectoryIndex index.php" >> "$VHOST_PMA_CONF"
+            echo "    Require all granted" >> "$VHOST_PMA_CONF"
+            echo "</Directory>" >> "$VHOST_PMA_CONF"
+            a2enconf phpmyadmin > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al habilitar la configuración de Apache para phpMyAdmin."; fi
+            systemctl restart apache2 > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al reiniciar Apache después de configurar phpMyAdmin."; fi
+        elif [ "$DISTRO" = "AlmaLinux" ]; then
+            VHOST_PMA_CONF="/etc/httpd/conf.d/phpMyAdmin.conf"
+            echo "Alias /phpmyadmin ${PMA_TARGET_DIR}" > "$VHOST_PMA_CONF"
+            echo "<Directory ${PMA_TARGET_DIR}>" >> "$VHOST_PMA_CONF"
+            echo "    AddType application/x-httpd-php .php" >> "$VHOST_PMA_CONF"
+            echo "    DirectoryIndex index.php" >> "$VHOST_PMA_CONF"
+            echo "    Require all granted" >> "$VHOST_PMA_CONF"
+            echo "</Directory>" >> "$VHOST_PMA_CONF"
+            systemctl restart httpd > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al reiniciar Apache después de configurar phpMyAdmin."; fi
+
+            # Aplicar contexto SELinux para phpMyAdmin
+            if command -v semanage &> /dev/null && command -v restorecon &> /dev/null; then
+                semanage fcontext -a -t httpd_sys_content_t "$PMA_TARGET_DIR(/.*)?" > /dev/null 2>&1
+                restorecon -Rv "$PMA_TARGET_DIR" > /dev/null 2>&1
+                if [ $? -ne 0 ]; then echo "Advertencia: Fallo al aplicar contexto SELinux para phpMyAdmin."; fi
+                # Necesario para que httpd pueda conectarse a la base de datos
+                setsebool -P httpd_can_network_connect_db on > /dev/null 2>&1
+            else
+                echo "Advertencia: semanage o restorecon no encontrados. Puede que necesites configurar SELinux manualmente para phpMyAdmin."
             fi
         fi
     fi
+    rm -rf "$PMA_TEMP_DIR" # Limpiar archivos temporales
 fi
 
 
@@ -854,9 +910,13 @@ fi
 
 # 93% - Creando archivo info.php para verificación de PHP...
 update_progress 93 "Creando archivo info.php para verificación de PHP..."
-if [ -f "/var/www/html/info.php" ]; then
-    echo "El archivo info.php ya existe. Asegurando permisos..."
-else
+# Asegurar que el directorio /var/www/html exista y tenga permisos correctos
+if [ ! -d "/var/www/html" ]; then
+    mkdir -p /var/www/html > /dev/null 2>&1
+    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al crear /var/www/html."; fi
+fi
+
+if ! $INSTALL_FAILED; then
     echo "<?php phpinfo(); ?>" > /var/www/html/info.php
     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al crear /var/www/html/info.php."; fi
 fi
@@ -868,6 +928,14 @@ if ! $INSTALL_FAILED; then # Solo intenta cambiar permisos si el archivo existe 
     elif [ "$DISTRO" = "AlmaLinux" ]; then
         chown apache:apache /var/www/html/info.php > /dev/null 2>&1
         if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al cambiar propietario de info.php."; fi
+        # Aplicar contexto SELinux para /var/www/html/info.php en AlmaLinux
+        if command -v semanage &> /dev/null && command -v restorecon &> /dev/null; then
+            semanage fcontext -a -t httpd_sys_content_t "/var/www/html(/.*)?" > /dev/null 2>&1
+            restorecon -Rv "/var/www/html" > /dev/null 2>&1
+            if [ $? -ne 0 ]; then echo "Advertencia: Fallo al aplicar contexto SELinux para /var/www/html. Esto podría causar problemas de permisos."; fi
+        else
+            echo "Advertencia: semanage o restorecon no encontrados. Puede que necesites configurar SELinux manualmente para /var/www/html."
+        fi
     fi
     chmod 644 /var/www/html/info.php > /dev/null 2>&1
     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al cambiar permisos de info.php."; fi
@@ -894,6 +962,7 @@ for PROGRAMA in "${PROGRAMAS_SELECCIONADOS[@]}"; do
             if ! command -v code &> /dev/null; then
                 echo "Intentando instalar Visual Studio Code..."
                 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+                    # Limpiar cualquier configuración de repositorio antigua para evitar duplicados o errores
                     rm -f /etc/apt/sources.list.d/vscode.list > /dev/null 2>&1
                     rm -f /etc/apt/sources.list.d/vscode.sources > /dev/null 2>&1
                     rm -f /usr/share/keyrings/microsoft.gpg > /dev/null 2>&1
@@ -907,7 +976,7 @@ for PROGRAMA in "${PROGRAMAS_SELECCIONADOS[@]}"; do
                         echo "URIs: https://packages.microsoft.com/repos/code"
                         echo "Suites: stable"
                         echo "Components: main"
-                        echo "Architectures: amd64,arm64,armhf"
+                        echo "Architectures: amd64,arm64,armhf" # Considerar armhf para Raspberry Pi u otros ARM 32-bit si aplica
                         echo "Signed-By: /usr/share/keyrings/microsoft.gpg"
                     } | tee "$VSCODE_SOURCES_FILE" > /dev/null
                     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al crear el archivo de repositorio de VS Code."; continue; fi
