@@ -131,13 +131,12 @@ if [ "$php_choice_exit_code" -eq 1 ] || [ "$php_choice_exit_code" -eq 255 ]; the
     exit 0
 fi
 
-# Cuadro de selección de programas
+# Cuadro de selección de programas (Sublime Text eliminado)
 PROGRAMAS_SELECCIONADOS_STR=$(dialog --clear --stdout \
                                      --backtitle "Instalador LAMP Laravel 12 - Versión $VERSION" \
                                      --title "Selección de Programas Adicionales" \
-                                     --checklist "Selecciona uno o más programas para instalar:" 18 60 4 \
+                                     --checklist "Selecciona uno o más programas para instalar:" 18 60 3 \
                                      "vscode" "Visual Studio Code" OFF \
-                                     "sublime" "Sublime Text" OFF \
                                      "brave" "Brave Browser" OFF \
                                      "chrome" "Google Chrome" OFF )
 
@@ -979,50 +978,6 @@ for PROGRAMA in "${PROGRAMAS_SELECCIONADOS[@]}"; do
                 fi
             else
                 echo "Visual Studio Code ya está instalado. Saltando."
-            fi
-            ;;
-        "sublime")
-            if ! command -v subl &> /dev/null; then
-                if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-                    # Nuevo proceso de instalación para Sublime Text
-                    # Limpiar cualquier clave o archivo de repositorio antiguo
-                    rm -f /etc/apt/keyrings/sublimehq-pub.asc > /dev/null 2>&1
-                    rm -f /etc/apt/sources.list.d/sublime-text.list > /dev/null 2>&1 # Asegurarse de limpiar el .list viejo
-                    rm -f /etc/apt/sources.list.d/sublime-text.sources > /dev/null 2>&1 # Limpiar también el nuevo tipo si existe
-
-                    # Paso 1: Descargar y guardar la clave GPG
-                    wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | tee /etc/apt/keyrings/sublimehq-pub.asc > /dev/null
-                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al descargar o guardar la clave GPG de Sublime Text."; fi
-
-                    # Paso 2: Crear el archivo .sources para el repositorio
-                    if ! $INSTALL_FAILED; then
-                        SUBLIME_SOURCES_FILE="/etc/apt/sources.list.d/sublime-text.sources"
-                        echo "Types: deb" > "$SUBLIME_SOURCES_FILE"
-                        echo "URIs: https://download.sublimetext.com/" >> "$SUBLIME_SOURCES_FILE"
-                        echo "Suites: apt/stable/" >> "$SUBLIME_SOURCES_FILE"
-                        echo "Signed-By: /etc/apt/keyrings/sublimehq-pub.asc" >> "$SUBLIME_SOURCES_FILE"
-                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al crear el archivo de repositorio de Sublime Text."; fi
-                    fi
-
-                    # Paso 3: Actualizar e instalar
-                    if ! $INSTALL_FAILED; then
-                        apt-get update -qq > /dev/null 2>&1
-                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al actualizar los índices de paquetes después de añadir el repositorio de Sublime Text."; fi
-                    fi
-
-                    if ! $INSTALL_FAILED; then
-                        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq sublime-text > /dev/null 2>&1
-                        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Sublime Text."; fi
-                    fi
-                elif [ "$DISTRO" = "AlmaLinux" ]; then
-                    rpm -v --import https://download.sublimetext.com/rpm/rpmkey.gpg > /dev/null 2>&1
-                    yum-config-manager --add-repo https://download.sublimetext.com/rpm/stable/x86_64/sublime-text.repo > /dev/null 2>&1
-                    yum check-update -q > /dev/null 2>&1
-                    yum install -y -q sublime-text > /dev/null 2>&1
-                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Sublime Text."; fi
-                fi
-            else
-                echo "Sublime Text ya está instalado."
             fi
             ;;
         "brave")
