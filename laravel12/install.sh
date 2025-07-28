@@ -591,8 +591,6 @@ fi
 # 50% - Instalando phpMyAdmin...
 update_progress 50 "Instalando: phpMyAdmin..."
 if ! $INSTALL_FAILED; then
-    # Descargar e instalar phpMyAdmin manualmente para mayor control y evitar problemas de dependencias
-    # con versiones de PHP específicas que el paquete oficial pueda tener.
     PMA_VERSION="5.2.1" # Última versión estable al momento
     PMA_TEMP_DIR="/tmp/phpmyadmin_install"
     PMA_TARGET_DIR="/usr/share/phpmyadmin"
@@ -634,15 +632,23 @@ if ! $INSTALL_FAILED; then
         # Establecer permisos y propietario
         if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
             chown -R www-data:www-data "$PMA_TARGET_DIR"
+            # Asegurar que los directorios tienen permisos de ejecución y los archivos de lectura
             chmod -R 755 "$PMA_TARGET_DIR"
+            find "$PMA_TARGET_DIR" -type f -exec chmod 644 {} \;
         elif [ "$DISTRO" = "AlmaLinux" ]; then
             chown -R apache:apache "$PMA_TARGET_DIR"
+            # Asegurar que los directorios tienen permisos de ejecución y los archivos de lectura
             chmod -R 755 "$PMA_TARGET_DIR"
+            find "$PMA_TARGET_DIR" -type f -exec chmod 644 {} \;
         fi
 
         # Configuración de Apache para phpMyAdmin
         if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
             VHOST_PMA_CONF="/etc/apache2/conf-available/phpmyadmin.conf"
+            # Asegurar que el directorio base de phpmyadmin tiene permisos de ejecución para www-data
+            # Este es un punto crítico para el error 403
+            chmod 755 /usr/share/phpmyadmin
+            
             echo "Alias /phpmyadmin ${PMA_TARGET_DIR}" > "$VHOST_PMA_CONF"
             echo "<Directory ${PMA_TARGET_DIR}>" >> "$VHOST_PMA_CONF"
             echo "    Options SymLinksIfOwnerMatch" >> "$VHOST_PMA_CONF"
@@ -655,6 +661,9 @@ if ! $INSTALL_FAILED; then
             if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al reiniciar Apache después de configurar phpMyAdmin."; fi
         elif [ "$DISTRO" = "AlmaLinux" ]; then
             VHOST_PMA_CONF="/etc/httpd/conf.d/phpMyAdmin.conf"
+            # Asegurar que el directorio base de phpmyadmin tiene permisos de ejecución para apache
+            chmod 755 /usr/share/phpmyadmin
+            
             echo "Alias /phpmyadmin ${PMA_TARGET_DIR}" > "$VHOST_PMA_CONF"
             echo "<Directory ${PMA_TARGET_DIR}>" >> "$VHOST_PMA_CONF"
             echo "    AddType application/x-httpd-php .php" >> "$VHOST_PMA_CONF"
