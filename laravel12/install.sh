@@ -25,17 +25,13 @@ else
     exit 1
 fi
 
-# Detectar si MySQL o MariaDB está instalado
-if command -v mysql &> /dev/null; then
-    if mysql -V 2>&1 | grep -q "MariaDB"; then
-        DBASE="MariaDB"
-    elif mysql -V 2>&1 | grep -q "MySQL"; then
-        DBASE="MySQL"
-    fi
-else
-    # Si no se detecta, establecer un valor predeterminado o indicar que se elegirá
-    DBASE="MySQL o MariaDB (se elegirá)"
+# Detectar qué base de datos se utilizará según la distribución
+if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+    DBASE="MariaDB"
+elif [ "$DISTRO" = "AlmaLinux" ]; then
+    DBASE="MySQL"
 fi
+
 
 # Validar que el sistema sea de 64 bits
 if [ "$(uname -m)" != "x86_64" ]; then
