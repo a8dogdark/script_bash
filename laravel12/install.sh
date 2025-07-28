@@ -384,16 +384,20 @@ PHP_EXTENSIONS=(
     "XSL" "php${PHP_VERSION}-xsl" "php-xsl"
 )
 
-# Numero total de "pasos" dentro del bloque PHP (base + cada extensión)
-NUM_PHP_SUB_STEPS=${#PHP_EXTENSIONS[@]}/3 # Divide por 3 porque cada extensión tiene 3 elementos
-PHP_PROGRESS_POINTS_PER_EXTENSION=$(echo "scale=2; ($PHP_END_PERCENT - $PHP_START_PERCENT) / $NUM_PHP_SUB_STEPS" | bc)
-PHP_CURRENT_SUB_PERCENT=$PHP_START_PERCENT # Usaremos un flotante para calcular los sub-pasos
+# Calcular el número total de "pasos" dentro del bloque PHP
+# +1 para la instalación de la base de PHP
+NUM_PHP_SUB_STEPS=$(( ${#PHP_EXTENSIONS[@]}/3 + 1 )) 
+PHP_PROGRESS_POINTS_PER_STEP=$(( (PHP_END_PERCENT - PHP_START_PERCENT) / NUM_PHP_SUB_STEPS ))
+PHP_CURRENT_SUB_PERCENT=$PHP_START_PERCENT # Usaremos un entero para calcular los sub-pasos
 
 # 12% - Instalando base de PHP y configurando Remi (si aplica)
 # No usamos update_progress directamente para los sub-pasos de PHP para mayor granularidad.
+# Incrementamos y actualizamos la barra directamente.
+PHP_CURRENT_SUB_PERCENT=$(( PHP_CURRENT_SUB_PERCENT + PHP_PROGRESS_POINTS_PER_STEP ))
+if [ "$PHP_CURRENT_SUB_PERCENT" -gt "$PHP_END_PERCENT" ]; then PHP_CURRENT_SUB_PERCENT="$PHP_END_PERCENT"; fi # Evitar exceder el límite superior
+
 echo "XXX"
-PHP_CURRENT_SUB_PERCENT=$(echo "scale=2; $PHP_CURRENT_SUB_PERCENT + $PHP_PROGRESS_POINTS_PER_EXTENSION" | bc)
-echo "$(printf "%.0f" "$PHP_CURRENT_SUB_PERCENT")" # Redondear y enviar
+echo "$PHP_CURRENT_SUB_PERCENT"
 echo "Instalando base de PHP ${PHP_VERSION}..."
 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
     if ! dpkg -s "php${PHP_VERSION}-cli" &> /dev/null; then
@@ -431,14 +435,12 @@ for (( i=0; i<${#PHP_EXTENSIONS[@]}; i+=3 )); do
     ALMALINUX_PKG="${PHP_EXTENSIONS[i+2]}"
 
     # Incrementar el porcentaje para esta extensión
-    PHP_CURRENT_SUB_PERCENT=$(echo "scale=2; $PHP_CURRENT_SUB_PERCENT + $PHP_PROGRESS_POINTS_PER_EXTENSION" | bc)
+    PHP_CURRENT_SUB_PERCENT=$(( PHP_CURRENT_SUB_PERCENT + PHP_PROGRESS_POINTS_PER_STEP ))
     # Asegurarse de no exceder el límite superior del segmento PHP
-    if (( $(echo "$PHP_CURRENT_SUB_PERCENT > $PHP_END_PERCENT" | bc -l) )); then
-        PHP_CURRENT_SUB_PERCENT=$PHP_END_PERCENT
-    fi
+    if [ "$PHP_CURRENT_SUB_PERCENT" -gt "$PHP_END_PERCENT" ]; then PHP_CURRENT_SUB_PERCENT="$PHP_END_PERCENT"; fi
     
     echo "XXX"
-    echo "$(printf "%.0f" "$PHP_CURRENT_SUB_PERCENT")" # Redondear y enviar
+    echo "$PHP_CURRENT_SUB_PERCENT"
     
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         if ! dpkg -s "$UBUNTU_PKG" &> /dev/null; then
@@ -852,15 +854,21 @@ fi
 
 # 98% - Instalando programas adicionales seleccionados...
 PROGRAMS_TOTAL=${#PROGRAMAS_SELECCIONADOS[@]}
+# Distribuir los puntos restantes entre los programas, asegurando un mínimo de 1% por programa si hay pocos.
+REMAINING_PERCENT=$((100 - CURRENT_PERCENT))
+PROGRAM_INCREMENT=0
 if [ "$PROGRAMS_TOTAL" -gt 0 ]; then
-    PROGRAM_INCREMENT=$(echo "scale=2; (100 - $CURRENT_PERCENT) / $PROGRAMS_TOTAL" | bc)
-else
-    PROGRAM_INCREMENT=0 # No hay programas, no hay incremento.
+    PROGRAM_INCREMENT=$(( REMAINING_PERCENT / PROGRAMS_TOTAL ))
+    # Asegurarse de que cada programa al menos incremente en 1 si es posible
+    if [ "$PROGRAM_INCREMENT" -eq 0 ] && [ "$PROGRAMS_TOTAL" -le "$REMAINING_PERCENT" ]; then
+        PROGRAM_INCREMENT=1
+    fi
 fi
 
 for PROGRAMA in "${PROGRAMAS_SELECCIONADOS[@]}"; do
-    CURRENT_PERCENT=$(echo "scale=0; $CURRENT_PERCENT + $PROGRAM_INCREMENT" | bc)
+    CURRENT_PERCENT=$(( CURRENT_PERCENT + PROGRAM_INCREMENT ))
     if [ "$CURRENT_PERCENT" -gt 98 ]; then CURRENT_PERCENT=98; fi # Limitar al max para esta sección
+
     update_progress "$CURRENT_PERCENT" "Instalando programa: $PROGRAMA..."
 
     case "$PROGRAMA" in
