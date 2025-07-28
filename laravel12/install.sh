@@ -155,10 +155,10 @@ echo "Preparando el sistema: Actualizando índices de paquetes..."
 echo "XXX"
 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
     apt-get update -qq > /dev/null 2>&1
-    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al actualizar índices."; fi
+    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: No se pudieron actualizar los índices de paquetes."; fi
 elif [ "$DISTRO" = "AlmaLinux" ]; then
     yum makecache -y > /dev/null 2>&1
-    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al actualizar índices."; fi
+    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: No se pudieron actualizar los índices de paquetes."; fi
 fi
 
 # 2% - Preparación del sistema: Actualizando paquetes
@@ -168,10 +168,10 @@ echo "Preparando el sistema: Actualizando paquetes..."
 echo "XXX"
 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
     DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -qq > /dev/null 2>&1
-    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al actualizar paquetes."; fi
+    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: No se pudieron actualizar los paquetes del sistema."; fi
 elif [ "$DISTRO" = "AlmaLinux" ]; then
     yum update -y -q > /dev/null 2>&1
-    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al actualizar paquetes."; fi
+    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: No se pudieron actualizar los paquetes del sistema."; fi
 fi
 
 # 3% - Instalando utilidades esenciales: curl
@@ -181,10 +181,10 @@ if ! command -v curl &> /dev/null; then
     echo "Instalando: curl..." # Mensaje visible en la barra de progreso
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl > /dev/null 2>&1
-        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al instalar curl."; fi
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar curl."; fi
     elif [ "$DISTRO" = "AlmaLinux" ]; then
         yum install -y -q curl > /dev/null 2>&1
-        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al instalar curl."; fi
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar curl."; fi
     fi
 else
     echo "curl ya está instalado." # Mensaje visible si ya está instalado
@@ -198,10 +198,10 @@ if ! command -v wget &> /dev/null; then
     echo "Instalando: wget..." # Mensaje visible en la barra de progreso
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         DEBIAN_FRONTEND=noninteractive apt-get install -y -qq wget > /dev/null 2>&1
-        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al instalar wget."; fi
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar wget."; fi
     elif [ "$DISTRO" = "AlmaLinux" ]; then
         yum install -y -q wget > /dev/null 2>&1
-        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al instalar wget."; fi
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar wget."; fi
     fi
 else
     echo "wget ya está instalado." # Mensaje visible si ya está instalado
@@ -215,10 +215,10 @@ if ! command -v unzip &> /dev/null; then
     echo "Instalando: unzip..." # Mensaje visible en la barra de progreso
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         DEBIAN_FRONTEND=noninteractive apt-get install -y -qq unzip > /dev/null 2>&1
-        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al instalar unzip."; fi
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar unzip."; fi
     elif [ "$DISTRO" = "AlmaLinux" ]; then
         yum install -y -q unzip > /dev/null 2>&1
-        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al instalar unzip."; fi
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar unzip."; fi
     fi
 else
     echo "unzip ya está instalado." # Mensaje visible si ya está instalado
@@ -232,10 +232,10 @@ if ! command -v zip &> /dev/null; then
     echo "Instalando: zip..." # Mensaje visible en la barra de progreso
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         DEBIAN_FRONTEND=noninteractive apt-get install -y -qq zip > /dev/null 2>&1
-        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al instalar zip."; fi
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar zip."; fi
     elif [ "$DISTRO" = "AlmaLinux" ]; then
         yum install -y -q zip > /dev/null 2>&1
-        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al instalar zip."; fi
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar zip."; fi
     fi
 else
     echo "zip ya está instalado." # Mensaje visible si ya está instalado
@@ -245,35 +245,49 @@ echo "XXX" # Cierre del bloque de mensaje/porcentaje
 # 10% - Instalando Apache
 echo "XXX"
 echo "10"
-if ! command -v apache2 &> /dev/null && ! command -v httpd &> /dev/null; then
-    echo "Instalando: Apache..."
-    if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+# Primero, comprueba si Apache (httpd o apache2) ya está instalado
+if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+    if ! command -v apache2 &> /dev/null; then
+        echo "Instalando: Apache..."
         DEBIAN_FRONTEND=noninteractive apt-get install -y -qq apache2 > /dev/null 2>&1
-        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al instalar Apache."; fi
-    elif [ "$DISTRO" = "AlmaLinux" ]; then
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Apache."; fi
+    else
+        echo "Apache ya está instalado."
+    fi
+elif [ "$DISTRO" = "AlmaLinux" ]; then
+    if ! command -v httpd &> /dev/null; then
+        echo "Instalando: Apache (httpd)..."
         yum install -y -q httpd > /dev/null 2>&1
-        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al instalar Apache."; fi
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Apache (httpd)."; fi
+    else
+        echo "Apache (httpd) ya está instalado."
     fi
-
-    # Habilitar y arrancar Apache si se instaló
-    if ! $INSTALL_FAILED; then # Solo si la instalación fue exitosa
-        if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-            systemctl enable apache2 > /dev/null 2>&1
-            systemctl start apache2 > /dev/null 2>&1
-        elif [ "$DISTRO" = "AlmaLinux" ]; then
-            systemctl enable httpd > /dev/null 2>&1
-            systemctl start httpd > /dev/null 2>&1
-            # Para AlmaLinux, también es común abrir el firewall para HTTP/HTTPS
-            firewall-cmd --permanent --add-service=http > /dev/null 2>&1
-            firewall-cmd --permanent --add-service=https > /dev/null 2>&1
-            firewall-cmd --reload > /dev/null 2>&1
-        fi
-        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "Error al habilitar/iniciar Apache o configurar firewall."; fi
-    fi
-else
-    echo "Apache ya está instalado."
 fi
-echo "XXX" # Cierre del bloque de mensaje/porcentaje
+
+# Habilitar y arrancar Apache si la instalación previa fue exitosa (o si ya estaba instalado)
+if ! $INSTALL_FAILED; then # Solo intenta configurar si no hubo un error crítico en la instalación
+    echo "Configurando e iniciando Apache..."
+    if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+        systemctl enable apache2 > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al habilitar Apache."; fi
+        systemctl start apache2 > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al iniciar Apache."; fi
+    elif [ "$DISTRO" = "AlmaLinux" ]; then
+        systemctl enable httpd > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al habilitar httpd."; fi
+        systemctl start httpd > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al iniciar httpd."; fi
+
+        # Para AlmaLinux, también es común abrir el firewall para HTTP/HTTPS
+        firewall-cmd --permanent --add-service=http > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al abrir puerto HTTP en firewall."; fi
+        firewall-cmd --permanent --add-service=https > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al abrir puerto HTTPS en firewall."; fi
+        firewall-cmd --reload > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al recargar firewall."; fi
+    fi
+fi
+echo "XXX" # Cierre del bloque de mensaje/porcentaje para Apache
 
 # Aquí se agregarán los siguientes pasos de instalación con sus porcentajes...
 # Por ejemplo:
