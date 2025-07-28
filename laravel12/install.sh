@@ -145,12 +145,105 @@ fi
 # Convertir la cadena de programas seleccionados en un array
 IFS=' ' read -r -a PROGRAMAS_SELECCIONADOS <<< "$PROGRAMAS_SELECCIONADOS_STR"
 
+# --- BARRA DE PROGRESO DE INSTALACIÓN ---
+(
+# 1% - Preparación del sistema: Actualizar índices de paquetes
+echo "XXX"
+echo "1"
+echo "Preparando el sistema: Actualizando índices de paquetes..."
+echo "XXX"
+if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+    apt-get update -qq > /dev/null
+elif [ "$DISTRO" = "AlmaLinux" ]; then
+    yum makecache -y > /dev/null
+fi
 
-# Este script instalará LAMP y las dependencias necesarias para Laravel 12.
-# Está diseñado para ser ejecutado en Ubuntu 24 y es compatible con Ubuntu 23, 22, Debian 11, 12 y AlmaLinux.
+# 2% - Preparación del sistema: Actualizando paquetes
+echo "XXX"
+echo "2"
+echo "Preparando el sistema: Actualizando paquetes..."
+echo "XXX"
+if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+    DEBIAN_FRONTEND=noninteractive apt-get upgrade -y -qq > /dev/null
+elif [ "$DISTRO" = "AlmaLinux" ]; then
+    yum update -y -q > /dev/null
+fi
 
-# Parte 1: Instalación de Apache, MySQL y PHP
-# Parte 2: Configuración de MySQL
-# Parte 3: Instalación de Composer
-# Parte 4: Instalación de Node.js y npm
-# Parte 5: Configuración adicional y permisos
+# 3% - Instalando utilidades esenciales: curl
+echo "XXX"
+echo "3"
+if ! command -v curl &> /dev/null; then
+    echo "Instalando: curl..." # Mensaje visible en la barra de progreso
+    if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl > /dev/null
+    elif [ "$DISTRO" = "AlmaLinux" ]; then
+        yum install -y -q curl > /dev/null
+    fi
+else
+    echo "curl ya está instalado." # Mensaje visible si ya está instalado
+fi
+echo "XXX" # Cierre del bloque de mensaje/porcentaje
+
+# 4% - Instalando utilidades esenciales: wget
+echo "XXX"
+echo "4"
+if ! command -v wget &> /dev/null; then
+    echo "Instalando: wget..." # Mensaje visible en la barra de progreso
+    if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq wget > /dev/null
+    elif [ "$DISTRO" = "AlmaLinux" ]; then
+        yum install -y -q wget > /dev/null
+    fi
+else
+    echo "wget ya está instalado." # Mensaje visible si ya está instalado
+fi
+echo "XXX" # Cierre del bloque de mensaje/porcentaje
+
+# 5% - Instalando utilidades esenciales: unzip
+echo "XXX"
+echo "5"
+if ! command -v unzip &> /dev/null; then
+    echo "Instalando: unzip..." # Mensaje visible en la barra de progreso
+    if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq unzip > /dev/null
+    elif [ "$DISTRO" = "AlmaLinux" ]; then
+        yum install -y -q unzip > /dev/null
+    fi
+else
+    echo "unzip ya está instalado." # Mensaje visible si ya está instalado
+fi
+echo "XXX" # Cierre del bloque de mensaje/porcentaje
+
+# 6% - Instalando utilidades esenciales: zip
+echo "XXX"
+echo "6"
+if ! command -v zip &> /dev/null; then
+    echo "Instalando: zip..." # Mensaje visible en la barra de progreso
+    if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq zip > /dev/null
+    elif [ "$DISTRO" = "AlmaLinux" ]; then
+        yum install -y -q zip > /dev/null
+    fi
+else
+    echo "zip ya está instalado." # Mensaje visible si ya está instalado
+fi
+echo "XXX" # Cierre del bloque de mensaje/porcentaje
+
+# Aquí se agregarán los siguientes pasos de instalación con sus porcentajes...
+# Por ejemplo:
+# 10% - Instalando Apache...
+# 20% - Instalando $DBASE...
+# 30% - Instalando PHP $PHP_VERSION...
+# etc.
+
+
+# 100% - Simulando finalización
+echo "XXX"
+echo "100"
+echo "Configuraciones finales completadas."
+echo "XXX"
+
+) | dialog --gauge "Iniciando instalación de LAMP y Laravel. Por favor, espera..." 10 70 0
+
+clear
+dialog --title "Instalación Completada" --msgbox "La instalación de LAMP y Laravel se ha completado con éxito, o ha sido cancelada si hubo errores." 10 50
