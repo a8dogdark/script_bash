@@ -108,14 +108,17 @@ clear
 dialog --title "Nombre del Proyecto" \
        --inputbox "Ingresa el nombre del proyecto Laravel que deseas crear:" 10 60 2> /tmp/project_name
 
-if [ $? -ne 0 ]; then
-    clear
-    echo "Instalación cancelada por el usuario."
-    exit 0
-fi
-
+response=$?
 PROJECT_NAME=$(cat /tmp/project_name)
 rm -f /tmp/project_name
+
+if [ $response -ne 0 ] || [ -z "$PROJECT_NAME" ]; then
+    dialog --title "Error" \
+           --msgbox "No ingresaste ningún nombre de proyecto." 8 50
+    clear
+    echo "Instalación cancelada por falta de nombre de proyecto."
+    exit 0
+fi
 
 clear
 echo "Nombre del proyecto: $PROJECT_NAME"
