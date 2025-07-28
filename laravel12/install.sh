@@ -22,7 +22,7 @@ if grep -q "Ubuntu" /etc/os-release; then
 elif grep -q "Debian" /etc/os-release; then
     DISTRO="Debian"
 elif grep -q "AlmaLinux" /etc/os-release; then
-    DISTRO="AlmaLinux" # <-- CORRECCIÓN AQUÍ: Asignar el valor de DISTRO
+    DISTRO="AlmaLinux"
 else
     echo "Distribución no soportada. Este script es compatible con Ubuntu (22, 23, 24), Debian (11, 12) y AlmaLinux."
     exit 1
@@ -102,20 +102,27 @@ PROYECTO=$(dialog --clear --stdout \
                 --title "Nombre del Proyecto Laravel" \
                 --inputbox "Ingresa el nombre del proyecto Laravel 12 a crear (Ej: mi_proyecto_web):" 10 60)
 check_input "$PROYECTO" "Nombre del Proyecto" $?
+clear # Limpiar después de que el usuario interactúe
 
 # Input para la contraseña del usuario phpMyAdmin de la base de datos
+# *** CAMBIO: Usando --inputbox para que se vea lo que se ingresa ***
+echo "Por favor, ingresa la contraseña para el usuario phpMyAdmin de la base de datos y presiona ENTER."
 PASSPHP=$(dialog --clear --stdout \
                --backtitle "Instalador LAMP Laravel 12 - Versión $VERSION" \
                --title "Contraseña para Usuario phpMyAdmin de MySQL/MariaDB" \
-               --passwordbox "Ingresa la contraseña para el usuario phpMyAdmin de la base de datos:" 10 60) # Usar passwordbox para ocultar
+               --inputbox "Ingresa la contraseña para el usuario phpMyAdmin de la base de datos:" 10 60)
 check_input "$PASSPHP" "Contraseña phpMyAdmin" $?
+clear # Limpiar después de que el usuario interactúe
 
 # Input para la contraseña del usuario root de la base de datos
+# *** CAMBIO: Usando --inputbox para que se vea lo que se ingresa ***
+echo "Por favor, ingresa la contraseña para el usuario root de la base de datos y presiona ENTER."
 PASSROOT=$(dialog --clear --stdout \
                 --backtitle "Instalador LAMP Laravel 12 - Versión $VERSION" \
                 --title "Contraseña para Usuario Root de MySQL/MariaDB" \
-               --passwordbox "Ingresa la contraseña para el usuario root de la base de datos:" 10 60) # Usar passwordbox para ocultar
+               --inputbox "Ingresa la contraseña para el usuario root de la base de datos:" 10 60)
 check_input "$PASSROOT" "Contraseña Root" $?
+clear # Limpiar después de que el usuario interactúe
 
 # Cuadro de selección de versión de PHP (radiolist)
 PHP_VERSION=$(dialog --clear --stdout \
@@ -132,6 +139,7 @@ if [ "$php_choice_exit_code" -eq 1 ] || [ "$php_choice_exit_code" -eq 255 ]; the
     echo "Instalación cancelada por el usuario."
     exit 0
 fi
+clear # Limpiar después de que el usuario interactúe
 
 # Cuadro de selección de programas adicionales
 PROGRAMAS_SELECCIONADOS_STR=$(dialog --clear --stdout \
@@ -151,6 +159,7 @@ else
     # Convertir la cadena de programas seleccionados en un array
     IFS=' ' read -r -a PROGRAMAS_SELECCIONADOS <<< "$PROGRAMAS_SELECCIONADOS_STR"
 fi
+clear # Limpiar después de que el usuario interactúe
 
 
 # --- BARRA DE PROGRESO DE INSTALACIÓN ---
