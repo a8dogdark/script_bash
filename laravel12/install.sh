@@ -26,7 +26,7 @@ if [[ "$ARCH" != "x86_64" && "$ARCH" != "amd64" ]]; then
   exit 1
 fi
 
-# Validar distribución, versión y definir base de datos
+# Validar distribución, versión y definir base de datos y gestor de paquetes
 if [ -f /etc/os-release ]; then
   . /etc/os-release
   OS_NAME=$ID
@@ -41,6 +41,7 @@ case "$OS_NAME" in
     UBUNTU_MAJOR=$(echo "$OS_VERSION" | cut -d '.' -f1)
     if [[ "$UBUNTU_MAJOR" -ge 22 && "$UBUNTU_MAJOR" -le 24 ]]; then
       DB_SERVER="mysql-server"
+      PKG_MANAGER="apt-get"
     else
       echo -e "\e[31mUbuntu versión no soportada. Solo 22.x, 23.x o 24.x son permitidos. Saliendo...\e[0m"
       exit 1
@@ -49,6 +50,7 @@ case "$OS_NAME" in
   debian)
     if [[ "$OS_VERSION" == "11" || "$OS_VERSION" == "12" ]]; then
       DB_SERVER="mariadb-server"
+      PKG_MANAGER="apt-get"
     else
       echo -e "\e[31mDebian versión no soportada. Solo 11 o 12 son permitidos. Saliendo...\e[0m"
       exit 1
@@ -56,12 +58,22 @@ case "$OS_NAME" in
     ;;
   almalinux)
     DB_SERVER="mariadb-server"
+    PKG_MANAGER="dnf"
     ;;
   *)
     echo -e "\e[31mDistribución $OS_NAME no soportada. Saliendo...\e[0m"
     exit 1
     ;;
 esac
+
+# Validar si dialog está instalado, si no, instalarlo silenciosamente en segundo plano
+if ! command -v dialog &> /dev/null; then
+  if [ "$PKG_MANAGER" = "apt-get" ]; then
+    apt-get install -y dialog &> /dev/null &
+  elif [ "$PKG_MANAGER" = "dnf" ]; then
+    dnf install -y dialog &> /dev/null &
+  fi
+fi
 
 # Mostrar cuadro de bienvenida con dialog
 dialog --backtitle "Instalador LAMP para Laravel 12" \
