@@ -562,6 +562,8 @@ if ! $INSTALL_FAILED && ! $DB_PACKAGE_INSTALLED; then
         if [ "$DBASE" = "MariaDB" ]; then
             mysql -u root <<EOF_SQL
 ALTER USER 'root'@'localhost' IDENTIFIED BY '$PASSROOT';
+-- Aseguramos que el plugin de autenticación sea 'mysql_native_password' para root
+UPDATE mysql.user SET plugin='mysql_native_password' WHERE User='root' AND Host='localhost';
 DELETE FROM mysql.user WHERE User='';
 DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
 DROP DATABASE IF EXISTS test;
@@ -574,7 +576,7 @@ EOF_SQL
             if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al configurar MariaDB con contraseñas."; fi
         elif [ "$DBASE" = "MySQL" ]; then
             mysql -u root <<EOF_SQL
-ALTER USER 'root'@'localhost' IDENTIFIED BY '$PASSROOT';
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$PASSROOT';
 DELETE FROM mysql.user WHERE User='';
 DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
 DROP DATABASE IF EXISTS test;
@@ -616,7 +618,7 @@ elif [ "$DISTRO" = "AlmaLinux" ]; then
 
         if ! grep -q "Include /etc/httpd/conf.d/phpMyAdmin.conf" /etc/httpd/conf/httpd.conf; then
             echo "Alias /phpmyadmin /usr/share/phpmyadmin" > /etc/httpd/conf.d/phpMyAdmin.conf
-            echo "<Directory /usr/share/phpmyadmin>" >> /etc/httpd/conf.d/phpMyAdmin.conf
+            echo "<Directory /usr/share/phpmyadmin>" >> "/etc/httpd/conf.d/phpMyAdmin.conf"
             echo "    AddType application/x-httpd-php .php" >> "/etc/httpd/conf.d/phpMyAdmin.conf"
             echo "    DirectoryIndex index.php" >> "/etc/httpd/conf.d/phpMyAdmin.conf"
             echo "    Require all granted" >> "/etc/httpd/conf.d/phpMyAdmin.conf"
@@ -1021,7 +1023,7 @@ for PROGRAMA in "${PROGRAMAS_SELECCIONADOS[@]}"; do
         *)
             echo "Programa desconocido seleccionado: $PROGRAMA. Saltando."
             ;;
-    esac
+    end case
     sleep 1
 done
 
