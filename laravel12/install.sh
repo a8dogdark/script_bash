@@ -440,9 +440,20 @@ install_php_extension() {
 
     # Incrementa el porcentaje antes de cada paso
     CURRENT_PERCENT=$(awk "BEGIN {print $CURRENT_PERCENT + $PHP_STEP_INCREMENT}")
-    # Redondea el porcentaje para evitar decimales en dialog
-    PERCENT_ROUNDED=$(printf "%.0f\n" "$CURRENT_PERCENT")
-    if (( PERCENT_ROUNDED > PHP_END_PERCENT )); then PERCENT_ROUNDED=$PHP_END_PERCENT; fi # No exceder el límite
+    
+    # Redondea el porcentaje a un entero. Redirige stderr para evitar mensajes de error de printf en la barra de progreso.
+    PERCENT_ROUNDED=$(printf "%.0f" "$CURRENT_PERCENT" 2>/dev/null)
+    
+    # Validación adicional: Si PERCENT_ROUNDED está vacío o no es numérico, usa el valor anterior o un valor por defecto.
+    if ! [[ "$PERCENT_ROUNDED" =~ ^[0-9]+$ ]]; then
+        # Intenta redondear de nuevo, si falla (e.g., CURRENT_PERCENT es inválido), usa PHP_START_PERCENT
+        PERCENT_ROUNDED=$(printf "%.0f" "$CURRENT_PERCENT" 2>/dev/null || echo "$PHP_START_PERCENT")
+        if (( $(echo "$PERCENT_ROUNDED < $PHP_START_PERCENT" | bc -l) )); then PERCENT_ROUNDED=$PHP_START_PERCENT; fi
+    fi
+
+    if (( PERCENT_ROUNDED > PHP_END_PERCENT )); then PERCENT_ROUNDED=$PHP_END_PERCENT; fi # No exceder el límite del rango PHP (40%)
+    if (( PERCENT_ROUNDED > 100 )); then PERCENT_ROUNDED=100; fi # No exceder el 100% total
+    if (( PERCENT_ROUNDED < 0 )); then PERCENT_ROUNDED=0; fi # No ser menor a 0%
 
     echo "XXX"
     echo "$PERCENT_ROUNDED" # Usa el porcentaje redondeado
@@ -1023,7 +1034,7 @@ for PROGRAMA in "${PROGRAMAS_SELECCIONADOS[@]}"; do
         *)
             echo "Programa desconocido seleccionado: $PROGRAMA. Saltando."
             ;;
-    esac
+    esalac
     sleep 1 # Pequeña pausa para visualizar los mensajes de instalación
 done
 echo "XXX"
@@ -1044,18 +1055,18 @@ if $INSTALL_FAILED; then
 else
     # Construir el mensaje para el cuadro de diálogo final
     MESSAGE="¡La instalación de LAMP y Laravel se ha completado con éxito!\n\n"
-    MESSAGE+="**Datos de tu proyecto:**\n"
+    MESSAGE+="\Z1**Datos de tu proyecto:**\Z0\n"
     MESSAGE+="-   **URL del Proyecto:** http://${PROYECTO}.test\n"
     MESSAGE+="-   **Ubicación del Proyecto:** ${PROJECT_PATH}\n"
     MESSAGE+="-   **Verificación PHP:** http://TU_IP/info.php\n"
     MESSAGE+="-   **phpMyAdmin:** http://TU_IP/phpmyadmin\n\n"
-    MESSAGE+="**Credenciales de Base de Datos:**\n"
+    MESSAGE+="\Z1**Credenciales de Base de Datos:**\Z0\n"
     MESSAGE+="-   **Usuario Root (${DBASE}):** root\n"
     MESSAGE+="-   **Contraseña Root (${DBASE}):** ${PASSROOT}\n"
     MESSAGE+="-   **Usuario phpMyAdmin:** phpmyadmin\n"
     MESSAGE+="-   **Contraseña phpMyAdmin:** ${PASSPHP}\n\n"
-    MESSAGE+="**¡IMPORTANTE!** En tu equipo local (no en el servidor), debes añadir la siguiente línea a tu archivo \`/etc/hosts\` (o \`C:\\Windows\\System32\\drivers\\etc\\hosts\` en Windows) para que el dominio \`${PROYECTO}.test\` funcione:\n"
-    MESSAGE+="    **127.0.0.1    ${PROYECTO}.test**\n\n"
+    MESSAGE+="\Z1**¡IMPORTANTE!**\Z0 En tu equipo local (no en el servidor), debes añadir la siguiente línea a tu archivo \`/etc/hosts\` (o \`C:\\Windows\\System32\\drivers\\etc\\hosts\` en Windows) para que el dominio \`${PROYECTO}.test\` funcione:\n"
+    MESSAGE+="    \Z4**127.0.0.1    ${PROYECTO}.test**\Z0\n\n"
     MESSAGE+="Presiona ENTER para limpiar la pantalla."
 
     dialog --title "Instalación Completada con Éxito" --msgbox "$MESSAGE" 25 80
