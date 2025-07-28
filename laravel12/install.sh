@@ -146,7 +146,7 @@ fi
 # Seleccionar la versión de PHP para phpMyAdmin
 PHP_VERSION=$(dialog --clear --backtitle "Instalador de Sistema v$VEROS" \
 --title "Version de PHP para phpMyAdmin" \
---radiolist "\nSelecciona la version de PHP a usar para phpMyAdmin (Recomendado para Laravel 12: PHP 8.3):" 15 60 3 \
+--radiolist "\nSelecciona la version de PHP a usar para phpMyAdmin:\n(Recomendada para Laravel 12: PHP 8.3)" 15 60 3 \
 "8.2" "PHP 8.2" OFF \
 "8.3" "PHP 8.3" ON \
 "8.4" "PHP 8.4" OFF \
@@ -161,3 +161,23 @@ if [ -z "$PHP_VERSION" ]; then
     clear
     exit 1
 fi
+
+# Seleccionar programas adicionales para instalar
+ADDITIONAL_SOFTWARE=$(dialog --clear --backtitle "Instalador de Sistema v$VEROS" \
+--title "Programas Adicionales" \
+--checklist "\nSelecciona los programas adicionales que deseas instalar:" 18 60 4 \
+"vscode" "Visual Studio Code" OFF \
+"sublime" "Sublime Text" OFF \
+"brave" "Brave Browser" OFF \
+"chrome" "Google Chrome" OFF \
+3>&1 1>&2 2>&3)
+
+# No es necesario validar si ADDITIONAL_SOFTWARE está vacío, ya que el usuario puede no querer instalar nada adicional.
+# Si el usuario presiona Cancelar, ADDITIONAL_SOFTWARE estará vacío, lo cual es un escenario válido aquí.
+
+# Puedes procesar la variable ADDITIONAL_SOFTWARE más adelante en el script.
+# Por ejemplo, para verificar si se seleccionó VS Code:
+# if [[ "$ADDITIONAL_SOFTWARE" == *"vscode"* ]]; then
+#     echo "Instalando Visual Studio Code..."
+#     # Comandos para instalar VS Code
+# fi
