@@ -32,6 +32,9 @@ if command -v mysql &> /dev/null; then
     elif mysql -V 2>&1 | grep -q "MySQL"; then
         DBASE="MySQL"
     fi
+else
+    # Si no se detecta, establecer un valor predeterminado o indicar que se elegirá
+    DBASE="MySQL o MariaDB (se elegirá)"
 fi
 
 # Validar que el sistema sea de 64 bits
