@@ -53,6 +53,23 @@ if ! command -v dialog &> /dev/null; then
     fi
 fi
 
+# Función para manejar la salida de dialog (Enter o ESC, y campo vacío)
+check_input() {
+    local input_value="$1"
+    local input_name="$2"
+    local dialog_exit_code="$3"
+
+    if [ -z "$input_value" ]; then
+        dialog --title "Error" --msgbox "El campo '$input_name' no puede estar vacío." 8 40
+        clear
+        exit 1
+    elif [ "$dialog_exit_code" -ne 0 ]; then # 0 para OK, 1 para Cancel, 255 para ESC
+        clear
+        echo "Instalación cancelada por el usuario."
+        exit 0
+    fi
+}
+
 # Cuadro de bienvenida
 dialog --title "Bienvenido al Instalador y creador de proyectos Laravel 12" \
 --backtitle "Instalador LAMP Laravel 12 - Versión $VERSION" \
@@ -74,6 +91,24 @@ case $response in
         exit 0
         ;;
 esac
+
+# Input para el nombre del proyecto
+PROYECTO=$(dialog --clear --stdout \
+                --title "Nombre del Proyecto Laravel" \
+                --inputbox "Ingresa el nombre del proyecto Laravel 12 a crear:" 10 60)
+check_input "$PROYECTO" "Nombre del Proyecto" $?
+
+# Input para la contraseña del usuario phpMyAdmin de la base de datos
+PASSPHP=$(dialog --clear --stdout \
+               --title "Contraseña para Usuario phpMyAdmin de MySQL/MariaDB" \
+               --inputbox "Ingresa la contraseña para el usuario phpMyAdmin de la base de datos:" 10 60)
+check_input "$PASSPHP" "Contraseña phpMyAdmin" $?
+
+# Input para la contraseña del usuario root de la base de datos
+PASSROOT=$(dialog --clear --stdout \
+                --title "Contraseña para Usuario Root de MySQL/MariaDB" \
+                --inputbox "Ingresa la contraseña para el usuario root de la base de datos:" 10 60)
+check_input "$PASSROOT" "Contraseña Root" $?
 
 # Este script instalará LAMP y las dependencias necesarias para Laravel 12.
 # Está diseñado para ser ejecutado en Ubuntu 24 y es compatible con Ubuntu 23, 22, Debian 11, 12 y AlmaLinux.
