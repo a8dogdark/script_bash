@@ -22,7 +22,6 @@ if grep -q "Ubuntu" /etc/os-release; then
 elif grep -q "Debian" /etc/os-release; then
     DISTRO="Debian"
 elif grep -q "AlmaLinux" /etc/os-release; then
-    DISTRO="AlmaLinux"
 else
     echo "Distribución no soportada. Este script es compatible con Ubuntu (22, 23, 24), Debian (11, 12) y AlmaLinux."
     exit 1
@@ -35,7 +34,6 @@ elif [ "$DISTRO" = "AlmaLinux" ]; then
     DBASE="MySQL"
 fi
 
-
 # Validar que el sistema sea de 64 bits
 if [ "$(uname -m)" != "x86_64" ]; then
     echo "Este script solo puede ejecutarse en sistemas de 64 bits (x86_64)."
@@ -45,6 +43,7 @@ fi
 # Validar e instalar dialog si no está presente
 if ! command -v dialog &> /dev/null; then
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+        DEBIAN_FRONTEND=noninteractive apt-get update -qq > /dev/null 2>&1
         DEBIAN_FRONTEND=noninteractive apt-get install -y dialog > /dev/null 2>&1
     elif [ "$DISTRO" = "AlmaLinux" ]; then
         yum install -y dialog > /dev/null 2>&1
@@ -180,7 +179,7 @@ if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
     apt-get update -qq > /dev/null 2>&1
     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: No se pudieron actualizar los índices de paquetes."; fi
 elif [ "$DISTRO" = "AlmaLinux" ]; then
-    yum makecache -y > /dev/null 2>&1
+    yum makecache -y -q > /dev/null 2>&1 # Added -q for quiet
     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: No se pudieron actualizar los índices de paquetes."; fi
 fi
 
@@ -206,7 +205,7 @@ if ! command -v curl &> /dev/null; then
     fi
 else
     echo "curl ya está instalado."
-    sleep 1 # Pausa para visualizar el mensaje
+    sleep 0.5 # Pausa para visualizar el mensaje
 fi
 
 # 4% - Instalando utilidades esenciales: wget
@@ -221,7 +220,7 @@ if ! command -v wget &> /dev/null; then
     fi
 else
     echo "wget ya está instalado."
-    sleep 1 # Pausa para visualizar el mensaje
+    sleep 0.5 # Pausa para visualizar el mensaje
 fi
 
 # 5% - Instalando utilidades esenciales: unzip
@@ -236,7 +235,7 @@ if ! command -v unzip &> /dev/null; then
     fi
 else
     echo "unzip ya está instalado."
-    sleep 1 # Pausa para visualizar el mensaje
+    sleep 0.5 # Pausa para visualizar el mensaje
 fi
 
 # 6% - Instalando utilidades esenciales: zip
@@ -251,7 +250,7 @@ if ! command -v zip &> /dev/null; then
     fi
 else
     echo "zip ya está instalado."
-    sleep 1 # Pausa para visualizar el mensaje
+    sleep 0.5 # Pausa para visualizar el mensaje
 fi
 
 # 7% - Instalando gpg (gnupg)
@@ -266,7 +265,7 @@ if ! command -v gpg &> /dev/null; then
     fi
 else
     echo "gnupg (gpg) ya está instalado."
-    sleep 1
+    sleep 0.5
 fi
 
 # 8% - Instalando apt-transport-https (solo si es Ubuntu/Debian)
@@ -277,7 +276,7 @@ if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar apt-transport-https."; fi
     else
         echo "apt-transport-https ya está instalado."
-        sleep 1
+        sleep 0.5
     fi
 else
     update_progress 8 "Saltando: apt-transport-https (No es Ubuntu/Debian)."
@@ -303,7 +302,7 @@ if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         fi
     else
         echo "Ondrej PPA ya está agregado."
-        sleep 1 # Pausa para visualizar el mensaje
+        sleep 0.5 # Pausa para visualizar el mensaje
     fi
 else
     update_progress 9 "Saltando: Ondrej PPA (No es Ubuntu/Debian)."
@@ -319,7 +318,7 @@ if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Apache."; fi
     else
         echo "Apache ya está instalado."
-        sleep 1 # Pausa para visualizar el mensaje
+        sleep 0.5 # Pausa para visualizar el mensaje
     fi
 elif [ "$DISTRO" = "AlmaLinux" ]; then
     if ! command -v httpd &> /dev/null; then
@@ -327,7 +326,7 @@ elif [ "$DISTRO" = "AlmaLinux" ]; then
         if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Apache (httpd)."; fi
     else
         echo "Apache (httpd) ya está instalado."
-        sleep 1 # Pausa para visualizar el mensaje
+        sleep 0.5 # Pausa para visualizar el mensaje
     fi
 fi
 
@@ -367,7 +366,7 @@ if ! $INSTALL_FAILED; then # Solo intenta configurar si no hubo un error crític
     fi
 else
     echo "Saltando configuración de Apache y mod_rewrite debido a errores previos."
-    sleep 1
+    sleep 0.5
 fi
 
 # Rango de 12% a 38% para PHP y extensiones
@@ -434,7 +433,7 @@ if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar la base de PHP ${PHP_VERSION}."; fi
     else
         echo "Base de PHP ${PHP_VERSION} (cli) ya está instalada."
-        sleep 1
+        sleep 0.5
     fi
 elif [ "$DISTRO" = "AlmaLinux" ]; then
     if ! yum repolist | grep -q "remi-php${PHP_VERSION//./}"; then
@@ -451,7 +450,7 @@ elif [ "$DISTRO" = "AlmaLinux" ]; then
         if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar la base de PHP ${PHP_VERSION} en AlmaLinux."; fi
     else
         echo "Base de PHP ${PHP_VERSION} (cli/fpm) ya está instalada."
-        sleep 1
+        sleep 0.5
     fi
 fi
 echo "XXX"
@@ -519,7 +518,7 @@ if ! $INSTALL_FAILED; then
     fi
 else
     echo "Saltando configuración de PHP debido a errores previos."
-    sleep 1
+    sleep 0.5
 fi
 
 # 45% - Instalando y configurando la base de datos (MariaDB o MySQL)
@@ -532,6 +531,7 @@ if [ "$DBASE" = "MariaDB" ]; then
     else
         echo "MariaDB ya está instalado."
         DB_PACKAGE_INSTALLED=true
+        sleep 0.5
     fi
 elif [ "$DBASE" = "MySQL" ]; then
     if ! rpm -q mysql-server &> /dev/null; then
@@ -540,29 +540,30 @@ elif [ "$DBASE" = "MySQL" ]; then
     else
         echo "MySQL ya está instalado."
         DB_PACKAGE_INSTALLED=true
+        sleep 0.5
     fi
 fi
 
-if ! $INSTALL_FAILED && ! $DB_PACKAGE_INSTALLED; then
-    echo "Habilitando e iniciando $DBASE..."
-    if [ "$DBASE" = "MariaDB" ]; then
-        systemctl enable mariadb > /dev/null 2>&1
-        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al habilitar MariaDB."; fi
-        systemctl start mariadb > /dev/null 2>&1
-        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al iniciar MariaDB."; fi
-    elif [ "$DBASE" = "MySQL" ]; then
-        systemctl enable mysqld > /dev/null 2>&1
-        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al habilitar MySQL."; fi
-        systemctl start mysqld > /dev/null 2>&1
-        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al iniciar MySQL."; fi
-    fi
-
-    if ! $INSTALL_FAILED; then
-        echo "Configurando contraseñas de $DBASE..."
+if ! $INSTALL_FAILED; then # Procede solo si la instalación de la DB base no falló
+    if ! $DB_PACKAGE_INSTALLED; then # Si la DB no estaba instalada, la iniciamos y configuramos
+        echo "Habilitando e iniciando $DBASE..."
         if [ "$DBASE" = "MariaDB" ]; then
-            mysql -u root <<EOF_SQL
+            systemctl enable mariadb > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al habilitar MariaDB."; fi
+            systemctl start mariadb > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al iniciar MariaDB."; fi
+        elif [ "$DBASE" = "MySQL" ]; then
+            systemctl enable mysqld > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al habilitar MySQL."; fi
+            systemctl start mysqld > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al iniciar MySQL."; fi
+        fi
+
+        if ! $INSTALL_FAILED; then
+            echo "Configurando contraseñas de $DBASE y plugin de autenticación para root..."
+            if [ "$DBASE" = "MariaDB" ]; then
+                mysql -u root <<EOF_SQL
 ALTER USER 'root'@'localhost' IDENTIFIED BY '$PASSROOT';
--- Aseguramos que el plugin de autenticación sea 'mysql_native_password' para root
 UPDATE mysql.user SET plugin='mysql_native_password' WHERE User='root' AND Host='localhost';
 DELETE FROM mysql.user WHERE User='';
 DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
@@ -573,9 +574,9 @@ CREATE USER 'phpmyadmin'@'localhost' IDENTIFIED BY '$PASSPHP';
 GRANT ALL PRIVILEGES ON *.* TO 'phpmyadmin'@'localhost' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 EOF_SQL
-            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al configurar MariaDB con contraseñas."; fi
-        elif [ "$DBASE" = "MySQL" ]; then
-            mysql -u root <<EOF_SQL
+                if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al configurar MariaDB con contraseñas y plugin."; fi
+            elif [ "$DBASE" = "MySQL" ]; then
+                mysql -u root <<EOF_SQL
 ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$PASSROOT';
 DELETE FROM mysql.user WHERE User='';
 DELETE FROM mysql.user WHERE User='root' AND Host NOT IN ('localhost', '127.0.0.1', '::1');
@@ -586,67 +587,88 @@ CREATE USER 'phpmyadmin'@'localhost' IDENTIFIED BY '$PASSPHP';
 GRANT ALL PRIVILEGES ON *.* TO 'phpmyadmin'@'localhost' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 EOF_SQL
-            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al configurar MySQL con contraseñas."; fi
+                if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al configurar MySQL con contraseñas y plugin."; fi
+            fi
         fi
+    else
+        echo "Base de datos ya instalada, saltando configuración de usuario/contraseñas iniciales."
+        sleep 0.5
     fi
 else
-    echo "Saltando configuración de $DBASE debido a errores o porque ya estaba instalado."
-    sleep 1
+    echo "Saltando configuración de $DBASE debido a errores previos en la instalación base."
+    sleep 0.5
 fi
+
 
 # 50% - Instalando phpMyAdmin...
 update_progress 50 "Instalando: phpMyAdmin..."
-if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
-    if ! dpkg -s phpmyadmin &> /dev/null; then
-        # Pre-seed debconf selections for phpMyAdmin for unattended installation
-        echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
-        echo "phpmyadmin phpmyadmin/app-password-confirm password $PASSPHP" | debconf-set-selections
-        echo "phpmyadmin phpmyadmin/mysql/admin-pass password $PASSROOT" | debconf-set-selections
-        echo "phpmyadmin phpmyadmin/mysql/app-pass password $PASSPHP" | debconf-set-selections
-        echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
-        
-        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq phpmyadmin > /dev/null 2>&1
-        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar phpMyAdmin."; fi
-    else
-        echo "phpMyAdmin ya está instalado."
-        sleep 1
-    fi
-elif [ "$DISTRO" = "AlmaLinux" ]; then
-    if ! rpm -q phpmyadmin &> /dev/null; then
-        yum install -y -q phpmyadmin > /dev/null 2>&1
-        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar phpMyAdmin."; fi
-
-        if ! grep -q "Include /etc/httpd/conf.d/phpMyAdmin.conf" /etc/httpd/conf/httpd.conf; then
-            echo "Alias /phpmyadmin /usr/share/phpmyadmin" > /etc/httpd/conf.d/phpMyAdmin.conf
-            echo "<Directory /usr/share/phpmyadmin>" >> "/etc/httpd/conf.d/phpMyAdmin.conf"
-            echo "    AddType application/x-httpd-php .php" >> "/etc/httpd/conf.d/phpMyAdmin.conf"
-            echo "    DirectoryIndex index.php" >> "/etc/httpd/conf.d/phpMyAdmin.conf"
-            echo "    Require all granted" >> "/etc/httpd/conf.d/phpMyAdmin.conf"
-            echo "</Directory>" >> "/etc/httpd/conf.d/phpMyAdmin.conf"
+if ! $INSTALL_FAILED; then
+    if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
+        if ! dpkg -s phpmyadmin &> /dev/null; then
+            # Pre-seed debconf selections for phpMyAdmin for unattended installation
+            echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
+            echo "phpmyadmin phpmyadmin/app-password-confirm password $PASSPHP" | debconf-set-selections
+            echo "phpmyadmin phpmyadmin/mysql/admin-pass password $PASSROOT" | debconf-set-selections
+            echo "phpmyadmin phpmyadmin/mysql/app-pass password $PASSPHP" | debconf-set-selections
+            echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
             
-            systemctl restart httpd > /dev/null 2>&1
-            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al reiniciar Apache después de configurar phpMyAdmin."; fi
+            DEBIAN_FRONTEND=noninteractive apt-get install -y -qq phpmyadmin > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar phpMyAdmin."; fi
         else
-            echo "Configuración de phpMyAdmin para Apache ya existe."
+            echo "phpMyAdmin ya está instalado."
+            sleep 0.5
+            # Si ya está instalado, reconfiguramos para asegurarnos de que la contraseña es la deseada.
+            echo "Reconfigurando phpMyAdmin para asegurar las credenciales..."
+            echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
+            echo "phpmyadmin phpmyadmin/app-password-confirm password $PASSPHP" | debconf-set-selections
+            echo "phpmyadmin phpmyadmin/mysql/admin-pass password $PASSROOT" | debconf-set-selections
+            echo "phpmyadmin phpmyadmin/mysql/app-pass password $PASSPHP" | debconf-set-selections
+            echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
+            dpkg-reconfigure -f noninteractive phpmyadmin > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al reconfigurar phpMyAdmin."; fi
         fi
-    else
-        echo "phpMyAdmin ya está instalado."
-        sleep 1
+    elif [ "$DISTRO" = "AlmaLinux" ]; then
+        if ! rpm -q phpmyadmin &> /dev/null; then
+            yum install -y -q phpmyadmin > /dev/null 2>&1
+            if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar phpMyAdmin."; fi
+
+            if ! grep -q "Include /etc/httpd/conf.d/phpMyAdmin.conf" /etc/httpd/conf/httpd.conf; then
+                echo "Alias /phpmyadmin /usr/share/phpmyadmin" > /etc/httpd/conf.d/phpMyAdmin.conf
+                echo "<Directory /usr/share/phpmyadmin>" >> "/etc/httpd/conf.d/phpMyAdmin.conf"
+                echo "    AddType application/x-httpd-php .php" >> "/etc/httpd/conf.d/phpMyAdmin.conf"
+                echo "    DirectoryIndex index.php" >> "/etc/httpd/conf.d/phpMyAdmin.conf"
+                echo "    Require all granted" >> "/etc/httpd/conf.d/phpMyAdmin.conf"
+                echo "</Directory>" >> "/etc/httpd/conf.d/phpMyAdmin.conf"
+                
+                systemctl restart httpd > /dev/null 2>&1
+                if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al reiniciar Apache después de configurar phpMyAdmin."; fi
+            else
+                echo "Configuración de phpMyAdmin para Apache ya existe."
+                sleep 0.5
+            fi
+        else
+            echo "phpMyAdmin ya está instalado."
+            sleep 0.5
+        fi
     fi
+else
+    echo "Saltando instalación de phpMyAdmin debido a errores previos."
+    sleep 0.5
 fi
+
 
 # 55% - Instalando Composer...
 update_progress 55 "Instalando: Composer..."
 if ! command -v composer &> /dev/null; then
     php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al descargar el instalador de Composer."; fi
-    php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+    php composer-setup.php --install-dir=/usr/local/bin --filename=composer > /dev/null 2>&1
     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Composer."; fi
-    rm composer-setup.php
+    rm composer-setup.php > /dev/null 2>&1
     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al eliminar el instalador de Composer."; fi
 else
     echo "Composer ya está instalado."
-    sleep 1
+    sleep 0.5
 fi
 
 # 60% - Instalando Node.js...
@@ -669,7 +691,7 @@ if ! command -v node &> /dev/null; then
     fi
 else
     echo "Node.js ya está instalado."
-    sleep 1
+    sleep 0.5
 fi
 
 # 70% - Creando la carpeta de proyectos Laravel y el proyecto en sí...
@@ -684,7 +706,7 @@ if [ ! -d "$LARAVEL_PROJECTS_DIR" ]; then
     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al crear el directorio $LARAVEL_PROJECTS_DIR."; fi
 else
     echo "Directorio $LARAVEL_PROJECTS_DIR ya existe."
-    sleep 1
+    sleep 0.5
 fi
 
 if ! $INSTALL_FAILED; then
@@ -725,11 +747,11 @@ if ! $INSTALL_FAILED; then
         fi
     else
         echo "El proyecto Laravel '$PROYECTO' ya existe en $PROJECT_PATH. Saltando creación."
-        sleep 1
+        sleep 0.5
     fi
 else
     echo "Saltando creación de proyecto Laravel debido a errores previos."
-    sleep 1
+    sleep 0.5
 fi
 
 # 80% - Configurando base de datos y ejecutando migraciones para Laravel
@@ -764,7 +786,7 @@ if ! $INSTALL_FAILED; then
     fi
 else
     echo "Saltando configuración de base de datos y migraciones debido a errores previos."
-    sleep 1
+    sleep 0.5
 fi
 
 # 85% - Configurando idioma español en Laravel
@@ -795,7 +817,7 @@ if ! $INSTALL_FAILED; then
     fi
 else
     echo "Saltando configuración de idioma español debido a errores previos."
-    sleep 1
+    sleep 0.5
 fi
 
 
@@ -865,23 +887,26 @@ if ! $INSTALL_FAILED; then
     fi
 else
     echo "Saltando configuración de Virtual Host debido a errores previos."
-    sleep 1
+    sleep 0.5
 fi
 
 # 93% - Creando archivo info.php para verificación de PHP...
 update_progress 93 "Creando archivo info.php para verificación de PHP..."
 if [ -f "/var/www/html/info.php" ]; then
     echo "El archivo info.php ya existe. Saltando creación."
-    sleep 1
+    sleep 0.5
 else
     echo "<?php phpinfo(); ?>" > /var/www/html/info.php
     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al crear /var/www/html/info.php."; fi
     if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
         chown www-data:www-data /var/www/html/info.php > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al cambiar propietario de info.php."; fi
     elif [ "$DISTRO" = "AlmaLinux" ]; then
         chown apache:apache /var/www/html/info.php > /dev/null 2>&1
+        if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al cambiar propietario de info.php."; fi
     fi
     chmod 644 /var/www/html/info.php > /dev/null 2>&1
+    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al cambiar permisos de info.php."; fi
 fi
 
 # 95% - Instalando programas adicionales seleccionados...
@@ -915,7 +940,6 @@ for PROGRAMA in "${PROGRAMAS_SELECCIONADOS[@]}"; do
                     rm -f /usr/share/keyrings/microsoft.gpg > /dev/null 2>&1
 
                     # 1. Descargar y añadir la clave GPG de Microsoft al keyring de apt
-                    # Usamos 'curl' directamente al archivo de keyring para evitar problemas de permisos con 'tee'
                     echo "Descargando y añadiendo clave GPG de VS Code..."
                     curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | sudo tee /usr/share/keyrings/microsoft.gpg > /dev/null
                     if [ $? -ne 0 ]; then
@@ -986,14 +1010,20 @@ for PROGRAMA in "${PROGRAMAS_SELECCIONADOS[@]}"; do
             if ! command -v brave-browser &> /dev/null; then
                 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
                     curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg > /dev/null 2>&1
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al descargar clave de Brave Browser."; continue; fi
                     echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" | tee /etc/apt/sources.list.d/brave-browser-release.list > /dev/null
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al configurar repositorio de Brave Browser."; continue; fi
                     apt-get update -qq > /dev/null 2>&1
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al actualizar índices para Brave Browser."; continue; fi
                     DEBIAN_FRONTEND=noninteractive apt-get install -y -qq brave-browser > /dev/null 2>&1
                     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Brave Browser."; fi
                 elif [ "$DISTRO" = "AlmaLinux" ]; then
                     rpm --import https://brave-browser-rpm-release.s3.brave.com/brave-core.asc > /dev/null 2>&1
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al importar clave RPM para Brave Browser."; continue; fi
                     yum-config-manager --add-repo https://brave-browser-rpm-release.s3.brave.com/x86_64/ > /dev/null 2>&1
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al añadir repositorio para Brave Browser."; continue; fi
                     yum check-update -q > /dev/null 2>&1
+                    if [ $? -ne 0 ]; then echo "Advertencia: Fallo en yum check-update para Brave Browser. Intentando instalación de todos modos."; fi
                     yum install -y -q brave-browser brave-keyring > /dev/null 2>&1
                     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Brave Browser."; fi
                 fi
@@ -1005,14 +1035,20 @@ for PROGRAMA in "${PROGRAMAS_SELECCIONADOS[@]}"; do
             if ! command -v google-chrome &> /dev/null; then
                 if [ "$DISTRO" = "Ubuntu" ] || [ "$DISTRO" = "Debian" ]; then
                     wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor | sudo tee /usr/share/keyrings/google-chrome.gpg > /dev/null
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al descargar clave de Google Chrome."; continue; fi
                     echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list > /dev/null
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al configurar repositorio de Google Chrome."; continue; fi
                     apt-get update -qq > /dev/null 2>&1
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al actualizar índices para Google Chrome."; continue; fi
                     DEBIAN_FRONTEND=noninteractive apt-get install -y -qq google-chrome-stable > /dev/null 2>&1
                     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Google Chrome."; fi
                 elif [ "$DISTRO" = "AlmaLinux" ]; then
                     curl https://dl.google.com/linux/linux_signing_key.pub | sudo rpm --import - > /dev/null 2>&1
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al importar clave RPM para Google Chrome."; continue; fi
                     echo -e "[google-chrome]\nname=google-chrome\nbaseurl=http://dl.google.com/linux/chrome/rpm/stable/x86_64\nenabled=1\ngpgcheck=1\ngpgkey=https://dl.google.com/linux/linux_signing_key.pub" | sudo tee /etc/yum.repos.d/google-chrome.repo > /dev/null
+                    if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al crear archivo de repositorio para Google Chrome."; continue; fi
                     yum check-update -q > /dev/null 2>&1
+                    if [ $? -ne 0 ]; then echo "Advertencia: Fallo en yum check-update para Google Chrome. Intentando instalación de todos modos."; fi
                     yum install -y -q google-chrome-stable > /dev/null 2>&1
                     if [ $? -ne 0 ]; then INSTALL_FAILED=true; echo "ERROR: Fallo al instalar Google Chrome."; fi
                 fi
@@ -1023,8 +1059,8 @@ for PROGRAMA in "${PROGRAMAS_SELECCIONADOS[@]}"; do
         *)
             echo "Programa desconocido seleccionado: $PROGRAMA. Saltando."
             ;;
-    end case
-    sleep 1
+    esac # <-- CORRECCIÓN AQUI
+    sleep 0.5
 done
 
 # 100% - Simulando finalización
@@ -1041,18 +1077,19 @@ else
     MESSAGE+="Datos de tu proyecto:\n"
     MESSAGE+="-   URL del Proyecto: http://${PROYECTO}.test\n"
     MESSAGE+="-   Ubicación del Proyecto: ${PROJECT_PATH}\n"
-    MESSAGE+="-   Verificación PHP: http://TU_IP/info.php\n"
-    MESSAGE+="-   phpMyAdmin: http://TU_IP/phpmyadmin\n\n"
+    MESSAGE+="-   Verificación PHP: http://TU_IP_DEL_SERVIDOR/info.php\n"
+    MESSAGE+="-   phpMyAdmin: http://TU_IP_DEL_SERVIDOR/phpmyadmin\n\n"
     MESSAGE+="Credenciales de Base de Datos:\n"
     MESSAGE+="-   Usuario Root (${DBASE}): root\n"
     MESSAGE+="-   Contraseña Root (${DBASE}): ${PASSROOT}\n"
     MESSAGE+="-   Usuario phpMyAdmin: phpmyadmin\n"
     MESSAGE+="-   Contraseña phpMyAdmin: ${PASSPHP}\n\n"
-    MESSAGE+="¡IMPORTANTE! En tu equipo local (no en el servidor), debes añadir la siguiente línea a tu archivo `/etc/hosts` (o `C:\\Windows\\System32\\drivers\\etc\\hosts` en Windows) para que el dominio `${PROYECTO}.test` funcione:\n"
-    MESSAGE+="    127.0.0.1    ${PROYECTO}.test\n\n"
+    MESSAGE+="¡IMPORTANTE! En tu equipo local (donde usas el navegador, no en el servidor), si deseas acceder al proyecto con '${PROYECTO}.test', debes añadir la siguiente línea a tu archivo `/etc/hosts` (en Linux/macOS) o `C:\\Windows\\System32\\drivers\\etc\\hosts` (en Windows):\n"
+    MESSAGE+="    IP_DE_TU_MAQUINA_VIRTUAL    ${PROYECTO}.test\n"
+    MESSAGE+="Reemplaza 'IP_DE_TU_MAQUINA_VIRTUAL' con la dirección IP real de tu máquina virtual.\n\n"
     MESSAGE+="Presiona ENTER para limpiar la pantalla."
 
-    dialog --title "Instalación Completada con Éxito" --msgbox "$MESSAGE" 25 80
+    dialog --title "Instalación Completada con Éxito" --msgbox "$MESSAGE" 30 80 # Aumentado el tamaño del cuadro para el mensaje largo
 fi
 
 clear
