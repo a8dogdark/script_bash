@@ -1,6 +1,5 @@
 #! /bin/bash
 
-#####################################################################
 # Script: install.sh
 # Version: 2.0
 # Descripcion:     Script de instalacion principal.
@@ -10,7 +9,6 @@
 #                 AlmaLinux 9
 # Autor:         [Tu Nombre o tu Organizacion, opcional]
 # Fecha:         2025-07-29
-#####################################################################
 
 clear # Limpiamos la pantalla al inicio del script
 
@@ -175,8 +173,8 @@ fi
 clear
 PASSROOT=$(dialog --clear \
                   --backtitle "Configuración de la Base de Datos" \
-                  --title "Contraseña Root de la Base de Datos" \
-                  --inputbox "\nPor favor, ingresa la contraseña para el usuario 'root' de la base de datos:" \
+                   --title "Contraseña Root de la Base de Datos" \
+                   --inputbox "\nPor favor, ingresa la contraseña para el usuario 'root' de la base de datos:" \
                   12 60 "" 3>&1 1>&2 2>&3)
 response=$?
 clear
@@ -223,27 +221,61 @@ SOFTWARE_ADICIONAL=$(dialog --clear \
                             "brave" "Navegador Brave" "off" \
                             "chrome" "Google Chrome" "off" \
                             3>&1 1>&2 2>&3)
-response=$? # Captura la respuesta de dialog (0 si OK, 1 si Cancelar, 255 si ESC)
+response=$?
 clear
 
-# No salir si el usuario cancela o no selecciona nada en esta sección opcional
 if [ $response -ne 0 ] || [ -z "$SOFTWARE_ADICIONAL" ]; then
     dialog --backtitle "Software Adicional" \
            --title "Información" \
            --msgbox "\nNo se seleccionó software adicional o la selección fue cancelada. La instalación principal continuará." \
            10 60
     clear
-    # No hay exit 1 aquí, el script simplemente continúa.
-    SOFTWARE_ADICIONAL="" # Aseguramos que la variable esté vacía si no se seleccionó nada
+    SOFTWARE_ADICIONAL=""
 fi
 
-# Aquí iría el resto del script de instalación
-# Puedes usar un bucle o una sentencia case para procesar $SOFTWARE_ADICIONAL
-# Por ejemplo, para depuración puedes imprimir las selecciones:
-# echo "Proyecto: $PROYECTO"
-# echo "Contraseña PhpMyAdmin: $PASSADMIN"
-# echo "Contraseña Root DB: $PASSROOT"
-# echo "Versión PHP: $PHP_VERSION"
-# echo "Software Adicional seleccionado: $SOFTWARE_ADICIONAL"
+# --- Proceso de Instalación con Barra de Progreso Simple (con pausas) ---
 
-echo "Script de configuración de parámetros completado. ¡Listo para la instalación real!"
+(
+    # Cada línea echo <PORCENTAJE>#<MENSAJE> avanza la barra de progreso
+    echo 0
+    echo "# Iniciando instalación..."
+    sleep 1 # Pausa de 1 segundo
+
+    echo 10
+    echo "# Preparando el sistema..."
+    # AQUI VA EL CODIGO DE INSTALACION REAL
+    sleep 1 # Pausa de 1 segundo
+
+    echo 30
+    echo "# Instalando componentes principales..."
+    # Más código de instalación aquí
+    sleep 1 # Pausa de 1 segundo
+
+    echo 60
+    echo "# Configurando servicios..."
+    # Más código de instalación aquí
+    sleep 1 # Pausa de 1 segundo
+
+    echo 90
+    echo "# Finalizando la instalación..."
+    # Más código de instalación aquí
+    sleep 1 # Pausa de 1 segundo
+
+    echo 100
+    echo "# ¡Instalación completa!"
+    sleep 1 # Pausa final antes de que la barra desaparezca
+) | dialog --gauge "Iniciando la instalación de su entorno LAMP para Laravel 12..." 12 70 0
+
+# --- Mensaje de Finalización ---
+clear
+dialog --backtitle "Instalación Completada" \
+       --title "¡Éxito!" \
+       --msgbox "\nLa instalación de su entorno LAMP y Laravel 12 ha finalizado correctamente.\n\n¡Disfrute su nuevo entorno de desarrollo!" \
+       10 60
+
+clear
+echo "¡Instalación finalizada!"
+echo "Puede acceder a su proyecto en: http://localhost/$PROYECTO"
+echo "PhpMyAdmin en: http://localhost/phpmyadmin"
+echo "Versión de PHP instalada: $PHP_VERSION"
+echo "Software adicional instalado: $SOFTWARE_ADICIONAL"
