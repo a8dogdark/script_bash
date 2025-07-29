@@ -12,6 +12,8 @@
 # Fecha:         2025-07-29
 #####################################################################
 
+clear # Limpiamos la pantalla al inicio del script
+
 # Variables Globales
 VER="2.0"
 DISTRO=""
@@ -51,7 +53,7 @@ if [ -f /etc/os-release ]; then
     case "$ID" in
         ubuntu)
             case "$VERSION_ID" in
-                22.04|23.10|24.04|24.10) # ¡24.04 LTS agregado aquí!
+                22.04|23.10|24.04|24.10)
                     DISTRO="Ubuntu"
                     VERSION="$VERSION_ID"
                     DBASE="mysql-server" # Todas las versiones de Ubuntu usan mysql-server
