@@ -5,7 +5,7 @@
 # Version: 2.0
 # Descripcion:     Script de instalacion principal.
 #                  Requiere privilegios de root para su ejecucion.
-# Compatibilidad: Ubuntu 24.10, 23.10, 22.04 LTS
+# Compatibilidad: Ubuntu 24.10, 23.10, 22.04 LTS, 24.04 LTS
 #                 Debian 11 (Bullseye), 12 (Bookworm)
 #                 AlmaLinux 9
 # Autor:         [Tu Nombre o tu Organizacion, opcional]
@@ -51,10 +51,10 @@ if [ -f /etc/os-release ]; then
     case "$ID" in
         ubuntu)
             case "$VERSION_ID" in
-                22.04|23.10|24.10)
+                22.04|23.10|24.04|24.10) # ¡24.04 LTS agregado aquí!
                     DISTRO="Ubuntu"
                     VERSION="$VERSION_ID"
-                    DBASE="mysql-server"
+                    DBASE="mysql-server" # Todas las versiones de Ubuntu usan mysql-server
                     PACKAGE="apt-get"
                     ;;
                 *)
@@ -67,7 +67,7 @@ if [ -f /etc/os-release ]; then
                 11|12)
                     DISTRO="Debian"
                     VERSION="$VERSION_ID"
-                    DBASE="mariadb-server"
+                    DBASE="mariadb-server" # MariaDB es el predeterminado en Debian 11/12
                     PACKAGE="apt-get"
                     ;;
                 *)
@@ -80,7 +80,7 @@ if [ -f /etc/os-release ]; then
                 8|9)
                     DISTRO="AlmaLinux"
                     VERSION="$VERSION_ID"
-                    DBASE="mariadb-server"
+                    DBASE="mariadb-server" # MariaDB es el predeterminado en AlmaLinux 8/9
                     PACKAGE="dnf"
                     ;;
                 *)
