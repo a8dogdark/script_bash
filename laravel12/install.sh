@@ -1,91 +1,210 @@
-#!/bin/bash
-# install.sh - Versión 2.0
-# Utiliza 'dialog' para la comunicación con el usuario
-# Todas las instalaciones y procesos deben ejecutarse en segundo plano sin confirmaciones
+#! /bin/bash
+
+#####################################################################
+# Script: install.sh
+# Version: 2.0
+# Descripcion:     Script de instalacion principal.
+#                  Requiere privilegios de root para su ejecucion.
+# Compatibilidad: Ubuntu 24.10, 23.10, 22.04 LTS
+#                 Debian 11 (Bullseye), 12 (Bookworm)
+#                 AlmaLinux 9
+# Autor:         [Tu Nombre o tu Organizacion, opcional]
+# Fecha:         2025-07-29
+#####################################################################
+
+# Variables Globales
+VER="2.0"
+DISTRO=""
+VERSION=""
+DBASE="" # Se usará para definir el tipo de DB a instalar (ej. "mysql-server", "mariadb-server")
+PACKAGE="" # Gestor de paquetes a usar (apt-get o dnf)
+PASSROOT=""
+PASSADMIN=""
+PROYECTO=""
+PHP_VERSION="" # Nueva variable para almacenar la versión de PHP seleccionada
+
+# --- Validaciones Iniciales ---
+
+# 1. Validar que el usuario sea root
+if [ $EUID -ne 0 ]; then
+  clear
+  echo "Error: Este script debe ser ejecutado como root."
+  echo "Por favor ingresa en la terminal y ejecuta"
+  echo "Ubuntu    -> sudo su -"
+  echo "Debian    -> su -"
+  echo "Almalinux -> su -"
+  exit 1
+fi
+
+# 2. Validar arquitectura de 64 bits
+if [ "$(uname -m)" != "x86_64" ]; then
+  clear
+  echo "Error: Este script ('install.sh' v$VER) solo puede ejecutarse en sistemas de 64 bits (x86_64)."
+  echo "Tu arquitectura actual es: $(uname -m)"
+  echo "El script no puede continuar."
+  exit 1
+fi
+
+# 3. Validar Distribucion y Version soportada
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    case "$ID" in
+        ubuntu)
+            case "$VERSION_ID" in
+                22.04|23.10|24.10)
+                    DISTRO="Ubuntu"
+                    VERSION="$VERSION_ID"
+                    DBASE="mysql-server"
+                    PACKAGE="apt-get"
+                    ;;
+                *)
+                    clear; echo "Error: Versión de Ubuntu ($VERSION_ID) no soportada."; exit 1
+                    ;;
+            esac
+            ;;
+        debian)
+            case "$VERSION_ID" in
+                11|12)
+                    DISTRO="Debian"
+                    VERSION="$VERSION_ID"
+                    DBASE="mariadb-server"
+                    PACKAGE="apt-get"
+                    ;;
+                *)
+                    clear; echo "Error: Versión de Debian ($VERSION_ID) no soportada."; exit 1
+                    ;;
+            esac
+            ;;
+        almalinux)
+            case "$VERSION_ID" in
+                8|9)
+                    DISTRO="AlmaLinux"
+                    VERSION="$VERSION_ID"
+                    DBASE="mariadb-server"
+                    PACKAGE="dnf"
+                    ;;
+                *)
+                    clear; echo "Error: Versión de AlmaLinux ($VERSION_ID) no soportada."; exit 1
+                    ;;
+            esac
+            ;;
+        *)
+            clear; echo "Error: Distribución ($ID) no soportada."; exit 1
+            ;;
+    esac
+else
+    clear
+    echo "Error: No se pudo detectar la distribución del sistema."
+    echo "El archivo /etc/os-release no se encontró."
+    exit 1
+fi
+
+# --- Instalación de Dialog (si no está instalado) ---
+if ! command -v dialog &> /dev/null; then
+    "$PACKAGE" install -yq dialog > /dev/null 2>&1
+    if ! command -v dialog &> /dev/null; then
+        clear
+        echo "Error: No se pudo instalar el paquete 'dialog'."
+        echo "Es necesario para el funcionamiento de este script."
+        exit 1
+    fi
+fi
 
 clear
 
-# Distribuciones objetivo:
-# - Ubuntu 22, 23, 24
-# - Debian 11, 12
-# - AlmaLinux
-
-# Por defecto se usará MySQL Server en Ubuntu 24.10.
-# Para las demás distribuciones se seleccionará la base de datos más adecuada y compatible.
-
-# Validar si el script se ejecuta como root
-if [ "$EUID" -ne 0 ]; then
-  echo -e "\e[31mEste script debe ejecutarse como root. Saliendo...\e[0m"
-  exit 1
-fi
-
-# Validar que la arquitectura sea 64 bits
-ARCH=$(uname -m)
-if [[ "$ARCH" != "x86_64" && "$ARCH" != "amd64" ]]; then
-  echo -e "\e[31mEste script solo es compatible con sistemas de 64 bits. Saliendo...\e[0m"
-  exit 1
-fi
-
-# Validar distribución, versión y definir base de datos y gestor de paquetes
-if [ -f /etc/os-release ]; then
-  . /etc/os-release
-  OS_NAME=$ID
-  OS_VERSION=$VERSION_ID
-else
-  echo -e "\e[31mNo se pudo determinar la distribución del sistema. Saliendo...\e[0m"
-  exit 1
-fi
-
-case "$OS_NAME" in
-  ubuntu)
-    UBUNTU_MAJOR=$(echo "$OS_VERSION" | cut -d '.' -f1)
-    if [[ "$UBUNTU_MAJOR" -ge 22 && "$UBUNTU_MAJOR" -le 24 ]]; then
-      DB_SERVER="mysql-server"
-      PKG_MANAGER="apt-get"
-    else
-      echo -e "\e[31mUbuntu versión no soportada. Solo 22.x, 23.x o 24.x son permitidos. Saliendo...\e[0m"
-      exit 1
-    fi
-    ;;
-  debian)
-    if [[ "$OS_VERSION" == "11" || "$OS_VERSION" == "12" ]]; then
-      DB_SERVER="mariadb-server"
-      PKG_MANAGER="apt-get"
-    else
-      echo -e "\e[31mDebian versión no soportada. Solo 11 o 12 son permitidos. Saliendo...\e[0m"
-      exit 1
-    fi
-    ;;
-  almalinux)
-    DB_SERVER="mariadb-server"
-    PKG_MANAGER="dnf"
-    ;;
-  *)
-    echo -e "\e[31mDistribución $OS_NAME no soportada. Saliendo...\e[0m"
-    exit 1
-    ;;
-esac
-
-# Validar si dialog está instalado, si no, instalarlo silenciosamente en segundo plano
-if ! command -v dialog &> /dev/null; then
-  if [ "$PKG_MANAGER" = "apt-get" ]; then
-    apt-get install -y dialog &> /dev/null &
-  elif [ "$PKG_MANAGER" = "dnf" ]; then
-    dnf install -y dialog &> /dev/null &
-  fi
-fi
-
-# Mostrar cuadro de bienvenida con dialog
-dialog --backtitle "Instalador LAMP para Laravel 12" \
-       --yes-label "Continuar" --no-label "Salir" \
-       --yesno "Bienvenido al instalador de LAMP, para Laravel 12.\n\nSe instalarán los siguientes programas:\n- Apache\n- PHP\n- $DB_SERVER\n- PhpMyAdmin\n- Composer\n- NodeJs\n- Programas de creación del proyecto" 15 60
+# --- Caja de diálogo de bienvenida con opciones Aceptar/Cancelar ---
+dialog --backtitle "Instalador de Entorno de Servidor (v$VER)" \
+       --title "¡Bienvenido al Creador de Sistema LAMP para Laravel 12!" \
+       --yesno "\nSe instalarán los siguientes paquetes:\n  - Apache\n  - PHP\n  - $DBASE\n  - PhpMyAdmin\n  - Composer\n  - Node.js\n  - Programas\n  - Proyecto base\n\nSu sistema ha sido detectado como:\n  Distribucion: $DISTRO $VERSION\n  Base de Datos: $DBASE\n  Gestor de Paquetes: $PACKAGE\n\n¿Desea continuar con la instalación?" \
+       23 75
 
 response=$?
 
-if [ $response -eq 1 ]; then
-  dialog --backtitle "Salir" --msgbox "Has elegido salir. El programa se cerrará." 7 40
-  clear
-  exit 0
+if [ $response -ne 0 ]; then
+    clear
+    dialog --backtitle "Instalación Cancelada" \
+           --title "Proceso Detenido" \
+           --msgbox "\nLa instalación ha sido cancelada por el usuario." \
+           10 50
+    clear
+    exit 0
 fi
 
+# --- Solicitud y Validación de Datos al Usuario ---
+
+# 1. Solicitar Nombre del Proyecto
 clear
+PROYECTO=$(dialog --clear \
+                  --backtitle "Configuración del Proyecto Laravel" \
+                  --title "Nombre del Proyecto" \
+                  --inputbox "\nPor favor, ingresa el nombre de tu proyecto Laravel 12 (ej. miapp sin guiones ni espacios):\n\n" \
+                  10 60 "" 3>&1 1>&2 2>&3)
+response=$?
+clear
+if [ $response -ne 0 ] || [ -z "$PROYECTO" ]; then
+    dialog --backtitle "Error de Entrada" \
+           --title "Campo Obligatorio" \
+           --msgbox "\nEl nombre del proyecto es un campo obligatorio y no puede estar vacío.\n\nLa instalación será cancelada." \
+           10 50
+    clear
+    exit 1
+fi
+
+# 2. Solicitar Password para PhpMyAdmin
+clear
+PASSADMIN=$(dialog --clear \
+                   --backtitle "Configuración de PhpMyAdmin" \
+                   --title "Contraseña PhpMyAdmin" \
+                   --inputbox "\nPor favor, ingresa la contraseña para el usuario 'phpmyadmin':" \
+                   12 60 "" 3>&1 1>&2 2>&3)
+response=$?
+clear
+if [ $response -ne 0 ] || [ -z "$PASSADMIN" ]; then
+    dialog --backtitle "Error de Entrada" \
+           --title "Campo Obligatorio" \
+           --msgbox "\nLa contraseña de PhpMyAdmin es un campo obligatorio y no puede estar vacío.\n\nLa instalación será cancelada." \
+           10 50
+    clear
+    exit 1
+fi
+
+# 3. Solicitar Password para el usuario root de la Base de Datos
+clear
+PASSROOT=$(dialog --clear \
+                  --backtitle "Configuración de la Base de Datos" \
+                  --title "Contraseña Root de la Base de Datos" \
+                  --inputbox "\nPor favor, ingresa la contraseña para el usuario 'root' de la base de datos:" \
+                  12 60 "" 3>&1 1>&2 2>&3)
+response=$?
+clear
+if [ $response -ne 0 ] || [ -z "$PASSROOT" ]; then
+    dialog --backtitle "Error de Entrada" \
+           --title "Campo Obligatorio" \
+           --msgbox "\nLa contraseña del usuario 'root' de la base de datos es un campo obligatorio y no puede estar vacío.\n\nLa instalación será cancelada." \
+           10 50
+    clear
+    exit 1
+fi
+
+# --- Selección de Versión de PHP ---
+clear
+PHP_VERSION=$(dialog --clear \
+                     --backtitle "Selección de Versión de PHP" \
+                     --title "Versión de PHP para Laravel 12" \
+                     --radiolist "\nSelecciona la versión de PHP a instalar. PHP 8.4 es la más óptima para Laravel 12.\n\n" \
+                     15 60 3 \
+                     "8.2" "PHP 8.2" "off" \
+                     "8.3" "PHP 8.3" "off" \
+                     "8.4" "PHP 8.4 (Recomendado para Laravel 12)" "on" \
+                     3>&1 1>&2 2>&3)
+response=$?
+clear
+
+if [ $response -ne 0 ] || [ -z "$PHP_VERSION" ]; then
+    dialog --backtitle "Error de Selección" \
+           --title "Selección Obligatoria" \
+           --msgbox "\nDebes seleccionar una versión de PHP para continuar con la instalación.\n\nLa instalación será cancelada." \
+           10 50
+    clear
+    exit 1
+fi
