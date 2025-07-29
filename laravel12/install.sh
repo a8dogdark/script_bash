@@ -5,7 +5,7 @@
 # Descripcion:     Script de instalacion principal.
 #                  Requiere privilegios de root para su ejecucion.
 # Compatibilidad: Ubuntu 24.10, 23.10, 22.04 LTS, 24.04 LTS
-#                 Debian 11 (Bullseye), 12 (Bookbook)
+#                 Debian 11 (Bullseye), 12 (Bookworm)
 #                 AlmaLinux 9
 # Autor:         [Tu Nombre o tu Organizacion, opcional]
 # Fecha:         2025-07-29
@@ -227,11 +227,11 @@ if [ $response -ne 0 ] || [ -z "$SOFTWARE_ADICIONAL" ]; then
     true # No hacer nada, solo asegurar que no haya un msgbox
 fi
 
-
-# --- Proceso de Instalación con Barra de Progreso Simple (con pausas y demo) ---
+# --- Proceso de Instalación con Barra de Progreso Dinámica (con pausas y demo) ---
 
 (
-    # La caja de progreso mostrará "Instalando: <nombre_del_paquete/componente>"
+    # Cada línea echo <PORCENTAJE>#<MENSAJE> avanza la barra de progreso
+    # El mensaje aparece DEBAJO de la barra.
 
     echo 0
     echo "# Iniciando instalación..."
@@ -276,7 +276,7 @@ fi
     echo "# Configurando permisos y finalizando..."
     # AQUI VA EL CODIGO DE CONFIGURACION FINAL
     sleep 1
-) | dialog --gauge "Proceso de Instalación en Curso..." 12 70 0
+) | dialog --title "Proceso de Instalación en Curso" --gauge "" 12 70 0
 
 # --- Mensaje de Finalización ---
 clear
