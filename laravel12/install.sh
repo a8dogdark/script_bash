@@ -5,7 +5,7 @@
 # Descripcion:     Script de instalacion principal.
 #                  Requiere privilegios de root para su ejecucion.
 # Compatibilidad: Ubuntu 24.10, 23.10, 22.04 LTS, 24.04 LTS
-#                 Debian 11 (Bullseye), 12 (Bookworm)
+#                 Debian 11 (Bullseye), 12 (Bookbook)
 #                 AlmaLinux 9
 # Autor:         [Tu Nombre o tu Organizacion, opcional]
 # Fecha:         2025-07-29
@@ -222,47 +222,61 @@ SOFTWARE_ADICIONAL=$(dialog --clear \
                             "chrome" "Google Chrome" "off" \
                             3>&1 1>&2 2>&3)
 response=$?
-# No hay mensaje de confirmación si no se selecciona software adicional.
-# La lógica de SOFTWARE_ADICIONAL="" ya maneja que no se instale nada.
+# No hay mensaje de confirmación si no se seleccionó software adicional.
 if [ $response -ne 0 ] || [ -z "$SOFTWARE_ADICIONAL" ]; then
-    # La variable ya está vacía si no se seleccionó nada o se canceló,
-    # así que no necesitamos una acción explícita aquí, solo evitar el mensaje.
-    true
+    true # No hacer nada, solo asegurar que no haya un msgbox
 fi
 
 
-# --- Proceso de Instalación con Barra de Progreso Simple (con pausas) ---
+# --- Proceso de Instalación con Barra de Progreso Simple (con pausas y demo) ---
 
 (
-    # Cada línea echo <PORCENTAJE>#<MENSAJE> avanza la barra de progreso
+    # La caja de progreso mostrará "Instalando: <nombre_del_paquete/componente>"
+
     echo 0
     echo "# Iniciando instalación..."
-    sleep 1 # Pausa de 1 segundo
+    sleep 1
 
     echo 10
-    echo "# Preparando el sistema..."
-    # AQUI VA EL CODIGO DE INSTALACION REAL
-    sleep 1 # Pausa de 1 segundo
+    echo "# Instalando: Repositorios"
+    # AQUI VA EL CODIGO DE INSTALACION REAL DE REPOSITORIOS
+    sleep 1
 
-    echo 30
-    echo "# Instalando componentes principales..."
-    # Más código de instalación aquí
-    sleep 1 # Pausa de 1 segundo
+    echo 20
+    echo "# Instalando: Apache2"
+    # AQUI VA EL CODIGO DE INSTALACION REAL DE APACHE
+    sleep 1
+
+    echo 40
+    echo "# Instalando: PHP $PHP_VERSION y Extensiones"
+    # AQUI VA EL CODIGO DE INSTALACION REAL DE PHP
+    sleep 1
 
     echo 60
-    echo "# Configurando servicios..."
-    # Más código de instalación aquí
-    sleep 1 # Pausa de 1 segundo
+    echo "# Instalando: $DBASE"
+    # AQUI VA EL CODIGO DE INSTALACION REAL DE LA BASE DE DATOS
+    sleep 1
 
-    echo 90
-    echo "# Finalizando la instalación..."
-    # Más código de instalación aquí
-    sleep 1 # Pausa de 1 segundo
+    echo 75
+    echo "# Instalando: PhpMyAdmin"
+    # AQUI VA EL CODIGO DE INSTALACION REAL DE PHPMYADMIN
+    sleep 1
+
+    echo 85
+    echo "# Instalando: Composer y Node.js"
+    # AQUI VA EL CODIGO DE INSTALACION REAL DE COMPOSER Y NODE.JS
+    sleep 1
+
+    echo 95
+    echo "# Instalando: Proyecto Laravel ($PROYECTO)"
+    # AQUI VA EL CODIGO DE INSTALACION REAL DEL PROYECTO
+    sleep 1
 
     echo 100
-    echo "# ¡Instalación completa!"
-    sleep 1 # Pausa final antes de que la barra desaparezca
-) | dialog --gauge "Iniciando la instalación de su entorno LAMP para Laravel 12..." 12 70 0
+    echo "# Configurando permisos y finalizando..."
+    # AQUI VA EL CODIGO DE CONFIGURACION FINAL
+    sleep 1
+) | dialog --gauge "Proceso de Instalación en Curso..." 12 70 0
 
 # --- Mensaje de Finalización ---
 clear
