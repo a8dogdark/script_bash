@@ -230,8 +230,8 @@ fi
 # --- Proceso de Instalación con Barra de Progreso Dinámica (con pausas y demo) ---
 
 (
-    # Cada línea echo <PORCENTAJE>#<MENSAJE> avanza la barra de progreso
-    # El mensaje aparece DEBAJO de la barra.
+    # La caja de progreso mostrará "Instalando: <nombre_del_paquete/componente>"
+    # Los mensajes aparecen DEBAJO de la barra.
 
     echo 0
     echo "# Iniciando instalación..."
@@ -276,7 +276,7 @@ fi
     echo "# Configurando permisos y finalizando..."
     # AQUI VA EL CODIGO DE CONFIGURACION FINAL
     sleep 1
-) | dialog --title "Proceso de Instalación en Curso" --gauge "" 12 70 0
+) | dialog --title "Proceso de Instalación en Curso" --gauge "" 15 70 0 # Aumentada la altura a 15
 
 # --- Mensaje de Finalización ---
 clear
