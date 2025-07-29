@@ -222,16 +222,14 @@ SOFTWARE_ADICIONAL=$(dialog --clear \
                             "chrome" "Google Chrome" "off" \
                             3>&1 1>&2 2>&3)
 response=$?
-clear
-
+# No hay mensaje de confirmación si no se selecciona software adicional.
+# La lógica de SOFTWARE_ADICIONAL="" ya maneja que no se instale nada.
 if [ $response -ne 0 ] || [ -z "$SOFTWARE_ADICIONAL" ]; then
-    dialog --backtitle "Software Adicional" \
-           --title "Información" \
-           --msgbox "\nNo se seleccionó software adicional o la selección fue cancelada. La instalación principal continuará." \
-           10 60
-    clear
-    SOFTWARE_ADICIONAL=""
+    # La variable ya está vacía si no se seleccionó nada o se canceló,
+    # así que no necesitamos una acción explícita aquí, solo evitar el mensaje.
+    true
 fi
+
 
 # --- Proceso de Instalación con Barra de Progreso Simple (con pausas) ---
 
