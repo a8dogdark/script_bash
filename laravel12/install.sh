@@ -24,6 +24,7 @@ PASSROOT=""
 PASSADMIN=""
 PROYECTO=""
 PHP_VERSION="" # Nueva variable para almacenar la versión de PHP seleccionada
+SOFTWARE_ADICIONAL="" # Nueva variable para almacenar el software adicional seleccionado
 
 # --- Validaciones Iniciales ---
 
@@ -56,7 +57,7 @@ if [ -f /etc/os-release ]; then
                 22.04|23.10|24.04|24.10)
                     DISTRO="Ubuntu"
                     VERSION="$VERSION_ID"
-                    DBASE="mysql-server" # Todas las versiones de Ubuntu usan mysql-server
+                    DBASE="mysql-server"
                     PACKAGE="apt-get"
                     ;;
                 *)
@@ -69,7 +70,7 @@ if [ -f /etc/os-release ]; then
                 11|12)
                     DISTRO="Debian"
                     VERSION="$VERSION_ID"
-                    DBASE="mariadb-server" # MariaDB es el predeterminado en Debian 11/12
+                    DBASE="mariadb-server"
                     PACKAGE="apt-get"
                     ;;
                 *)
@@ -82,7 +83,7 @@ if [ -f /etc/os-release ]; then
                 8|9)
                     DISTRO="AlmaLinux"
                     VERSION="$VERSION_ID"
-                    DBASE="mariadb-server" # MariaDB es el predeterminado en AlmaLinux 8/9
+                    DBASE="mariadb-server"
                     PACKAGE="dnf"
                     ;;
                 *)
@@ -210,3 +211,39 @@ if [ $response -ne 0 ] || [ -z "$PHP_VERSION" ]; then
     clear
     exit 1
 fi
+
+# --- Selección de Software Adicional (Opcional) ---
+clear
+SOFTWARE_ADICIONAL=$(dialog --clear \
+                            --backtitle "Software Adicional (Opcional)" \
+                            --title "Selecciona Software Opcional" \
+                            --checklist "\nMarca los programas adicionales que deseas instalar (puedes seleccionar varios). Si no seleccionas nada o cancelas, la instalación principal continuará.\n\n" \
+                            15 60 3 \
+                            "vscode" "Visual Studio Code" "off" \
+                            "brave" "Navegador Brave" "off" \
+                            "chrome" "Google Chrome" "off" \
+                            3>&1 1>&2 2>&3)
+response=$? # Captura la respuesta de dialog (0 si OK, 1 si Cancelar, 255 si ESC)
+clear
+
+# No salir si el usuario cancela o no selecciona nada en esta sección opcional
+if [ $response -ne 0 ] || [ -z "$SOFTWARE_ADICIONAL" ]; then
+    dialog --backtitle "Software Adicional" \
+           --title "Información" \
+           --msgbox "\nNo se seleccionó software adicional o la selección fue cancelada. La instalación principal continuará." \
+           10 60
+    clear
+    # No hay exit 1 aquí, el script simplemente continúa.
+    SOFTWARE_ADICIONAL="" # Aseguramos que la variable esté vacía si no se seleccionó nada
+fi
+
+# Aquí iría el resto del script de instalación
+# Puedes usar un bucle o una sentencia case para procesar $SOFTWARE_ADICIONAL
+# Por ejemplo, para depuración puedes imprimir las selecciones:
+# echo "Proyecto: $PROYECTO"
+# echo "Contraseña PhpMyAdmin: $PASSADMIN"
+# echo "Contraseña Root DB: $PASSROOT"
+# echo "Versión PHP: $PHP_VERSION"
+# echo "Software Adicional seleccionado: $SOFTWARE_ADICIONAL"
+
+echo "Script de configuración de parámetros completado. ¡Listo para la instalación real!"
