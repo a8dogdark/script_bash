@@ -78,7 +78,7 @@ dialog --title "Bienvenido" \
 --yesno "Bienvenido al instalador de Lamp para Laravel 12.\n\nSe instalarán los siguientes paquetes:\n\n- Apache\n- PHP\n- $DBASE\n- PhpMyAdmin\n- Composer\n- NodeJs\n- Softwares\n- Proyecto Laravel 12" 18 60
 
 if [[ $? -ne 0 ]]; then
+  dialog --title "Operación cancelada" --msgbox "Ha cancelado la operación. El instalador se cerrará." 7 50
   clear
-  echo "Instalación cancelada por el usuario."
   exit 1
 fi
