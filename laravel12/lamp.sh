@@ -141,18 +141,26 @@ if [[ $? -ne 0 ]]; then
   exit 1
 fi
 
-# Demo progressbar para prueba de instalación de paquetes
 {
-  echo "10"; echo "Instalando Apache..."
+  echo "5"
+  echo "Iniciando actualización del sistema..."
   sleep 1
-  echo "30"; echo "Instalando PHP $PHPVERSION..."
+  echo "20"
+  echo "Instalando Apache..."
   sleep 1
-  echo "50"; echo "Instalando $DBASE..."
+  echo "40"
+  echo "Instalando PHP $PHPVERSION..."
   sleep 1
-  echo "70"; echo "Instalando PhpMyAdmin..."
+  echo "60"
+  echo "Instalando $DBASE..."
   sleep 1
-  echo "90"; echo "Instalando Composer y NodeJs..."
+  echo "80"
+  echo "Instalando PhpMyAdmin..."
   sleep 1
-  echo "100"; echo "Instalación completada."
+  echo "90"
+  echo "Instalando Composer y NodeJs..."
   sleep 1
-} | dialog --title "Progreso de Instalación" --gauge "Por favor espere..." 10 60 0
+  echo "100"
+  echo "Instalación completada."
+  sleep 1
+} | dialog --title "Progreso de instalación" --gauge "Por favor espere..." 10 70 0
