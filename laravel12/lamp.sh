@@ -152,18 +152,31 @@ if [[ $? -ne 0 ]]; then
   exit 1
 fi
 
-# Barra de progreso demo
+# Progreso de instalación con manejo de repositorios según distro
 {
-  echo "XXX"; echo "10"; echo "Preparando entorno..."; echo "XXX"
-  sleep 1
-  echo "XXX"; echo "30"; echo "Instalando Apache..."; echo "XXX"
-  sleep 1
-  echo "XXX"; echo "50"; echo "Instalando PHP $PHPVERSION..."; echo "XXX"
-  sleep 1
-  echo "XXX"; echo "70"; echo "Instalando $DBASE..."; echo "XXX"
-  sleep 1
-  echo "XXX"; echo "90"; echo "Configurando entorno Laravel $PROYECTO..."; echo "XXX"
-  sleep 1
-  echo "XXX"; echo "100"; echo "Instalación DEMO completa."; echo "XXX"
-  sleep 1
+  echo "XXX"; echo "1"; echo "Actualizando sistema..."; echo "XXX"
+  $PACKAGE update -y >/dev/null 2>&1
+
+  echo "XXX"; echo "3"; echo "Actualizando paquetes..."; echo "XXX"
+  $PACKAGE upgrade -y >/dev/null 2>&1
+
+  if [[ "$DISTRO" == "ubuntu" || "$DISTRO" == "anduinos" ]]; then
+    echo "XXX"; echo "5"; echo "Verificando repositorio ondrej/php..."; echo "XXX"
+    if ! grep -Rq "^deb .*\bondrej/php\b" /etc/apt/sources.list /etc/apt/sources.list.d/ >/dev/null 2>&1; then
+      $PACKAGE install -y software-properties-common >/dev/null 2>&1
+      add-apt-repository -y ppa:ondrej/php >/dev/null 2>&1
+      $PACKAGE update -y >/dev/null 2>&1
+    fi
+
+  elif [[ "$DISTRO" == "almalinux" ]]; then
+    echo "XXX"; echo "5"; echo "Configurando repositorio Remi para PHP..."; echo "XXX"
+    if ! rpm -q remi-release >/dev/null 2>&1; then
+      dnf install -y https://rpms.remirepo.net/enterprise/remi-release-9.rpm >/dev/null 2>&1
+    fi
+    dnf module reset php -y >/dev/null 2>&1
+    dnf module enable php:remi-8.4 -y >/dev/null 2>&1
+    dnf update -y >/dev/null 2>&1
+  fi
+
+  sleep 2
 } | whiptail --title "Progreso de instalación" --gauge "Por favor espere..." 10 70 0
