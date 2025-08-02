@@ -9,6 +9,7 @@ SOFTWARES=""
 PHPVERSION=""
 DBASE="mysql-server"
 PACKAGE=""
+PROYECTO=""
 
 # Verificar root
 if [[ "$EUID" -ne 0 ]]; then
@@ -81,4 +82,16 @@ if [[ $? -ne 0 ]]; then
   dialog --title "Operación cancelada" --msgbox "Ha cancelado la operación. El instalador se cerrará." 7 50
   clear
   exit 1
+fi
+
+# Capturar nombre del proyecto (sin variable extra para el código de salida)
+PROYECTO=$(dialog --title "Nombre del proyecto" --inputbox "Ingrese el nombre del proyecto:" 8 50 3>&1 1>&2 2>&3)
+if [[ $? -ne 0 ]]; then
+  dialog --title "Operación cancelada" --msgbox "Ha cancelado la operación. El instalador se cerrará." 7 50
+  clear
+  exit 1
+fi
+
+if [[ -z "$PROYECTO" ]]; then
+  PROYECTO="crud"
 fi
