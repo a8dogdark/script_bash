@@ -140,12 +140,11 @@ fi
 
 # Check de softwares
 SOFTWARES=$(whiptail --title "Softwares adicionales" --checklist \
-"Seleccione los softwares adicionales a instalar:" 15 60 5 \
+"Seleccione los softwares adicionales a instalar:" 15 60 4 \
 "VisualStudioCode" "Editor Visual Studio Code" OFF \
 "FileZilla" "Cliente FTP FileZilla" OFF \
 "Brave" "Navegador Brave" OFF \
 "GoogleChrome" "Navegador Google Chrome" OFF \
-"Otros" "Otras utilidades generales" OFF \
 3>&1 1>&2 2>&3)
 
 if [[ $? -ne 0 ]]; then
