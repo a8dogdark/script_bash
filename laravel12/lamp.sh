@@ -1,29 +1,32 @@
 #!/bin/bash
+
 clear
 
-# Versión del script
+# Variables
 VER="2.0"
+PROYECTO=""
 PASSADMIN=""
 PASSROOT=""
-SOFTWARES=""
 PHPVERSION=""
-DBASE="mysql-server"
+SOFTWARES=""
+DBASE=""
 PACKAGE=""
-PROYECTO=""
+DISTRO=""
+VERDIS=""
 
 # Verificar root
 if [[ "$EUID" -ne 0 ]]; then
-  echo "Este script debe ejecutarse como root. Abortando."
+  echo "Este script debe ejecutarse como root."
   exit 1
 fi
 
-# Verificar arquitectura 64 bits
+# Verificar arquitectura
 if [[ "$(uname -m)" != "x86_64" ]]; then
-  echo "Este script solo puede ejecutarse en sistemas de 64 bits. Abortando."
+  echo "Este script solo funciona en sistemas de 64 bits."
   exit 1
 fi
 
-# Obtener datos de la distro
+# Detección de distribución
 source /etc/os-release
 
 if [[ "$ID" == "ubuntu" && "$PRETTY_NAME" == *"AnduinOS"* ]]; then
@@ -32,16 +35,14 @@ elif [[ "$ID" == "ubuntu" ]]; then
   DISTRO="ubuntu"
 elif [[ "$ID" == "debian" ]]; then
   DISTRO="debian"
-elif [[ "$ID" == "almalinux" ]]; then
+elif [[ "$ID" == "almalinux" || "$ID" == "centos" ]]; then
   DISTRO="almalinux"
-elif [[ "$ID" == "centos" ]]; then
-  DISTRO="centos"
 else
-  echo "Sistema operativo no compatible."
+  echo "Distribución no compatible."
   exit 1
 fi
 
-DISTROVER="$VERSION_ID"
+VERDIS="$VERSION_ID"
 
 case "$DISTRO" in
   ubuntu|anduinos)
@@ -49,16 +50,16 @@ case "$DISTRO" in
     PACKAGE="apt-get"
     ;;
   debian)
-    if [[ ! "$DISTROVER" =~ ^(11|12)$ ]]; then
-      echo "Debian soportado solo en versiones 11 o 12. Abortando."
+    if [[ ! "$VERDIS" =~ ^(11|12)$ ]]; then
+      echo "Debian soportado solo en versiones 11 o 12."
       exit 1
     fi
     DBASE="mariadb-server"
     PACKAGE="apt-get"
     ;;
-  almalinux|centos)
-    if [[ ! "$DISTROVER" =~ ^(8|9)$ ]]; then
-      echo "$DISTRO soportado solo en versiones 8 o 9. Abortando."
+  almalinux)
+    if [[ ! "$VERDIS" =~ ^(8|9)$ ]]; then
+      echo "AlmaLinux/CentOS soportado solo en versiones 8 o 9."
       exit 1
     fi
     DBASE="mariadb-server"
@@ -66,29 +67,39 @@ case "$DISTRO" in
     ;;
 esac
 
-# Instalar dialog si no está presente (modo silencioso y sin confirmación)
-if ! command -v dialog >/dev/null 2>&1; then
-  echo "Espere un momento por favor..."
-  $PACKAGE install -y dialog >/dev/null 2>&1
+# Instalar whiptail si no está presente
+if ! command -v whiptail &>/dev/null; then
+  echo "Instalando whiptail..."
+  $PACKAGE install -y whiptail >/dev/null 2>&1
 fi
 
-# Cuadro de bienvenida personalizado mostrando el valor real de DBASE
-dialog --title "Bienvenido" \
---yes-label "Aceptar" \
---no-label "Cancelar" \
---yesno "Bienvenido al instalador de Lamp para Laravel 12.\n\nSe instalarán los siguientes paquetes:\n\n- Apache\n- PHP\n- $DBASE\n- PhpMyAdmin\n- Composer\n- NodeJs\n- Softwares\n- Proyecto Laravel 12" 18 60
+# Bienvenida
+whiptail --title "Bienvenido" --yesno \
+"Bienvenido al instalador de Lamp para Laravel 12.
+
+Se instalarán los siguientes paquetes:
+
+Apache
+PHP
+Base de datos: $DBASE
+PhpMyAdmin
+Composer
+NodeJS
+Softwares adicionales
+Proyecto Laravel 12" \
+20 70
 
 if [[ $? -ne 0 ]]; then
-  dialog --title "Operación cancelada" --msgbox "Ha cancelado la operación. El instalador se cerrará." 7 50
-  clear
+  whiptail --title "Cancelado" --msgbox "El usuario canceló la operación." 8 50
   exit 1
 fi
 
-# Capturar nombre del proyecto (sin variable extra para el código de salida)
-PROYECTO=$(dialog --title "Nombre del proyecto" --inputbox "Ingrese el nombre del proyecto:" 8 50 3>&1 1>&2 2>&3)
+# Nombre del proyecto
+PROYECTO=$(whiptail --title "Nombre del proyecto" --inputbox \
+"Ingrese el nombre del proyecto Laravel:" 10 60 3>&1 1>&2 2>&3)
+
 if [[ $? -ne 0 ]]; then
-  dialog --title "Operación cancelada" --msgbox "Ha cancelado la operación. El instalador se cerrará." 7 50
-  clear
+  whiptail --title "Cancelado" --msgbox "El usuario canceló la operación." 8 50
   exit 1
 fi
 
@@ -96,64 +107,64 @@ if [[ -z "$PROYECTO" ]]; then
   PROYECTO="crud"
 fi
 
-# Capturar password de usuario phpMyAdmin (texto visible)
-PASSADMIN=$(dialog --title "Contraseña phpMyAdmin" --insecure --passwordbox "Ingrese la contraseña para el usuario phpMyAdmin (no puede quedar vacía):" 8 60 3>&1 1>&2 2>&3)
+# Contraseña phpmyadmin
+PASSADMIN=$(whiptail --title "Contraseña phpmyadmin" --passwordbox \
+"Ingrese la contraseña para el usuario phpmyadmin (no puede estar vacía):" 10 60 3>&1 1>&2 2>&3)
+
 if [[ $? -ne 0 || -z "$PASSADMIN" ]]; then
-  dialog --title "Operación cancelada" --msgbox "La contraseña no puede estar vacía o se canceló la operación. El instalador se cerrará." 7 60
-  clear
+  whiptail --title "Cancelado" --msgbox "La contraseña no puede estar vacía o se canceló la operación." 8 60
   exit 1
 fi
 
-# Capturar password de usuario root (texto visible)
-PASSROOT=$(dialog --title "Contraseña root MySQL" --insecure --passwordbox "Ingrese la contraseña para el usuario root de la base de datos (no puede quedar vacía):" 8 60 3>&1 1>&2 2>&3)
+# Contraseña root DB
+PASSROOT=$(whiptail --title "Contraseña root MySQL" --passwordbox \
+"Ingrese la contraseña para el usuario root de la base de datos:" 10 60 3>&1 1>&2 2>&3)
+
 if [[ $? -ne 0 || -z "$PASSROOT" ]]; then
-  dialog --title "Operación cancelada" --msgbox "La contraseña no puede estar vacía o se canceló la operación. El instalador se cerrará." 7 60
-  clear
+  whiptail --title "Cancelado" --msgbox "La contraseña no puede estar vacía o se canceló la operación." 8 60
   exit 1
 fi
 
-# Selección versión PHP para Laravel 12 (8.3 recomendada)
-PHPVERSION=$(dialog --title "Seleccionar versión de PHP" \
-  --radiolist "Elige la versión de PHP para instalar (Laravel 12 recomienda 8.3):" 15 60 3 \
-  8.2 "PHP 8.2 (Compatible)" off \
-  8.3 "PHP 8.3 (Recomendada)" on \
-  8.4 "PHP 8.4 (Estable)" off \
-  3>&1 1>&2 2>&3)
+# Versión de PHP
+PHPVERSION=$(whiptail --title "Versión de PHP" --radiolist \
+"Selecciona la versión de PHP para instalar (Laravel 12 soporta 8.2–8.4):" 15 70 3 \
+"8.2" "PHP 8.2 (mínimo soportado)" OFF \
+"8.3" "PHP 8.3 (recomendada para Laravel 12)" ON \
+"8.4" "PHP 8.4 (requiere validación de compatibilidad)" OFF \
+3>&1 1>&2 2>&3)
 
 if [[ $? -ne 0 ]]; then
-  dialog --title "Operación cancelada" --msgbox "Ha cancelado la operación. El instalador se cerrará." 7 50
-  clear
+  whiptail --title "Cancelado" --msgbox "El usuario canceló la operación." 8 50
   exit 1
 fi
 
-# Cuadro para elegir varios softwares
-SOFTWARES=$(dialog --title "Seleccionar softwares" \
-  --checklist "Seleccione los softwares que desea instalar (barra espacio para marcar):" 15 60 5 \
-  "brave" "Brave" off \
-  "code" "Visual Studio Code" off \
-  "ftpzilla" "Ftpzilla" off \
-  "google-chrome" "Google Chrome" off \
-  3>&1 1>&2 2>&3)
+# Check de softwares
+SOFTWARES=$(whiptail --title "Softwares adicionales" --checklist \
+"Seleccione los softwares adicionales a instalar:" 15 60 5 \
+"VisualStudioCode" "Editor Visual Studio Code" OFF \
+"FileZilla" "Cliente FTP FileZilla" OFF \
+"Brave" "Navegador Brave" OFF \
+"GoogleChrome" "Navegador Google Chrome" OFF \
+"Otros" "Otras utilidades generales" OFF \
+3>&1 1>&2 2>&3)
 
 if [[ $? -ne 0 ]]; then
-  dialog --title "Operación cancelada" --msgbox "Ha cancelado la operación. El instalador se cerrará." 7 50
-  clear
+  whiptail --title "Cancelado" --msgbox "El usuario canceló la operación." 8 50
   exit 1
 fi
 
+# Barra de progreso demo
 {
-  echo "XXX"; echo "1"; echo "1111..."; echo "XXX"
+  echo "XXX"; echo "10"; echo "Preparando entorno..."; echo "XXX"
   sleep 1
-  echo "XXX"; echo "1"; echo "22222..."; echo "XXX"
+  echo "XXX"; echo "30"; echo "Instalando Apache..."; echo "XXX"
   sleep 1
-  echo "XXX"; echo "1"; echo "3333..."; echo "XXX"
+  echo "XXX"; echo "50"; echo "Instalando PHP $PHPVERSION..."; echo "XXX"
   sleep 1
-  echo "XXX"; echo "1"; echo "444444.."; echo "XXX"
+  echo "XXX"; echo "70"; echo "Instalando $DBASE..."; echo "XXX"
   sleep 1
-  echo "XXX"; echo "1"; echo "55555..."; echo "XXX"
+  echo "XXX"; echo "90"; echo "Configurando entorno Laravel $PROYECTO..."; echo "XXX"
   sleep 1
-  echo "XXX"; echo "1"; echo "666666.."; echo "XXX"
+  echo "XXX"; echo "100"; echo "Instalación DEMO completa."; echo "XXX"
   sleep 1
-  echo "XXX"; echo "100"; echo "fin..."; echo "XXX"
-  sleep 1
-} | dialog --title "Progreso de instalación" --gauge "Por favor espere..." 10 70 0
+} | whiptail --title "Progreso de instalación" --gauge "Por favor espere..." 10 70 0
