@@ -197,5 +197,12 @@ fi
     systemctl restart httpd >/dev/null 2>&1
   fi
 
+  echo "XXX"; echo "20"; echo "Verificando info.php en Apache..."; echo "XXX"
+  if [[ ! -f /var/www/html/info.php ]]; then
+    echo "<?php phpinfo(); ?>" > /var/www/html/info.php
+    chown www-data:www-data /var/www/html/info.php >/dev/null 2>&1 || true
+    chmod 644 /var/www/html/info.php
+  fi
+
   sleep 2
 } | whiptail --title "Progreso de instalación" --gauge "Por favor espere..." 10 70 0
