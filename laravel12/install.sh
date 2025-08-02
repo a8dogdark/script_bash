@@ -233,31 +233,32 @@ if [[ "$PACKAGE" == "apt-get" ]]; then
 fi
 $PACKAGE install -y phpmyadmin &>/dev/null
 
-echo "XXX"; echo "27"; echo "Validando Composer..."; echo "XXX"
+echo "XXX"; echo "26"; echo "Instalando Composer..."; echo "XXX"
 if ! command -v composer &>/dev/null; then
-  curl -sS https://getcomposer.org/installer | php &>/dev/null
-  mv composer.phar /usr/local/bin/composer
-  chmod +x /usr/local/bin/composer
+  php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" &>/dev/null
+  php composer-setup.php --install-dir=/usr/local/bin --filename=composer &>/dev/null
+  rm -f composer-setup.php
 fi
 
-echo "XXX"; echo "28"; echo "Validando NodeJS..."; echo "XXX"
+echo "XXX"; echo "27"; echo "Instalando NodeJS LTS..."; echo "XXX"
 if ! command -v node &>/dev/null; then
-  if [[ "$PACKAGE" == "apt-get" ]]; then
-    curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - &>/dev/null
-    $PACKAGE install -y nodejs &>/dev/null
-  elif [[ "$PACKAGE" == "dnf" ]]; then
-    curl -fsSL https://rpm.nodesource.com/setup_lts.x | bash - &>/dev/null
-    $PACKAGE install -y nodejs &>/dev/null
-  fi
+  curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - &>/dev/null
+  $PACKAGE install -y nodejs &>/dev/null
 fi
 
-echo "XXX"; echo "100"; echo "Finalizando instalación..."; echo "XXX"
+echo "XXX"; echo "28"; echo "Creando proyecto Laravel 12..."; echo "XXX"
+mkdir -p /var/www/html/laravel
+cd /var/www/html/laravel
+composer create-project laravel/laravel:"12.*" "$PROYECTO" &>/dev/null
+cd "$PROYECTO"
+npm install &>/dev/null
+npm run build &>/dev/null
+
+echo "XXX"; echo "29"; echo "Finalizando instalación..."; echo "XXX"
+sleep 2
 
 } | dialog --title "Progreso de instalación" --gauge "Por favor espere..." 10 70 0
 
-sleep 2
-
-# Mensaje final con botón aceptar
-dialog --title "Instalación finalizada" --msgbox "La instalación finalizó correctamente.\n\nPresione Aceptar para salir." 10 50
-
+dialog --title "Instalación completada" --msgbox "LAMP + Laravel 12 ha sido instalado exitosamente." 10 50
 clear
+echo "Instalación finalizada correctamente."
