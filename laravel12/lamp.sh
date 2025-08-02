@@ -178,5 +178,11 @@ fi
     dnf update -y >/dev/null 2>&1
   fi
 
+  # Validar e instalar Apache si no está instalado
+  echo "XXX"; echo "10"; echo "Verificando Apache..."; echo "XXX"
+  if ! command -v apache2 >/dev/null 2>&1 && ! command -v httpd >/dev/null 2>&1; then
+    $PACKAGE install -y apache2 >/dev/null 2>&1 || $PACKAGE install -y httpd >/dev/null 2>&1
+  fi
+
   sleep 2
 } | whiptail --title "Progreso de instalación" --gauge "Por favor espere..." 10 70 0
