@@ -212,38 +212,54 @@ GRANT ALL PRIVILEGES ON *.* TO 'phpmyadmin'@'localhost' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 EOF
 
-echo "XXX"; echo "25"; echo "Instalando phpMyAdmin..."; echo "XXX"
-echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
-echo "phpmyadmin phpmyadmin/app-password-confirm password $PHPADMIN" | debconf-set-selections
-echo "phpmyadmin phpmyadmin/mysql/admin-pass password $PHPROOT" | debconf-set-selections
-echo "phpmyadmin phpmyadmin/mysql/app-pass password $PHPADMIN" | debconf-set-selections
-echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
-$PACKAGE install -y phpmyadmin &>/dev/null
+# Instalar phpMyAdmin siempre que no esté instalado
+if ! command -v phpmyadmin &>/dev/null; then
+  echo "XXX"; echo "25"; echo "Instalando phpMyAdmin..."; echo "XXX"
+  echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
+  echo "phpmyadmin phpmyadmin/app-password-confirm password $PHPADMIN" | debconf-set-selections
+  echo "phpmyadmin phpmyadmin/mysql/admin-pass password $PHPROOT" | debconf-set-selections
+  echo "phpmyadmin phpmyadmin/mysql/app-pass password $PHPADMIN" | debconf-set-selections
+  echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
+  $PACKAGE install -y phpmyadmin &>/dev/null
+fi
 
-echo "XXX"; echo "26"; echo "Instalando Composer..."; echo "XXX"
-php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-php composer-setup.php --quiet
-mv composer.phar /usr/local/bin/composer
-rm composer-setup.php
+# Instalar Composer si no existe
+if ! command -v composer &>/dev/null; then
+  echo "XXX"; echo "26"; echo "Instalando Composer..."; echo "XXX"
+  EXPECTED_SIG=$(wget -q -O - https://composer.github.io/installer.sig)
+  php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+  ACTUAL_SIG=$(php -r "echo hash_file('sha384', 'composer-setup.php');")
+  if [[ "$EXPECTED_SIG" == "$ACTUAL_SIG" ]]; then
+    php composer-setup.php --quiet
+    mv composer.phar /usr/local/bin/composer
+  fi
+  rm composer-setup.php
+fi
 
-echo "XXX"; echo "27"; echo "Instalando Node.js..."; echo "XXX"
-curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - &>/dev/null
-$PACKAGE install -y nodejs &>/dev/null
+# Instalar Node.js LTS si no existe
+if ! command -v node &>/dev/null; then
+  echo "XXX"; echo "27"; echo "Instalando Node.js..."; echo "XXX"
+  curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - &>/dev/null
+  $PACKAGE install -y nodejs &>/dev/null
+fi
 
-echo "XXX"; echo "28"; echo "Creando carpeta laravel y proyecto $PROYECTO..."; echo "XXX"
-mkdir -p ~/laravel
-cd ~/laravel || exit 1
-composer create-project laravel/laravel "$PROYECTO" "12.*" --quiet
+echo "XXX"; echo "28"; echo "Creando carpeta /var/www/laravel y proyecto $PROYECTO..."; echo "XXX"
+mkdir -p /var/www/laravel
+cd /var/www/laravel || exit 1
+if [[ ! -d "$PROYECTO" ]]; then
+  composer create-project laravel/laravel "$PROYECTO" "12.*" --quiet
+fi
 cd "$PROYECTO" || exit 1
 php artisan optimize:clear
-npm install
-npm run build
+npm install --silent
+npm run build --silent
 
 echo "XXX"; echo "29"; echo "Finalizando instalación..."; echo "XXX"
 sleep 2
 
 } | dialog --title "Progreso de instalación" --gauge "Por favor espere..." 10 70 0
 
+dialog --backtitle "Instalador Lamp Laravel 12" --msgbox "Instalación completada exitosamente. Presiona OK para salir." 8 50
+
 clear
-dialog --title "Instalación completada" --msgbox "La instalación y configuración se ha completado correctamente." 10 50
-clear
+echo "Instalación finalizada correctamente."
