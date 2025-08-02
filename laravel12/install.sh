@@ -233,9 +233,31 @@ if [[ "$PACKAGE" == "apt-get" ]]; then
 fi
 $PACKAGE install -y phpmyadmin &>/dev/null
 
-echo "XXX"; echo "26"; echo "Finalizando instalación..."; echo "XXX"
+echo "XXX"; echo "27"; echo "Validando Composer..."; echo "XXX"
+if ! command -v composer &>/dev/null; then
+  curl -sS https://getcomposer.org/installer | php &>/dev/null
+  mv composer.phar /usr/local/bin/composer
+  chmod +x /usr/local/bin/composer
+fi
+
+echo "XXX"; echo "28"; echo "Validando NodeJS..."; echo "XXX"
+if ! command -v node &>/dev/null; then
+  if [[ "$PACKAGE" == "apt-get" ]]; then
+    curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - &>/dev/null
+    $PACKAGE install -y nodejs &>/dev/null
+  elif [[ "$PACKAGE" == "dnf" ]]; then
+    curl -fsSL https://rpm.nodesource.com/setup_lts.x | bash - &>/dev/null
+    $PACKAGE install -y nodejs &>/dev/null
+  fi
+fi
+
+echo "XXX"; echo "100"; echo "Finalizando instalación..."; echo "XXX"
 
 } | dialog --title "Progreso de instalación" --gauge "Por favor espere..." 10 70 0
 
+sleep 2
+
+# Mensaje final con botón aceptar
+dialog --title "Instalación finalizada" --msgbox "La instalación finalizó correctamente.\n\nPresione Aceptar para salir." 10 50
+
 clear
-echo "Instalación finalizada correctamente."
