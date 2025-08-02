@@ -1,61 +1,82 @@
 #!/bin/bash
+# Versión del script
+VER="2.0"
+PASSADMIN=""
+PASSROOT=""
+SOFTWARES=""
+PHPVERSION=""
+DBASE="mysql-server"
+PACKAGE=""
 
-# Validar si es root
-if [[ $EUID -ne 0 ]]; then
-  clear
-  echo "Debes ser usuario root para ejecutar el programa."
+# Verificar root
+if [[ "$EUID" -ne 0 ]]; then
+  echo "Este script debe ejecutarse como root. Abortando."
   exit 1
 fi
 
-# Validar si el sistema es de 64 bits
-if [[ $(uname -m) != "x86_64" ]]; then
-  clear
-  echo "Este script solo es compatible con sistemas de 64 bits."
+# Verificar arquitectura 64 bits
+if [[ "$(uname -m)" != "x86_64" ]]; then
+  echo "Este script solo puede ejecutarse en sistemas de 64 bits. Abortando."
   exit 1
 fi
 
-# Obtener los datos de la distribución y su versión
-DISTRO=$(lsb_release -si)
-VERDISTRO=$(lsb_release -sr)
+# Obtener datos de la distro
+source /etc/os-release
 
-# Validar distribución y versión
-case $DISTRO in
-  Ubuntu|AnduinOS)
-    case $VERDISTRO in
-      20.04|22.04|24.04)
-        ;;
-      *)
-        clear
-        echo "Este script solo es compatible con versiones LTS de Ubuntu/AnduinOS (20.04, 22.04, 24.04)."
-        exit 1
-        ;;
-    esac
+if [[ "$ID" == "ubuntu" && "$PRETTY_NAME" == *"AnduinOS"* ]]; then
+  DISTRO="anduinos"
+elif [[ "$ID" == "ubuntu" ]]; then
+  DISTRO="ubuntu"
+elif [[ "$ID" == "debian" ]]; then
+  DISTRO="debian"
+elif [[ "$ID" == "almalinux" ]]; then
+  DISTRO="almalinux"
+elif [[ "$ID" == "centos" ]]; then
+  DISTRO="centos"
+else
+  echo "Sistema operativo no compatible."
+  exit 1
+fi
+
+DISTROVER="$VERSION_ID"
+
+case "$DISTRO" in
+  ubuntu|anduinos)
+    DBASE="mysql-server"
+    PACKAGE="apt-get"
     ;;
-  Debian)
-    case $VERDISTRO in
-      11*|12*)
-        ;;
-      *)
-        clear
-        echo "Este script solo es compatible con Debian 11 o 12."
-        exit 1
-        ;;
-    esac
+  debian)
+    if [[ ! "$DISTROVER" =~ ^(11|12)$ ]]; then
+      echo "Debian soportado solo en versiones 11 o 12. Abortando."
+      exit 1
+    fi
+    DBASE="mariadb-server"
+    PACKAGE="apt-get"
     ;;
-  AlmaLinux)
-    case $VERDISTRO in
-      8*|9*)
-        ;;
-      *)
-        clear
-        echo "Este script solo es compatible con AlmaLinux 8 o 9."
-        exit 1
-        ;;
-    esac
-    ;;
-  *)
-    clear
-    echo "Este script solo es compatible con Ubuntu/AnduinOS LTS, Debian 11/12 o AlmaLinux 8/9."
-    exit 1
+  almalinux|centos)
+    if [[ ! "$DISTROVER" =~ ^(8|9)$ ]]; then
+      echo "$DISTRO soportado solo en versiones 8 o 9. Abortando."
+      exit 1
+    fi
+    DBASE="mariadb-server"
+    PACKAGE="dnf"
     ;;
 esac
+
+# Instalar dialog si no está presente (modo silencioso y sin confirmación)
+if ! command -v dialog >/dev/null 2>&1; then
+  echo "Espere un momento por favor..."
+  $PACKAGE install -y dialog >/dev/null 2>&1
+fi
+
+# Cuadro de bienvenida personalizado
+dialog --title "Bienvenido" \
+--yes-label "Aceptar" \
+--no-label "Cancelar" \
+--yesno "Bienvenido al instalador de Lamp para Laravel 12.\n\nSe instalarán los siguientes paquetes:\n\n- Apache\n- PHP\n- DBASE según distro\n- PhpMyAdmin\n- Composer\n- NodeJs\n- Softwares\n- Proyecto Laravel 12" 18 60
+
+if [[ $? -ne 0 ]]; then
+  clear
+  echo "Instalación cancelada por el usuario."
+  exit 1
+fi
