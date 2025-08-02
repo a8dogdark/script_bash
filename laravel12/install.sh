@@ -1,293 +1,424 @@
-#! /bin/bash
+#!/bin/bash
 
-# Script: install.sh
-# Version: 2.0
-# Descripcion:     Script de instalacion principal.
-#                  Requiere privilegios de root para su ejecucion.
-# Compatibilidad: Ubuntu 24.10, 23.10, 22.04 LTS, 24.04 LTS
-#                 Debian 11 (Bullseye), 12 (Bookworm)
-#                 AlmaLinux 9
-# Autor:         [Tu Nombre o tu Organizacion, opcional]
-# Fecha:         2025-07-29
+clear
 
-clear # Limpiamos la pantalla al inicio del script
+# Versión del script
+VERSO="2.0"
 
-# Variables Globales
-VER="2.0"
-DISTRO=""
-VERSION=""
-DBASE="" # Se usará para definir el tipo de DB a instalar (ej. "mysql-server", "mariadb-server")
-PACKAGE="" # Gestor de paquetes a usar (apt-get o dnf)
-PASSROOT=""
-PASSADMIN=""
+# Variables
+DBASE=""
+PHPADMIN=""
+PHPROOT=""
+PHPVER=""
+OPSOFTWARE=()
 PROYECTO=""
-PHP_VERSION="" # Nueva variable para almacenar la versión de PHP seleccionada
-SOFTWARE_ADICIONAL="" # Nueva variable para almacenar el software adicional seleccionado
+PACKAGE=""
+APACHE_HTML_DIR=""
 
-# --- Validaciones Iniciales ---
-
-# 1. Validar que el usuario sea root
-if [ $EUID -ne 0 ]; then
+# Validar si es root
+if [[ $EUID -ne 0 ]]; then
   clear
-  echo "Error: Este script debe ser ejecutado como root."
-  echo "Por favor ingresa en la terminal y ejecuta"
-  echo "Ubuntu    -> sudo su -"
-  echo "Debian    -> su -"
-  echo "Almalinux -> su -"
+  echo "Debes ser usuario root para ejecutar el programa."
   exit 1
 fi
 
-# 2. Validar arquitectura de 64 bits
-if [ "$(uname -m)" != "x86_64" ]; then
+# Validar arquitectura 64 bits
+ARCH=$(uname -m)
+if [[ "$ARCH" != "x86_64" ]]; then
   clear
-  echo "Error: Este script ('install.sh' v$VER) solo puede ejecutarse en sistemas de 64 bits (x86_64)."
-  echo "Tu arquitectura actual es: $(uname -m)"
-  echo "El script no puede continuar."
+  echo "Este script solo funciona en sistemas de 64 bits."
   exit 1
 fi
 
-# 3. Validar Distribucion y Version soportada
-if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    case "$ID" in
-        ubuntu)
-            case "$VERSION_ID" in
-                22.04|23.10|24.04|24.10)
-                    DISTRO="Ubuntu"
-                    VERSION="$VERSION_ID"
-                    DBASE="mysql-server"
-                    PACKAGE="apt-get"
-                    ;;
-                *)
-                    clear; echo "Error: Versión de Ubuntu ($VERSION_ID) no soportada."; exit 1
-                    ;;
-            esac
-            ;;
-        debian)
-            case "$VERSION_ID" in
-                11|12)
-                    DISTRO="Debian"
-                    VERSION="$VERSION_ID"
-                    DBASE="mariadb-server"
-                    PACKAGE="apt-get"
-                    ;;
-                *)
-                    clear; echo "Error: Versión de Debian ($VERSION_ID) no soportada."; exit 1
-                    ;;
-            esac
-            ;;
-        almalinux)
-            case "$VERSION_ID" in
-                8|9)
-                    DISTRO="AlmaLinux"
-                    VERSION="$VERSION_ID"
-                    DBASE="mariadb-server"
-                    PACKAGE="dnf"
-                    ;;
-                *)
-                    clear; echo "Error: Versión de AlmaLinux ($VERSION_ID) no soportada."; exit 1
-                    ;;
-            esac
-            ;;
-        *)
-            clear; echo "Error: Distribución ($ID) no soportada."; exit 1
-            ;;
-    esac
+# Obtener datos de la distro
+source /etc/os-release
+
+if [[ "$ID" == "ubuntu" && "$PRETTY_NAME" == *"AnduinOS"* ]]; then
+  DISTRO="anduinos"
+elif [[ "$ID" == "ubuntu" ]]; then
+  DISTRO="ubuntu"
+elif [[ "$ID" == "debian" ]]; then
+  DISTRO="debian"
+elif [[ "$ID" == "almalinux" ]]; then
+  DISTRO="almalinux"
 else
-    clear
-    echo "Error: No se pudo detectar la distribución del sistema."
-    echo "El archivo /etc/os-release no se encontró."
-    exit 1
+  echo "Sistema operativo no compatible."
+  exit 1
 fi
 
-# --- Instalación de Dialog (si no está instalado) ---
-if ! command -v dialog &> /dev/null; then
-    "$PACKAGE" install -yq dialog > /dev/null 2>&1
-    if ! command -v dialog &> /dev/null; then
-        clear
-        echo "Error: No se pudo instalar el paquete 'dialog'."
-        echo "Es necesario para el funcionamiento de este script."
-        exit 1
+DISTROVER="$VERSION_ID"
+
+case "$DISTRO" in
+  ubuntu|anduinos)
+    DBASE="mysql-server"
+    PACKAGE="apt-get"
+    APACHE_HTML_DIR="/var/www/html"
+    ;;
+  debian)
+    if [[ ! "$DISTROVER" =~ ^(11|12)$ ]]; then
+      echo "Debian soportado solo en versiones 11 o 12."
+      exit 1
     fi
+    DBASE="mariadb-server"
+    PACKAGE="apt-get"
+    APACHE_HTML_DIR="/var/www/html"
+    ;;
+  almalinux)
+    if [[ ! "$DISTROVER" =~ ^(8|9)$ ]]; then
+      echo "AlmaLinux soportado solo en versiones 8 o 9."
+      exit 1
+    fi
+    DBASE="mariadb-server"
+    PACKAGE="dnf"
+    APACHE_HTML_DIR="/var/www/html"
+    ;;
+esac
+
+# Instalar dialog si no está instalado (silencioso)
+if ! command -v dialog &>/dev/null; then
+  $PACKAGE install -y dialog &>/dev/null
 fi
 
-clear
+# Cuadro bienvenida
+dialog --backtitle "Instalador Lamp Laravel 12" \
+  --title "Instalador Lamp para Laravel 12 VER $VERSO" \
+  --yesno "Bienvenido al instalador de Lamp para Laravel 12 en Linux. Se instalarán los siguientes paquetes:
+- Apache
+- PHP
+- $DBASE
+- PhpMyAdmin
+- Composer
+- NodeJS
+- Softwares adicionales
+- Proyecto Laravel 12
 
-# --- Caja de diálogo de bienvenida con opciones Aceptar/Cancelar ---
-dialog --backtitle "Instalador de Entorno de Servidor (v$VER)" \
-       --title "¡Bienvenido al Creador de Sistema LAMP para Laravel 12!" \
-       --yesno "\nSe instalarán los siguientes paquetes:\n  - Apache\n  - PHP\n  - $DBASE\n  - PhpMyAdmin\n  - Composer\n  - Node.js\n  - Programas\n  - Proyecto base\n\nSu sistema ha sido detectado como:\n  Distribucion: $DISTRO $VERSION\n  Base de Datos: $DBASE\n  Gestor de Paquetes: $PACKAGE\n\n¿Desea continuar con la instalación?" \
-       23 75
+¿Deseas continuar?" 20 60
 
-response=$?
-
-if [ $response -ne 0 ]; then
-    clear
-    dialog --backtitle "Instalación Cancelada" \
-           --title "Proceso Detenido" \
-           --msgbox "\nLa instalación ha sido cancelada por el usuario." \
-           10 50
-    clear
-    exit 0
-fi
-
-# --- Solicitud y Validación de Datos al Usuario ---
-
-# 1. Solicitar Nombre del Proyecto
-clear
-PROYECTO=$(dialog --clear \
-                  --backtitle "Configuración del Proyecto Laravel" \
-                  --title "Nombre del Proyecto" \
-                  --inputbox "\nPor favor, ingresa el nombre de tu proyecto Laravel 12 (ej. miapp sin guiones ni espacios):\n\n" \
-                  10 60 "" 3>&1 1>&2 2>&3)
-response=$?
-clear
-if [ $response -ne 0 ] || [ -z "$PROYECTO" ]; then
-    dialog --backtitle "Error de Entrada" \
-           --title "Campo Obligatorio" \
-           --msgbox "\nEl nombre del proyecto es un campo obligatorio y no puede estar vacío.\n\nLa instalación será cancelada." \
-           10 50
-    clear
-    exit 1
-fi
-
-# 2. Solicitar Password para PhpMyAdmin
-clear
-PASSADMIN=$(dialog --clear \
-                   --backtitle "Configuración de PhpMyAdmin" \
-                   --title "Contraseña PhpMyAdmin" \
-                   --inputbox "\nPor favor, ingresa la contraseña para el usuario 'phpmyadmin':" \
-                   12 60 "" 3>&1 1>&2 2>&3)
-response=$?
-clear
-if [ $response -ne 0 ] || [ -z "$PASSADMIN" ]; then
-    dialog --backtitle "Error de Entrada" \
-           --title "Campo Obligatorio" \
-           --msgbox "\nLa contraseña de PhpMyAdmin es un campo obligatorio y no puede estar vacío.\n\nLa instalación será cancelada." \
-           10 50
+case $? in
+  1|255)
+    dialog --title "Cancelado" --msgbox "Has cancelado, saldremos de la instalación." 10 40
     clear
     exit 1
+    ;;
+esac
+
+# Inputbox para nombre del proyecto Laravel (campo en blanco)
+PROYECTO=$(dialog --backtitle "Instalador Lamp Laravel 12 - Script versión $VERSO" \
+  --title "Nombre del Proyecto Laravel" \
+  --inputbox "Ingrese el nombre del proyecto Laravel:" 10 50 "" 3>&1 1>&2 2>&3)
+
+if [[ -z "$PROYECTO" ]]; then
+  PROYECTO="crud"
 fi
 
-# 3. Solicitar Password para el usuario root de la Base de Datos
-clear
-PASSROOT=$(dialog --clear \
-                  --backtitle "Configuración de la Base de Datos" \
-                   --title "Contraseña Root de la Base de Datos" \
-                   --inputbox "\nPor favor, ingresa la contraseña para el usuario 'root' de la base de datos:" \
-                  12 60 "" 3>&1 1>&2 2>&3)
-response=$?
-clear
-if [ $response -ne 0 ] || [ -z "$PASSROOT" ]; then
-    dialog --backtitle "Error de Entrada" \
-           --title "Campo Obligatorio" \
-           --msgbox "\nLa contraseña del usuario 'root' de la base de datos es un campo obligatorio y no puede estar vacío.\n\nLa instalación será cancelada." \
-           10 50
-    clear
-    exit 1
+# Inputbox para password phpmyadmin
+PHPADMIN=$(dialog --backtitle "Instalador Lamp Laravel 12 - Script versión $VERSO" \
+  --title "Contraseña phpmyadmin" \
+  --insecure --passwordbox "Ingresa la contraseña para el usuario phpmyadmin:" 8 60 3>&1 1>&2 2>&3)
+
+if [[ -z "$PHPADMIN" ]]; then
+  clear
+  echo "No se ingresó contraseña para phpMyAdmin. Saliendo."
+  exit 1
 fi
 
-# --- Selección de Versión de PHP ---
-clear
-PHP_VERSION=$(dialog --clear \
-                     --backtitle "Selección de Versión de PHP" \
-                     --title "Versión de PHP para Laravel 12" \
-                     --radiolist "\nSelecciona la versión de PHP a instalar. PHP 8.4 es la más óptima para Laravel 12.\n\n" \
-                     15 60 3 \
-                     "8.2" "PHP 8.2" "off" \
-                     "8.3" "PHP 8.3" "off" \
-                     "8.4" "PHP 8.4 (Recomendado para Laravel 12)" "on" \
-                     3>&1 1>&2 2>&3)
-response=$?
-clear
+# Inputbox para password root base de datos
+PHPROOT=$(dialog --backtitle "Instalador Lamp Laravel 12 - Script versión $VERSO" \
+  --title "Contraseña root base de datos" \
+  --insecure --passwordbox "Ingresa la contraseña para el usuario root de la base de datos:" 8 60 3>&1 1>&2 2>&3)
 
-if [ $response -ne 0 ] || [ -z "$PHP_VERSION" ]; then
-    dialog --backtitle "Error de Selección" \
-           --title "Selección Obligatoria" \
-           --msgbox "\nDebes seleccionar una versión de PHP para continuar con la instalación.\n\nLa instalación será cancelada." \
-           10 50
-    clear
-    exit 1
+if [[ -z "$PHPROOT" ]]; then
+  clear
+  echo "No se ingresó contraseña para root de base de datos. Saliendo."
+  exit 1
 fi
 
-# --- Selección de Software Adicional (Opcional) ---
-clear
-SOFTWARE_ADICIONAL=$(dialog --clear \
-                            --backtitle "Software Adicional (Opcional)" \
-                            --title "Selecciona Software Opcional" \
-                            --checklist "\nMarca los programas adicionales que deseas instalar (puedes seleccionar varios). Si no seleccionas nada o cancelas, la instalación principal continuará.\n\n" \
-                            15 60 3 \
-                            "vscode" "Visual Studio Code" "off" \
-                            "brave" "Navegador Brave" "off" \
-                            "chrome" "Google Chrome" "off" \
-                            3>&1 1>&2 2>&3)
-response=$?
-# No hay mensaje de confirmación si no se seleccionó software adicional.
-if [ $response -ne 0 ] || [ -z "$SOFTWARE_ADICIONAL" ]; then
-    true # No hacer nada, solo asegurar que no haya un msgbox
+# Selección versión PHP (con opción recomendada preseleccionada)
+PHPVER=$(dialog --backtitle "Instalador Lamp Laravel 12 - Script versión $VERSO" \
+  --title "Versión de PHP" \
+  --radiolist "Seleccione la versión de PHP recomendada para Laravel 12 (8.4):" 15 50 3 \
+  8.2 "PHP 8.2" off \
+  8.3 "PHP 8.3" off \
+  8.4 "PHP 8.4 (Recomendada)" on 3>&1 1>&2 2>&3)
+
+if [[ -z "$PHPVER" ]]; then
+  PHPVER="8.4"
 fi
 
-# --- Proceso de Instalación con Barra de Progreso Dinámica (con pausas y demo) ---
+if [[ $? -ne 0 ]]; then
+  clear
+  echo "Cancelado por el usuario. Saliendo."
+  exit 1
+fi
 
-(
-    # La caja de progreso mostrará "Instalando: <nombre_del_paquete/componente>"
-    # Los mensajes aparecen DEBAJO de la barra.
+# Cuadro para seleccionar softwares adicionales (multi-selección)
+OPSOFTWARE=$(dialog --backtitle "Instalador Lamp Laravel 12 - Script versión $VERSO" \
+  --title "Seleccionar Softwares Adicionales" \
+  --checklist "Seleccione los softwares que desea instalar (espacio para marcar):" 15 50 4 \
+  "vscode" "Visual Studio Code" off \
+  "brave" "Brave" off \
+  "chrome" "Google Chrome" off \
+  "ftpzilla" "FileZilla" off 3>&1 1>&2 2>&3)
 
-    echo 0
-    echo "# Iniciando instalación..."
-    sleep 1
+if [[ $? -ne 0 ]]; then
+  clear
+  echo "Cancelado por el usuario. Saliendo."
+  exit 1
+fi
 
-    echo 10
-    echo "# Instalando: Repositorios"
-    # AQUI VA EL CODIGO DE INSTALACION REAL DE REPOSITORIOS
-    sleep 1
+IFS=' ' read -r -a OPSOFTWARE <<< "$OPSOFTWARE"
 
-    echo 20
-    echo "# Instalando: Apache2"
-    # AQUI VA EL CODIGO DE INSTALACION REAL DE APACHE
-    sleep 1
+# Progressbar - Instalación paso a paso con porcentajes fijos y únicos entre 1 y 99
 
-    echo 40
-    echo "# Instalando: PHP $PHP_VERSION y Extensiones"
-    # AQUI VA EL CODIGO DE INSTALACION REAL DE PHP
-    sleep 1
+{
+  echo "XXX"
+  echo "1"
+  echo "Actualizando lista de paquetes (update)..."
+  echo "XXX"
+  $PACKAGE update -y &>/dev/null
+  sleep 1
 
-    echo 60
-    echo "# Instalando: $DBASE"
-    # AQUI VA EL CODIGO DE INSTALACION REAL DE LA BASE DE DATOS
-    sleep 1
+  echo "XXX"
+  echo "5"
+  echo "Actualizando paquetes (upgrade)..."
+  echo "XXX"
+  $PACKAGE upgrade -y &>/dev/null
+  sleep 1
 
-    echo 75
-    echo "# Instalando: PhpMyAdmin"
-    # AQUI VA EL CODIGO DE INSTALACION REAL DE PHPMYADMIN
-    sleep 1
+  echo "XXX"
+  echo "9"
+  echo "Agregando repositorio ondrej/php si no existe..."
+  echo "XXX"
+  if [[ "$PACKAGE" == "apt-get" ]]; then
+    if ! grep -q "^deb .\+ondrej/php" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null; then
+      add-apt-repository -y ppa:ondrej/php &>/dev/null
+      $PACKAGE update -y &>/dev/null
+    fi
+  fi
+  sleep 1
 
-    echo 85
-    echo "# Instalando: Composer y Node.js"
-    # AQUI VA EL CODIGO DE INSTALACION REAL DE COMPOSER Y NODE.JS
-    sleep 1
+  echo "XXX"
+  echo "13"
+  echo "Validando e instalando wget..."
+  echo "XXX"
+  if ! command -v wget &>/dev/null; then
+    $PACKAGE install -y wget &>/dev/null
+  fi
+  sleep 1
 
-    echo 95
-    echo "# Instalando: Proyecto Laravel ($PROYECTO)"
-    # AQUI VA EL CODIGO DE INSTALACION REAL DEL PROYECTO
-    sleep 1
+  echo "XXX"
+  echo "17"
+  echo "Validando e instalando unzip..."
+  echo "XXX"
+  if ! command -v unzip &>/dev/null; then
+    $PACKAGE install -y unzip &>/dev/null
+  fi
+  sleep 1
 
-    echo 100
-    echo "# Configurando permisos y finalizando..."
-    # AQUI VA EL CODIGO DE CONFIGURACION FINAL
-    sleep 1
-) | dialog --title "Proceso de Instalación en Curso" --gauge "" 15 70 0 # Aumentada la altura a 15
+  echo "XXX"
+  echo "21"
+  echo "Validando e instalando zip..."
+  echo "XXX"
+  if ! command -v zip &>/dev/null; then
+    $PACKAGE install -y zip &>/dev/null
+  fi
+  sleep 1
 
-# --- Mensaje de Finalización ---
+  echo "XXX"
+  echo "25"
+  echo "Validando e instalando gpg..."
+  echo "XXX"
+  if ! command -v gpg &>/dev/null; then
+    $PACKAGE install -y gnupg &>/dev/null
+  fi
+  sleep 1
+
+  echo "XXX"
+  echo "29"
+  echo "Validando e instalando git..."
+  echo "XXX"
+  if ! command -v git &>/dev/null; then
+    $PACKAGE install -y git &>/dev/null
+  fi
+  sleep 1
+
+  echo "XXX"
+  echo "33"
+  echo "Actualizando lista de paquetes (update) después de git..."
+  echo "XXX"
+  $PACKAGE update -y &>/dev/null
+  sleep 1
+
+  echo "XXX"
+  echo "37"
+  echo "Validando e instalando Apache2..."
+  echo "XXX"
+  if ! command -v apache2 &>/dev/null && ! command -v httpd &>/dev/null; then
+    $PACKAGE install -y apache2 &>/dev/null || $PACKAGE install -y httpd &>/dev/null
+  fi
+  sleep 1
+
+  echo "XXX"
+  echo "41"
+  echo "Validando módulo rewrite de Apache..."
+  echo "XXX"
+  if [[ "$PACKAGE" == "apt-get" ]]; then
+    a2enmod rewrite &>/dev/null
+    systemctl restart apache2 &>/dev/null
+  else
+    systemctl restart httpd &>/dev/null
+  fi
+  sleep 1
+
+  echo "XXX"
+  echo "45"
+  echo "Instalando PHP $PHPVER..."
+  echo "XXX"
+  if [[ "$PACKAGE" == "apt-get" ]]; then
+    $PACKAGE install -y php$PHPVER &>/dev/null
+  else
+    $PACKAGE install -y php &>/dev/null
+  fi
+  sleep 1
+
+  # Extensiones PHP independientes cada una con porcentaje único
+
+  echo "XXX"
+  echo "49"
+  echo "Instalando php$PHPVER-mbstring..."
+  echo "XXX"
+  if [[ "$PACKAGE" == "apt-get" ]]; then
+    $PACKAGE install -y php$PHPVER-mbstring &>/dev/null
+  else
+    $PACKAGE install -y php-mbstring &>/dev/null
+  fi
+  sleep 1
+
+  echo "XXX"
+  echo "53"
+  echo "Instalando php$PHPVER-xml..."
+  echo "XXX"
+  if [[ "$PACKAGE" == "apt-get" ]]; then
+    $PACKAGE install -y php$PHPVER-xml &>/dev/null
+  else
+    $PACKAGE install -y php-xml &>/dev/null
+  fi
+  sleep 1
+
+  echo "XXX"
+  echo "57"
+  echo "Instalando php$PHPVER-curl..."
+  echo "XXX"
+  if [[ "$PACKAGE" == "apt-get" ]]; then
+    $PACKAGE install -y php$PHPVER-curl &>/dev/null
+  else
+    $PACKAGE install -y php-curl &>/dev/null
+  fi
+  sleep 1
+
+  echo "XXX"
+  echo "61"
+  echo "Instalando php$PHPVER-mysql..."
+  echo "XXX"
+  if [[ "$PACKAGE" == "apt-get" ]]; then
+    $PACKAGE install -y php$PHPVER-mysql &>/dev/null
+  else
+    $PACKAGE install -y php-mysqlnd &>/dev/null
+  fi
+  sleep 1
+
+  echo "XXX"
+  echo "65"
+  echo "Instalando php$PHPVER-zip..."
+  echo "XXX"
+  if [[ "$PACKAGE" == "apt-get" ]]; then
+    $PACKAGE install -y php$PHPVER-zip &>/dev/null
+  else
+    $PACKAGE install -y php-zip &>/dev/null
+  fi
+  sleep 1
+
+  echo "XXX"
+  echo "69"
+  echo "Instalando php$PHPVER-bcmath..."
+  echo "XXX"
+  if [[ "$PACKAGE" == "apt-get" ]]; then
+    $PACKAGE install -y php$PHPVER-bcmath &>/dev/null
+  else
+    $PACKAGE install -y php-bcmath &>/dev/null
+  fi
+  sleep 1
+
+  echo "XXX"
+  echo "73"
+  echo "Instalando php$PHPVER-gd..."
+  echo "XXX"
+  if [[ "$PACKAGE" == "apt-get" ]]; then
+    $PACKAGE install -y php$PHPVER-gd &>/dev/null
+  else
+    $PACKAGE install -y php-gd &>/dev/null
+  fi
+  sleep 1
+
+  echo "XXX"
+  echo "77"
+  echo "Instalando php$PHPVER-tokenizer..."
+  echo "XXX"
+  if [[ "$PACKAGE" == "apt-get" ]]; then
+    $PACKAGE install -y php$PHPVER-tokenizer &>/dev/null
+  else
+    $PACKAGE install -y php-tokenizer &>/dev/null
+  fi
+  sleep 1
+
+  echo "XXX"
+  echo "81"
+  echo "Instalando php$PHPVER-fileinfo..."
+  echo "XXX"
+  if [[ "$PACKAGE" == "apt-get" ]]; then
+    $PACKAGE install -y php$PHPVER-fileinfo &>/dev/null
+  else
+    $PACKAGE install -y php-fileinfo &>/dev/null
+  fi
+  sleep 1
+
+  echo "XXX"
+  echo "85"
+  echo "Instalando php$PHPVER-opcache..."
+  echo "XXX"
+  if [[ "$PACKAGE" == "apt-get" ]]; then
+    $PACKAGE install -y php$PHPVER-opcache &>/dev/null
+  else
+    $PACKAGE install -y php-opcache &>/dev/null
+  fi
+  sleep 1
+
+  # Crear info.php para verificar PHP en navegador antes de instalar la base de datos
+  echo "XXX"
+  echo "89"
+  echo "Creando archivo info.php para ver información PHP..."
+  echo "XXX"
+  echo "<?php phpinfo(); ?>" > "$APACHE_HTML_DIR/info.php"
+  chmod 644 "$APACHE_HTML_DIR/info.php"
+  sleep 1
+
+  # Instalación de base de datos según distro
+  echo "XXX"
+  echo "93"
+  echo "Instalando base de datos $DBASE..."
+  echo "XXX"
+  if [[ "$PACKAGE" == "apt-get" ]]; then
+    if ! dpkg -l | grep -qw "$DBASE"; then
+      $PACKAGE install -y $DBASE &>/dev/null
+    fi
+  else
+    if ! rpm -q $DBASE &>/dev/null; then
+      $PACKAGE install -y $DBASE &>/dev/null
+    fi
+  fi
+  sleep 1
+
+} | dialog --title "Progreso de instalación" --gauge "Por favor espere..." 15 70 0
+
 clear
-dialog --backtitle "Instalación Completada" \
-       --title "¡Éxito!" \
-       --msgbox "\nLa instalación de su entorno LAMP y Laravel 12 ha finalizado correctamente.\n\n¡Disfrute su nuevo entorno de desarrollo!" \
-       10 60
-
-clear
-echo "¡Instalación finalizada!"
-echo "Puede acceder a su proyecto en: http://localhost/$PROYECTO"
-echo "PhpMyAdmin en: http://localhost/phpmyadmin"
-echo "Versión de PHP instalada: $PHP_VERSION"
-echo "Software adicional instalado: $SOFTWARE_ADICIONAL"
+echo "Instalación base completada. Continuaremos con los siguientes pasos..."
