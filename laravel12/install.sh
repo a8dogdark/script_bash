@@ -216,10 +216,24 @@ FLUSH PRIVILEGES;
 EOF
   fi
 
-  echo "XXX"; echo 99; echo "Finalizando..."; echo "XXX"
+  echo "XXX"; echo 94; echo "Instalando PhpMyAdmin..."; echo "XXX"
+  if [[ "$PACKAGE" == "apt-get" ]]; then
+    [[ -d /usr/share/phpmyadmin ]] || $PACKAGE install -y phpmyadmin &>/dev/null
+    ln -s /usr/share/phpmyadmin /var/www/html/phpmyadmin &>/dev/null
+  elif [[ "$PACKAGE" == "dnf" ]]; then
+    [[ -d /usr/share/phpMyAdmin ]] || $PACKAGE install -y phpmyadmin &>/dev/null
+    ln -s /usr/share/phpMyAdmin /var/www/html/phpmyadmin &>/dev/null
+  fi
+
+  echo "XXX"; echo 98; echo "Reiniciando Apache..."; echo "XXX"
+  systemctl restart apache2 &>/dev/null || systemctl restart httpd &>/dev/null
+
+  echo "XXX"; echo 99; echo "Finalizando instalación..."; echo "XXX"
   sleep 1
 
 } | dialog --title "Progreso de instalación" --gauge "Por favor espere..." 10 70 0
 
 clear
-echo "Instalación completada con éxito."
+echo "Instalación completada con éxito. Accede a:"
+echo "  http://localhost/info.php"
+echo "  http://localhost/phpmyadmin"
