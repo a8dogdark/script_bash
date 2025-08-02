@@ -184,5 +184,18 @@ fi
     $PACKAGE install -y apache2 >/dev/null 2>&1 || $PACKAGE install -y httpd >/dev/null 2>&1
   fi
 
+  echo "XXX"; echo "15"; echo "Verificando módulo rewrite de Apache..."; echo "XXX"
+  if [[ "$DISTRO" == "ubuntu" || "$DISTRO" == "debian" || "$DISTRO" == "anduinos" ]]; then
+    if ! apache2ctl -M 2>/dev/null | grep -q rewrite_module; then
+      a2enmod rewrite >/dev/null 2>&1
+      systemctl restart apache2 >/dev/null 2>&1
+    fi
+  elif [[ "$DISTRO" == "almalinux" ]]; then
+    if ! httpd -M 2>/dev/null | grep -q rewrite_module; then
+      echo "El módulo rewrite debería estar habilitado en AlmaLinux por defecto. Si no, editar httpd.conf manualmente." >> /var/log/lamp_installer.log
+    fi
+    systemctl restart httpd >/dev/null 2>&1
+  fi
+
   sleep 2
 } | whiptail --title "Progreso de instalación" --gauge "Por favor espere..." 10 70 0
