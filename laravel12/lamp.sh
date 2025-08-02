@@ -103,3 +103,11 @@ if [[ $? -ne 0 || -z "$PASSADMIN" ]]; then
   clear
   exit 1
 fi
+
+# Capturar password de usuario root (texto visible)
+PASSROOT=$(dialog --title "Contraseña root MySQL" --insecure --passwordbox "Ingrese la contraseña para el usuario root de la base de datos (no puede quedar vacía):" 8 60 3>&1 1>&2 2>&3)
+if [[ $? -ne 0 || -z "$PASSROOT" ]]; then
+  dialog --title "Operación cancelada" --msgbox "La contraseña no puede estar vacía o se canceló la operación. El instalador se cerrará." 7 60
+  clear
+  exit 1
+fi
