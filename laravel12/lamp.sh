@@ -95,3 +95,11 @@ fi
 if [[ -z "$PROYECTO" ]]; then
   PROYECTO="crud"
 fi
+
+# Capturar password de usuario phpMyAdmin (oculto)
+PASSADMIN=$(dialog --title "Contraseña phpMyAdmin" --insecure --passwordbox "Ingrese la contraseña para el usuario phpMyAdmin:" 8 50 3>&1 1>&2 2>&3)
+if [[ $? -ne 0 ]]; then
+  dialog --title "Operación cancelada" --msgbox "Ha cancelado la operación. El instalador se cerrará." 7 50
+  clear
+  exit 1
+fi
