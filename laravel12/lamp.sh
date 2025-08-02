@@ -111,3 +111,17 @@ if [[ $? -ne 0 || -z "$PASSROOT" ]]; then
   clear
   exit 1
 fi
+
+# Selección versión PHP para Laravel 12 (8.3 recomendada)
+PHPVERSION=$(dialog --title "Seleccionar versión de PHP" \
+  --radiolist "Elige la versión de PHP para instalar (Laravel 12 recomienda 8.3):" 15 60 3 \
+  8.2 "PHP 8.2 (Compatible)" off \
+  8.3 "PHP 8.3 (Recomendada)" on \
+  8.4 "PHP 8.4 (Estable)" off \
+  3>&1 1>&2 2>&3)
+
+if [[ $? -ne 0 ]]; then
+  dialog --title "Operación cancelada" --msgbox "Ha cancelado la operación. El instalador se cerrará." 7 50
+  clear
+  exit 1
+fi
