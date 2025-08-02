@@ -142,25 +142,18 @@ if [[ $? -ne 0 ]]; then
 fi
 
 {
-  echo "5"
-  echo "Iniciando actualización del sistema..."
+  echo "XXX"; echo "1"; echo "1111..."; echo "XXX"
   sleep 1
-  echo "20"
-  echo "Instalando Apache..."
+  echo "XXX"; echo "1"; echo "22222..."; echo "XXX"
   sleep 1
-  echo "40"
-  echo "Instalando PHP $PHPVERSION..."
+  echo "XXX"; echo "1"; echo "3333..."; echo "XXX"
   sleep 1
-  echo "60"
-  echo "Instalando $DBASE..."
+  echo "XXX"; echo "1"; echo "444444.."; echo "XXX"
   sleep 1
-  echo "80"
-  echo "Instalando PhpMyAdmin..."
+  echo "XXX"; echo "1"; echo "55555..."; echo "XXX"
   sleep 1
-  echo "90"
-  echo "Instalando Composer y NodeJs..."
+  echo "XXX"; echo "1"; echo "666666.."; echo "XXX"
   sleep 1
-  echo "100"
-  echo "Instalación completada."
+  echo "XXX"; echo "100"; echo "fin..."; echo "XXX"
   sleep 1
 } | dialog --title "Progreso de instalación" --gauge "Por favor espere..." 10 70 0
