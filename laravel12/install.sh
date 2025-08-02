@@ -10,7 +10,6 @@ DBASE=""
 PHPADMIN=""
 PHPROOT=""
 PHPVER=""
-OPSOFTWARE=()
 PROYECTO=""
 PACKAGE=""
 
@@ -85,7 +84,6 @@ dialog --backtitle "Instalador Lamp Laravel 12" \
 - PhpMyAdmin
 - Composer
 - NodeJS
-- Softwares adicionales
 - Proyecto Laravel 12
 
 ¿Deseas continuar?" 20 60
@@ -121,21 +119,12 @@ PHPROOT=$(dialog --backtitle "Instalador Lamp Laravel 12 - Script versión $VERS
 # Versión PHP
 PHPVER=$(dialog --backtitle "Instalador Lamp Laravel 12 - Script versión $VERSO" \
   --title "Versión de PHP" \
-  --radiolist "Seleccione la versión de PHP recomendada para Laravel 12 (8.4):" 15 50 3 \
+  --radiolist "Seleccione la versión de PHP recomendada para Laravel 12 (8.3):" 15 50 3 \
   8.2 "PHP 8.2" off \
-  8.3 "PHP 8.3" off \
-  8.4 "PHP 8.4 (Recomendada)" on 3>&1 1>&2 2>&3)
+  8.3 "PHP 8.3 (Recomendada)" on \
+  8.4 "PHP 8.4" off 3>&1 1>&2 2>&3)
 
-[[ -z "$PHPVER" ]] && PHPVER="8.4"
-
-# Checklist software adicional
-OPSOFTWARE=$(dialog --backtitle "Instalador Lamp Laravel 12 - Script versión $VERSO" \
-  --title "Seleccionar Softwares Adicionales" \
-  --checklist "Seleccione los softwares que desea instalar (espacio para marcar):" 15 50 4 \
-  "vscode" "Visual Studio Code" off \
-  "brave" "Brave" off \
-  "chrome" "Google Chrome" off \
-  "ftpzilla" "FileZilla" off 3>&1 1>&2 2>&3)
+[[ -z "$PHPVER" ]] && PHPVER="8.3"
 
 # PROGRESSBAR
 {
@@ -223,42 +212,38 @@ GRANT ALL PRIVILEGES ON *.* TO 'phpmyadmin'@'localhost' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 EOF
 
-echo "XXX"; echo "25"; echo "Instalando PhpMyAdmin..."; echo "XXX"
-if [[ "$PACKAGE" == "apt-get" ]]; then
-  echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
-  echo "phpmyadmin phpmyadmin/app-password-confirm password $PHPADMIN" | debconf-set-selections
-  echo "phpmyadmin phpmyadmin/mysql/admin-pass password $PHPROOT" | debconf-set-selections
-  echo "phpmyadmin phpmyadmin/mysql/app-pass password $PHPADMIN" | debconf-set-selections
-  echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
-fi
+echo "XXX"; echo "25"; echo "Instalando phpMyAdmin..."; echo "XXX"
+echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
+echo "phpmyadmin phpmyadmin/app-password-confirm password $PHPADMIN" | debconf-set-selections
+echo "phpmyadmin phpmyadmin/mysql/admin-pass password $PHPROOT" | debconf-set-selections
+echo "phpmyadmin phpmyadmin/mysql/app-pass password $PHPADMIN" | debconf-set-selections
+echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
 $PACKAGE install -y phpmyadmin &>/dev/null
 
 echo "XXX"; echo "26"; echo "Instalando Composer..."; echo "XXX"
-if ! command -v composer &>/dev/null; then
-  php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" &>/dev/null
-  php composer-setup.php --install-dir=/usr/local/bin --filename=composer &>/dev/null
-  rm -f composer-setup.php
-fi
+php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+php composer-setup.php --quiet
+mv composer.phar /usr/local/bin/composer
+rm composer-setup.php
 
-echo "XXX"; echo "27"; echo "Instalando NodeJS LTS..."; echo "XXX"
-if ! command -v node &>/dev/null; then
-  curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - &>/dev/null
-  $PACKAGE install -y nodejs &>/dev/null
-fi
+echo "XXX"; echo "27"; echo "Instalando Node.js..."; echo "XXX"
+curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - &>/dev/null
+$PACKAGE install -y nodejs &>/dev/null
 
-echo "XXX"; echo "28"; echo "Creando proyecto Laravel 12..."; echo "XXX"
-mkdir -p /var/www/html/laravel
-cd /var/www/html/laravel
-composer create-project laravel/laravel:"12.*" "$PROYECTO" &>/dev/null
-cd "$PROYECTO"
-npm install &>/dev/null
-npm run build &>/dev/null
+echo "XXX"; echo "28"; echo "Creando carpeta laravel y proyecto $PROYECTO..."; echo "XXX"
+mkdir -p ~/laravel
+cd ~/laravel || exit 1
+composer create-project laravel/laravel "$PROYECTO" "12.*" --quiet
+cd "$PROYECTO" || exit 1
+php artisan optimize:clear
+npm install
+npm run build
 
 echo "XXX"; echo "29"; echo "Finalizando instalación..."; echo "XXX"
 sleep 2
 
 } | dialog --title "Progreso de instalación" --gauge "Por favor espere..." 10 70 0
 
-dialog --title "Instalación completada" --msgbox "LAMP + Laravel 12 ha sido instalado exitosamente." 10 50
 clear
-echo "Instalación finalizada correctamente."
+dialog --title "Instalación completada" --msgbox "La instalación y configuración se ha completado correctamente." 10 50
+clear
