@@ -69,11 +69,11 @@ if ! command -v dialog >/dev/null 2>&1; then
   $PACKAGE install -y dialog >/dev/null 2>&1
 fi
 
-# Cuadro de bienvenida personalizado
+# Cuadro de bienvenida personalizado mostrando el valor real de DBASE
 dialog --title "Bienvenido" \
 --yes-label "Aceptar" \
 --no-label "Cancelar" \
---yesno "Bienvenido al instalador de Lamp para Laravel 12.\n\nSe instalarán los siguientes paquetes:\n\n- Apache\n- PHP\n- DBASE según distro\n- PhpMyAdmin\n- Composer\n- NodeJs\n- Softwares\n- Proyecto Laravel 12" 18 60
+--yesno "Bienvenido al instalador de Lamp para Laravel 12.\n\nSe instalarán los siguientes paquetes:\n\n- Apache\n- PHP\n- $DBASE\n- PhpMyAdmin\n- Composer\n- NodeJs\n- Softwares\n- Proyecto Laravel 12" 18 60
 
 if [[ $? -ne 0 ]]; then
   clear
