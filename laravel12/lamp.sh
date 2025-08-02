@@ -1,4 +1,6 @@
 #!/bin/bash
+clear
+
 # Versión del script
 VER="2.0"
 PASSADMIN=""
