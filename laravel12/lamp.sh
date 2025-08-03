@@ -155,10 +155,20 @@ fi
 # Progreso de instalación con manejo de repositorios según distro
 {
   echo "XXX"; echo "1"; echo "Actualizando sistema..."; echo "XXX"
-  $PACKAGE update -y >/dev/null 2>&1
+  if [[ "$PACKAGE" == "apt-get" ]]; then
+    $PACKAGE update -y >/dev/null 2>&1
+  elif [[ "$PACKAGE" == "dnf" ]]; then
+    $PACKAGE makecache -y >/dev/null 2>&1
+  fi
+  sleep 1
 
   echo "XXX"; echo "3"; echo "Actualizando paquetes..."; echo "XXX"
-  $PACKAGE upgrade -y >/dev/null 2>&1
+  if [[ "$PACKAGE" == "apt-get" ]]; then
+    $PACKAGE upgrade -y >/dev/null 2>&1
+  elif [[ "$PACKAGE" == "dnf" ]]; then
+    $PACKAGE upgrade -y >/dev/null 2>&1
+  fi
+  sleep 1
 
   if [[ "$DISTRO" == "ubuntu" || "$DISTRO" == "anduinos" ]]; then
     echo "XXX"; echo "5"; echo "Verificando repositorio ondrej/php..."; echo "XXX"
@@ -167,22 +177,27 @@ fi
       add-apt-repository -y ppa:ondrej/php >/dev/null 2>&1
       $PACKAGE update -y >/dev/null 2>&1
     fi
-
+    sleep 1
   elif [[ "$DISTRO" == "almalinux" ]]; then
     echo "XXX"; echo "5"; echo "Configurando repositorio Remi para PHP..."; echo "XXX"
     if ! rpm -q remi-release >/dev/null 2>&1; then
-      dnf install -y https://rpms.remirepo.net/enterprise/remi-release-9.rpm >/dev/null 2>&1
+      $PACKAGE install -y https://rpms.remirepo.net/enterprise/remi-release-9.rpm >/dev/null 2>&1
     fi
-    dnf module reset php -y >/dev/null 2>&1
-    dnf module enable php:remi-8.4 -y >/dev/null 2>&1
-    dnf update -y >/dev/null 2>&1
+    $PACKAGE module reset php -y >/dev/null 2>&1
+    $PACKAGE module enable php:remi-8.4 -y >/dev/null 2>&1
+    $PACKAGE update -y >/dev/null 2>&1
+    sleep 1
   fi
 
-  # Validar e instalar Apache si no está instalado
   echo "XXX"; echo "10"; echo "Verificando Apache..."; echo "XXX"
   if ! command -v apache2 >/dev/null 2>&1 && ! command -v httpd >/dev/null 2>&1; then
-    $PACKAGE install -y apache2 >/dev/null 2>&1 || $PACKAGE install -y httpd >/dev/null 2>&1
+    if [[ "$PACKAGE" == "apt-get" ]]; then
+      $PACKAGE install -y apache2 >/dev/null 2>&1
+    else
+      $PACKAGE install -y httpd >/dev/null 2>&1
+    fi
   fi
+  sleep 1
 
   echo "XXX"; echo "15"; echo "Verificando módulo rewrite de Apache..."; echo "XXX"
   if [[ "$DISTRO" == "ubuntu" || "$DISTRO" == "debian" || "$DISTRO" == "anduinos" ]]; then
@@ -196,20 +211,18 @@ fi
     fi
     systemctl restart httpd >/dev/null 2>&1
   fi
+  sleep 1
 
-# Validar e instalar PHP según versión elegida
   echo "XXX"; echo "20"; echo "Verificando PHP versión $PHPVERSION..."; echo "XXX"
   if ! command -v php >/dev/null 2>&1 || [[ "$(php -r 'echo PHP_VERSION;')" != $PHPVERSION* ]]; then
-    if [[ "$DISTRO" == "ubuntu" || "$DISTRO" == "anduinos" || "$DISTRO" == "debian" ]]; then
+    if [[ "$PACKAGE" == "apt-get" ]]; then
       $PACKAGE install -y php$PHPVERSION >/dev/null 2>&1
-    elif [[ "$DISTRO" == "almalinux" ]]; then
-      dnf module enable php:$PHPVERSION -y >/dev/null 2>&1
-      $PACKAGE install -y php >/dev/null 2>&1
+    elif [[ "$PACKAGE" == "dnf" ]]; then
+      $PACKAGE install -y php$PHPVERSION >/dev/null 2>&1
     fi
   fi
+  sleep 1
 
-  
-  
-
+  echo "XXX"; echo "100"; echo "Instalación finalizada"; echo "XXX"
   sleep 2
 } | whiptail --title "Progreso de instalación" --gauge "Por favor espere..." 10 70 0
