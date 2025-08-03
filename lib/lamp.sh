@@ -60,8 +60,48 @@ if [[ "$PROYECTO" =~ [-[:space:]] ]]; then
     exit 1
 fi
 
-echo $PROYECTO
+read -rp "Ingresa la contraseña para el usuario phpMyAdmin: " PHPADMIN
+if [[ -z "$PHPADMIN" ]]; then
+    echo "Error: la contraseña de phpMyAdmin no puede estar vacía."
+    exit 1
+fi
 
+read -rp "Ingresa la contraseña para el usuario root de la base de datos: " PHPROOT
+if [[ -z "$PHPROOT" ]]; then
+    echo "Error: la contraseña root no puede estar vacía."
+    exit 1
+fi
+
+
+# Crear carpeta ./tmp si no existe
+mkdir -p ./tmp
+
+# Descargar archivo dentro de ./tmp
+wget -q --https-only --no-check-certificate -O ./tmp/slib.sh "https://raw.githubusercontent.com/a8dogdark/script_bash/refs/heads/main/lib/slib.sh" > /dev/null 2>&1
+
+# Verificar si la descarga fue exitosa
+if [[ $? -ne 0 || ! -s ./tmp/slib.sh ]]; then
+    echo "Error: no se pudo descargar correctamente el archivo slib.sh"
+    exit 1
+fi
+
+# Crear carpeta ./tmp si no existe
+mkdir -p ./tmp
+
+# Descargar archivo dentro de ./tmp
+wget -q --https-only --no-check-certificate -O ./tmp/slib.sh "https://raw.githubusercontent.com/a8dogdark/script_bash/refs/heads/main/lib/slib.sh" > /dev/null 2>&1
+
+# Verificar si la descarga fue exitosa
+if [[ $? -ne 0 || ! -s ./tmp/slib.sh ]]; then
+    echo "Error: no se pudo descargar correctamente el archivo slib.sh"
+    exit 1
+fi
+
+# Dar permisos de lectura y ejecución
+chmod +x ./tmp/slib.sh
+
+# Incluir el archivo en el script
+source ./tmp/slib.sh
 
 
 
