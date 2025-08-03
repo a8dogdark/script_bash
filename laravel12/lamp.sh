@@ -50,16 +50,14 @@ else
   exit 1
 fi
 
-if whiptail --backtitle "Instalador de Lamp para Laravel 12 versión $VER" \
+if whiptail --backtitle "Instalador de Lamp para Laravel 12 version $VER" \
   --title "Bienvenido" \
-  --yesno "Bienvenido al instalador de Servidor Lamp para Laravel 12\n\nSe instalarán los siguientes paquetes:\n- Apache\n- PHP\n- Servidor de base de datos $DBASE\n- Phpmyadmin\n- Softwares a elección\n- Proyecto Laravel 12" 18 70; then
-    # Usuario aceptó, continuar
-    echo "Continuando con la instalación..."
+  --yesno "Bienvenido al instalador de Servidor Lamp para Laravel 12\n\nSe instalaran los siguientes paquetes:\n- Apache\n- PHP\n- Servidor de base de datos $DBASE\n- Phpmyadmin\n- Softwares a eleccion\n- Proyecto Laravel 12\n\nPresiona Si para aceptar o No para cancelar." 20 70; then
+    echo "Continuando con la instalacion..."
 else
-  # Usuario canceló
-  whiptail --backtitle "Instalador de Lamp para Laravel 12 versión $VER" \
+  whiptail --backtitle "Instalador de Lamp para Laravel 12 version $VER" \
     --title "Cancelado" \
-    --msgbox "Has cancelado la instalación." 8 50
+    --msgbox "Has cancelado la instalacion." 8 50
   clear
   exit 1
 fi
