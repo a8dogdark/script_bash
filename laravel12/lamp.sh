@@ -1,11 +1,9 @@
 #!/bin/bash
-
 clear
 
-DBASE="" # Esta variable ahora almacenará la base de datos recomendada
+DBASE=""  # Asigna aquí la base de datos recomendada, por ejemplo: "MySQL"
 DISTRO=""
 PACKAGE=""
-PACKAGES=""
 PASSADMIN=""
 PASSROOT=""
 PHPVERSION=""
@@ -14,105 +12,69 @@ SOFTWARES=""
 VER="2.0"
 VERDIS=""
 
+# Mostrar título con versión
+echo -e "==============================="
+echo -e "  Instalador de Lamp para Laravel 12        Versión: $VER"
+echo -e "===============================\n"
+
+# Verificación de root
 if [ "$EUID" -ne 0 ]; then
-  echo "Este script debe ejecutarse como root. Por favor, usa 'sudo'."
+  echo "Este script debe ejecutarse como root. Usa 'sudo'."
   exit 1
 fi
 
-if ! (uname -m | grep -q "64" || uname -m | grep -q "x86_64"); then
-  echo "Este script requiere una distribución de 64 bits. Tu arquitectura es: $(uname -m)"
+# Verificación de arquitectura 64 bits
+if ! uname -m | grep -Eq "64|x86_64"; then
+  echo "Se requiere una arquitectura de 64 bits. Detectado: $(uname -m)"
   exit 1
 fi
 
-# Detecta y guarda la distribución y su versión
+# Detectar distribución y versión
 if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    DISTRO=$(echo "$ID" | tr '[:upper:]' '[:lower:]')
-    VERDIS=$VERSION_ID
-elif [ -f /etc/lsb-release ]; then
-    . /etc/lsb-release
-    DISTRO=$(echo "$DISTRIB_ID" | tr '[:upper:]' '[:lower:]')
-    VERDIS=$DISTRIB_RELEASE
-elif [ -f /etc/debian_version ]; then
-    DISTRO="debian"
-    VERDIS=$(cat /etc/debian_version | cut -d'.' -f1)
-elif [ -f /etc/redhat-release ]; then
-    DISTRO=$(cat /etc/redhat-release | awk '{print tolower($1)}')
-    VERDIS=$(cat /etc/redhat-release | sed 's/.*release //;s/ (.*)//')
+  . /etc/os-release
+  DISTRO="$ID"
+  VERDIS="$VERSION_ID"
 else
-    echo "Error: No se pudo detectar la distribución de Linux. Saliendo."
+  echo "No se pudo detectar la distribución. Abortando."
+  exit 1
+fi
+
+# Validar distribución y versión
+if [[ "$DISTRO" == "ubuntu" ]]; then
+  if [[ "$VERDIS" != "22.04" && "$VERDIS" != "24.04" ]]; then
+    echo "Solo se permite Ubuntu 22.04 o 24.04. Detectado: $VERDIS"
     exit 1
-fi
-
-if [ -z "$DISTRO" ] || [ -z "$VERDIS" ]; then
-    echo "Error: No se pudo obtener la información completa de la distribución. Saliendo."
+  fi
+elif [[ "$DISTRO" == "debian" ]]; then
+  if [[ "$VERDIS" != "11" && "$VERDIS" != "12" ]]; then
+    echo "Solo se permite Debian 11 o 12. Detectado: $VERDIS"
     exit 1
+  fi
+else
+  echo "Solo se permite Ubuntu o Debian. Detectado: $DISTRO"
+  exit 1
 fi
 
-# --- Validación de la distribución y versión soportada ---
-case "$DISTRO" in
-    ubuntu)
-        if [ "$VERDIS" == "1.1.7" ]; then
-            : # Válido: Es Anduinos 1.1.7 identificado como Ubuntu
-        elif [ "$VERDIS" == "22.04" ] || [ "$VERDIS" == "24.04" ]; then
-            : # Válido: Es Ubuntu LTS (22.04 o 24.04)
-        else
-            echo "Error: Distribución Ubuntu no soportada. Debe ser versión 22.04 (LTS), 24.04 (LTS) o Anduinos 1.1.7."
-            exit 1
-        fi
-        PACKAGES="apt"
-        DBASE="mysql-server" # Para Ubuntu/Anduinos, se asigna mysql-server a la variable
-        ;;
-    debian)
-        if [ "$VERDIS" == "11" ] || [ "$VERDIS" == "12" ]; then
-            : # Válido
-        else
-            echo "Error: Distribución Debian no soportada. Debe ser versión 11 o 12."
-            exit 1
-        fi
-        PACKAGES="apt"
-        DBASE="mariadb-server" # MariaDB es la opción preferida y por defecto en Debian
-        ;;
-    almalinux)
-        if [ "$VERDIS" == "8" ] || [ "$VERDIS" == "9" ]; then
-            : # Válido
-        else
-            echo "Error: Distribución AlmaLinux no soportada. Debe ser versión 8 o 9."
-            exit 1
-        fi
-        if command -v dnf &> /dev/null; then
-            PACKAGES="dnf"
-        else
-            PACKAGES="yum"
-        fi
-        DBASE="mariadb-server" # MariaDB es también la opción por defecto en AlmaLinux/RHEL
-        ;;
-    *) # Cualquier otra distribución
-        echo "Error: Distribución '$DISTRO' con versión '$VERDIS' no soportada. Saliendo."
-        exit 1
-        ;;
-esac
-
-# --- Instalación de Whiptail ---
-if ! command -v whiptail &> /dev/null; then
-    if [ "$PACKAGES" == "apt" ]; then
-        apt update && apt install -y whiptail
-        if [ $? -ne 0 ]; then
-            echo "Error: No se pudo instalar whiptail. Saliendo."
-            exit 1
-        else
-            echo "Espere un momento por favor...."
-        fi
-    elif [ "$PACKAGES" == "yum" ] || [ "$PACKAGES" == "dnf" ]; then
-        "$PACKAGES" install -y newt
-        if [ $? -ne 0 ]; then
-            echo "Error: No se pudo instalar whiptail. Saliendo."
-            exit 1
-        else
-            echo "Espere un momento por favor...."
-        fi
-    else
-        echo "Error: No se sabe cómo instalar whiptail en esta distribución ($DISTRO). Saliendo."
-        exit 1
-    fi
+# Verificar si whiptail está instalado
+if ! command -v whiptail >/dev/null 2>&1; then
+  echo "Espere por favor ... instalando whiptail"
+  if [[ "$DISTRO" == "ubuntu" || "$DISTRO" == "debian" ]]; then
+    apt-get install -y whiptail >/dev/null 2>&1 &
+  else
+    echo "No se puede instalar whiptail automáticamente en esta distribución."
+    exit 1
+  fi
 fi
+
+# Mostrar cuadro de bienvenida con botones Aceptar y Cancelar
+whiptail --backtitle "Instalador de Lamp para Laravel 12 - Versión: $VER" --title "Bienvenido" --yesno "Bienvenido a la Instalación del servidor LAMP para Laravel 12.\n\nSe instalarán los siguientes paquetes:\n- Apache\n- PHP\n- $DBASE (versión recomendada)\n- PhpMyAdmin" 15 60
+
+RESPUESTA=$?
+
+if [ $RESPUESTA -ne 0 ]; then
+  whiptail --backtitle "Instalador de Lamp para Laravel 12 - Versión: $VER" --title "Instalación Cancelada" --msgbox "Has cancelado la instalación." 8 40
+  exit 1
+fi
+
+echo "Comenzando la instalación..."
+# Aquí seguiría el resto del script de instalación
