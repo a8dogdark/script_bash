@@ -158,3 +158,7 @@ fi
 
 # Incluir slib.sh
 source ./tmp/slib.sh
+
+
+
+run_ok "" "Actualizando el equipo"
