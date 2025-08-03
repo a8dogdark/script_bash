@@ -24,12 +24,12 @@ fi
 DISTRO=$ID
 VERDISTRO=$VERSION_ID
 
-# Validación con AnduinOS incluido
-if ! { 
-       { [ "$DISTRO_LOWER" = "ubuntu" ] && { [ "$VERDISTRO" = "22.04" ] || [ "$VERDISTRO" = "24.04" ]; }; } || \
-       { [ "$DISTRO_LOWER" = "debian" ] && { [ "$VERDISTRO" = "11" ] || [ "$VERDISTRO" = "12" ]; }; } || \
-       { [ "$DISTRO_LOWER" = "anduinos" ] || [ "$NAME_LOWER" = "anduin os" ]; } \
-     }; then
+# Validar distribución
+if ! (
+     ([[ "$DISTRO" == "ubuntu" ]] && ([[ "$VERDISTRO" == "22.04" ]] || [[ "$VERDISTRO" == "24.04" ]])) ||
+     ([[ "$DISTRO" == "debian" ]] && ([[ "$VERDISTRO" == "11" ]] || [[ "$VERDISTRO" == "12" ]])) ||
+     [[ "$NAME_LOWER" == *"anduinos"* ]]
+   ); then
   echo "Sistema no soportado. Solo Ubuntu 22.04, 24.04, Debian 11, 12 o AnduinOS."
   exit 1
 fi
