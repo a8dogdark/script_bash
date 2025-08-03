@@ -197,12 +197,19 @@ fi
     systemctl restart httpd >/dev/null 2>&1
   fi
 
-  echo "XXX"; echo "20"; echo "Verificando info.php en Apache..."; echo "XXX"
-  if [[ ! -f /var/www/html/info.php ]]; then
-    echo "<?php phpinfo(); ?>" > /var/www/html/info.php
-    chown www-data:www-data /var/www/html/info.php >/dev/null 2>&1 || true
-    chmod 644 /var/www/html/info.php
+# Validar e instalar PHP según versión elegida
+  echo "XXX"; echo "20"; echo "Verificando PHP versión $PHPVERSION..."; echo "XXX"
+  if ! command -v php >/dev/null 2>&1 || [[ "$(php -r 'echo PHP_VERSION;')" != $PHPVERSION* ]]; then
+    if [[ "$DISTRO" == "ubuntu" || "$DISTRO" == "anduinos" || "$DISTRO" == "debian" ]]; then
+      $PACKAGE install -y php$PHPVERSION >/dev/null 2>&1
+    elif [[ "$DISTRO" == "almalinux" ]]; then
+      dnf module enable php:$PHPVERSION -y >/dev/null 2>&1
+      $PACKAGE install -y php >/dev/null 2>&1
+    fi
   fi
+
+  
+  
 
   sleep 2
 } | whiptail --title "Progreso de instalación" --gauge "Por favor espere..." 10 70 0
