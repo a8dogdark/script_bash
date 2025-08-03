@@ -47,13 +47,7 @@ echo "- NodeJS"
 echo "- Softwares"
 echo "- Proyecto Laravel 12"
 
-read -rp "Ingresa el nombre del proyecto Laravel a crear (sin guiones ni espacios, ejemplo: crud) [ESC para salir]: " PROYECTO
-
-# Si el usuario presionó ESC (código 27) se detecta si la variable quedó vacía y no se presionó Enter
-if [[ $PROYECTO == $'\e' ]]; then
-    echo "Instalación cancelada."
-    exit 1
-fi
+read -rp "Ingresa el nombre del proyecto Laravel a crear (sin guiones ni espacios, ejemplo: crud): " PROYECTO
 
 # Si está vacío, usar valor por defecto
 if [[ -z "$PROYECTO" ]]; then
