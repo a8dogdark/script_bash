@@ -72,7 +72,7 @@ exitstatus=$?
 if [ $exitstatus != 0 ]; then
   whiptail --backtitle "Instalador de Lamp para Laravel 12 version $VER" \
     --title "Cancelado" \
-    --msgbox "No se ingreso un nombre de proyecto. Instalacion cancelada." 8 50
+    --msgbox "Instalacion cancelada." 8 50
   clear
   exit 1
 fi
