@@ -52,4 +52,4 @@ fi
 
 whiptail --backtitle "Instalador de Lamp para Laravel 12 versión $VER" \
   --title "Bienvenido" \
-  --msgbox "Bienvenido al instalador de Servidor Lamp para Laravel 12\n\nSe instalarán los siguientes paquetes:\n- Apache\n- PHP\n- Servidor de base de datos $DBASE\n- Phpmyadmin\n\nSoftwares a elección Proyecto Laravel 12" 18 70
+  --msgbox "Bienvenido al instalador de Servidor Lamp para Laravel 12\n\nSe instalarán los siguientes paquetes:\n- Apache\n- PHP\n- Servidor de base de datos $DBASE\n- Phpmyadmin\nSoftwares a elección Proyecto Laravel 12" 18 70
