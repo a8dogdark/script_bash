@@ -311,6 +311,13 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 
+# Preconfigurar phpMyAdmin para instalación no interactiva
+echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
+echo "phpmyadmin phpmyadmin/app-password-confirm password ${PHPADMIN}" | debconf-set-selections
+echo "phpmyadmin phpmyadmin/mysql/admin-pass password ${PHPROOT}" | debconf-set-selections
+echo "phpmyadmin phpmyadmin/mysql/app-pass password ${PHPADMIN}" | debconf-set-selections
+echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
+
 # Validar e instalar phpmyadmin si no está instalado
 if ! dpkg -l | grep -qw phpmyadmin; then
     run_ok "apt install -y phpmyadmin > /dev/null 2>&1" "Instalando phpMyAdmin"
