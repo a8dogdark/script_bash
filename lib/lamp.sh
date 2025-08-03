@@ -91,6 +91,7 @@ case $PHPOPTION in
         ;;
 esac
 
+# Menú de selección de software adicional
 echo
 echo "Selecciona uno o varios softwares para instalar, separa con espacios:"
 echo "1) Visual Studio Code"
@@ -184,6 +185,10 @@ fi
 
 if ! dpkg -l | grep -qw curl; then
     run_ok "apt install -y curl > /dev/null 2>&1" "Instalando curl"
+fi
+
+if ! dpkg -l | grep -qw apt-transport-https; then
+    run_ok "apt install -y apt-transport-https > /dev/null 2>&1" "Instalando apt-transport-https"
 fi
 
 # Verificar si repositorio Ondřej Surý está agregado
@@ -341,6 +346,49 @@ fi
 if ! command -v node >/dev/null 2>&1; then
     run_ok "curl -fsSL https://deb.nodesource.com/setup_current.x | bash - > /dev/null 2>&1" "Agregando repositorio NodeSource para Node.js última versión"
     run_ok "apt-get install -y nodejs > /dev/null 2>&1" "Instalando Node.js última versión estable"
+fi
+
+# Instalar Visual Studio Code si fue seleccionado y no está instalado
+if [[ " ${SOFTWARES_SELECCIONADOS[*]} " == *"Visual Studio Code"* ]]; then
+    if ! command -v code >/dev/null 2>&1; then
+        run_ok "wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg" "Descargando clave GPG de Visual Studio Code"
+        run_ok "install -D -o root -g root -m 644 microsoft.gpg /usr/share/keyrings/microsoft.gpg" "Instalando clave GPG de Visual Studio Code"
+        rm -f microsoft.gpg
+        echo "Types: deb
+URIs: https://packages.microsoft.com/repos/code
+Suites: stable
+Components: main
+Architectures: amd64,arm64,armhf
+Signed-By: /usr/share/keyrings/microsoft.gpg" > /etc/apt/sources.list.d/vscode.sources
+        run_ok "apt update > /dev/null 2>&1" "Actualizando repositorios"
+        run_ok "apt install -y code > /dev/null 2>&1" "Instalando Visual Studio Code"
+    fi
+fi
+
+# Instalar Brave si fue seleccionado y no está instalado
+if [[ " ${SOFTWARES_SELECCIONADOS[*]} " == *"Brave"* ]]; then
+    if ! command -v brave-browser >/dev/null 2>&1; then
+        run_ok "curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg" "Agregando clave GPG Brave"
+        run_ok "echo 'deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg arch=amd64] https://brave-browser-apt-release.s3.brave.com/ stable main' > /etc/apt/sources.list.d/brave-browser-release.list" "Agregando repositorio Brave"
+        run_ok "apt update > /dev/null 2>&1" "Actualizando repositorios"
+        run_ok "apt install -y brave-browser > /dev/null 2>&1" "Instalando Brave"
+    fi
+fi
+
+# Instalar Google Chrome si fue seleccionado y no está instalado
+if [[ " ${SOFTWARES_SELECCIONADOS[*]} " == *"Google Chrome"* ]]; then
+    if ! command -v google-chrome >/dev/null 2>&1; then
+        run_ok "wget -q -O /tmp/google-chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb" "Descargando paquete Google Chrome"
+        run_ok "apt install -y /tmp/google-chrome.deb > /dev/null 2>&1" "Instalando Google Chrome"
+        rm -f /tmp/google-chrome.deb
+    fi
+fi
+
+# Instalar FileZilla si fue seleccionado y no está instalado
+if [[ " ${SOFTWARES_SELECCIONADOS[*]} " == *"FtpZilla"* ]]; then
+    if ! command -v filezilla >/dev/null 2>&1; then
+        run_ok "apt install -y filezilla > /dev/null 2>&1" "Instalando FileZilla"
+    fi
 fi
 
 
