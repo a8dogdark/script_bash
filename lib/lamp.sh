@@ -304,6 +304,16 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 
+# Validar e instalar phpmyadmin si no está instalado
+if ! dpkg -l | grep -qw phpmyadmin; then
+    run_ok "apt install -y phpmyadmin > /dev/null 2>&1 &" "Instalando phpMyAdmin"
+
+    if [[ -f /etc/phpmyadmin/apache.conf ]]; then
+        run_ok "ln -s /etc/phpmyadmin/apache.conf /etc/apache2/conf-available/phpmyadmin.conf > /dev/null 2>&1 &" "Configurando Apache para phpMyAdmin"
+        run_ok "a2enconf phpmyadmin > /dev/null 2>&1 &" "Habilitando configuración phpMyAdmin en Apache"
+        run_ok "systemctl reload apache2 > /dev/null 2>&1 &" "Recargando Apache"
+    fi
+fi
 
 # Eliminar carpeta tmp y todo su contenido
 rm -rf ./tmp
