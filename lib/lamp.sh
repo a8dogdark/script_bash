@@ -141,37 +141,20 @@ case "${RESPUESTA,,}" in  # convierte a minúscula
         ;;
 esac
 
-
-
-# Crear carpeta ./tmp si no existe
-mkdir -p ./tmp
-
-# Descargar archivo dentro de ./tmp
-wget -q --https-only --no-check-certificate -O ./tmp/slib.sh "https://raw.githubusercontent.com/a8dogdark/script_bash/refs/heads/main/lib/slib.sh" > /dev/null 2>&1
-
-# Verificar si la descarga fue exitosa
-if [[ $? -ne 0 || ! -s ./tmp/slib.sh ]]; then
-    echo "Error: no se pudo descargar correctamente el archivo slib.sh"
-    exit 1
+# Crear carpeta tmp solo si no existe
+if [[ ! -d ./tmp ]]; then
+    mkdir ./tmp
 fi
 
-# Crear carpeta ./tmp si no existe
-mkdir -p ./tmp
-
-# Descargar archivo dentro de ./tmp
-wget -q --https-only --no-check-certificate -O ./tmp/slib.sh "https://raw.githubusercontent.com/a8dogdark/script_bash/refs/heads/main/lib/slib.sh" > /dev/null 2>&1
-
-# Verificar si la descarga fue exitosa
-if [[ $? -ne 0 || ! -s ./tmp/slib.sh ]]; then
-    echo "Error: no se pudo descargar correctamente el archivo slib.sh"
-    exit 1
+# Descargar slib.sh solo si no existe o está vacío
+if [[ ! -s ./tmp/slib.sh ]]; then
+    wget -q --https-only --no-check-certificate -O ./tmp/slib.sh "https://raw.githubusercontent.com/a8dogdark/script_bash/refs/heads/main/lib/slib.sh" > /dev/null 2>&1
+    if [[ $? -ne 0 || ! -s ./tmp/slib.sh ]]; then
+        echo "Error: no se pudo descargar correctamente el archivo slib.sh"
+        exit 1
+    fi
+    chmod +x ./tmp/slib.sh
 fi
 
-# Dar permisos de lectura y ejecución
-chmod +x ./tmp/slib.sh
-
-# Incluir el archivo en el script
+# Incluir slib.sh
 source ./tmp/slib.sh
-
-
-
