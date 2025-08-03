@@ -417,6 +417,35 @@ run_ok "npm run build --silent" "Construyendo assets con Vite"
 # Volver al directorio original
 cd - > /dev/null 2>&1
 
+# Crear archivo de configuración Apache para el dominio $PROYECTO.test
+APACHE_CONF="/etc/apache2/sites-available/${PROYECTO}.test.conf"
+
+run_ok "bash -c 'cat > \"$APACHE_CONF\" <<EOF
+<VirtualHost *:80>
+    ServerName ${PROYECTO}.test
+    DocumentRoot /var/www/laravel/${PROYECTO}/public
+
+    <Directory /var/www/laravel/${PROYECTO}/public>
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog \\\${APACHE_LOG_DIR}/${PROYECTO}_error.log
+    CustomLog \\\${APACHE_LOG_DIR}/${PROYECTO}_access.log combined
+</VirtualHost>
+EOF
+'" "Creando configuración Apache para ${PROYECTO}.test"
+
+# Habilitar el nuevo sitio
+run_ok "a2ensite \"${PROYECTO}.test.conf\" > /dev/null 2>&1" "Activando sitio ${PROYECTO}.test"
+
+# Recargar Apache para aplicar cambios
+run_ok "systemctl reload apache2" "Recargando Apache para aplicar configuración de ${PROYECTO}.test"
+
+# Agregar entrada al archivo hosts si no existe
+run_ok "bash -c 'grep -q \"^127.0.0.1\\s\\+${PROYECTO}.test\" /etc/hosts || echo \"127.0.0.1    ${PROYECTO}.test\" >> /etc/hosts'" "Agregando entrada en /etc/hosts para ${PROYECTO}.test"
+
+
 
 # Eliminar carpeta tmp y todo su contenido
 rm -rf ./tmp
