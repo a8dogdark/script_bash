@@ -400,7 +400,7 @@ fi
 # Crear el proyecto Laravel 12 en modo silencioso
 cd /var/www/laravel || exit 1
 
-run_ok "composer create-project --prefer-dist laravel/laravel:^12.0 $PROYECTO --quiet" "Creando proyecto Laravel 12 en /var/www/laravel/$PROYECTO"
+run_ok "composer create-project --prefer-dist laravel/laravel:^12.0 $PROYECTO --quiet || true" "Creando proyecto Laravel 12 en /var/www/laravel/$PROYECTO"
 
 # Cambiar permisos del proyecto para que Laravel pueda escribir
 run_ok "chown -R www-data:www-data /var/www/laravel/$PROYECTO" "Asignando propiedad a www-data en $PROYECTO"
