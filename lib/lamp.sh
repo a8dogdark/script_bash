@@ -322,8 +322,6 @@ if ! dpkg -l | grep -qw phpmyadmin; then
         # Corrección aquí para evitar error por enlace ya existente
         if [[ ! -L /etc/apache2/conf-available/phpmyadmin.conf ]]; then
             run_ok "ln -s /etc/phpmyadmin/apache.conf /etc/apache2/conf-available/phpmyadmin.conf > /dev/null 2>&1" "Configurando Apache para phpMyAdmin"
-        else
-            echo "Enlace phpMyAdmin en Apache ya existe, omitiendo creación."
         fi
 
         run_ok "a2enconf phpmyadmin > /dev/null 2>&1" "Habilitando configuración phpMyAdmin en Apache"
