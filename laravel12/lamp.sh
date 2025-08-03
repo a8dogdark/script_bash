@@ -1,6 +1,4 @@
 #!/bin/bash
-export LANG=es_ES.UTF-8
-export LC_ALL=es_ES.UTF-8
 
 clear
 
@@ -67,9 +65,7 @@ fi
 
 PROYECTO=$(whiptail --backtitle "Instalador de Lamp para Laravel 12 version $VER" \
   --inputbox "Ingrese el nombre del proyecto (default: crud):" 10 60 3>&1 1>&2 2>&3)
-
-exitstatus=$?
-if [ $exitstatus != 0 ]; then
+if [ $? -ne 0 ]; then
   whiptail --backtitle "Instalador de Lamp para Laravel 12 version $VER" \
     --title "Cancelado" \
     --msgbox "Instalacion cancelada." 8 50
@@ -81,4 +77,25 @@ if [ -z "$PROYECTO" ]; then
   PROYECTO="crud"
 fi
 
+PASSADMIN=$(whiptail --backtitle "Instalador de Lamp para Laravel 12 version $VER" \
+  --passwordbox "Ingrese la contraseña para el usuario phpmyadmin:" 10 60 3>&1 1>&2 2>&3)
+if [ $? -ne 0 ]; then
+  whiptail --backtitle "Instalador de Lamp para Laravel 12 version $VER" \
+    --title "Cancelado" \
+    --msgbox "Instalacion cancelada." 8 50
+  clear
+  exit 1
+fi
+
+PASSROOT=$(whiptail --backtitle "Instalador de Lamp para Laravel 12 version $VER" \
+  --passwordbox "Ingrese la contraseña para el usuario root de la base de datos:" 10 60 3>&1 1>&2 2>&3)
+if [ $? -ne 0 ]; then
+  whiptail --backtitle "Instalador de Lamp para Laravel 12 version $VER" \
+    --title "Cancelado" \
+    --msgbox "Instalacion cancelada." 8 50
+  clear
+  exit 1
+fi
+
 echo "Nombre del proyecto: $PROYECTO"
+# Por seguridad, no mostrar contraseñas en consola
