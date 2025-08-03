@@ -284,10 +284,6 @@ if ! php -m | grep -iq imagick; then
     run_ok "apt install -y php$PHPVERSION-imagick > /dev/null 2>&1" 'Instalando extensión PHP: imagick'
 fi
 
-if ! php -m | grep -iq iconv; then
-    run_ok "apt install -y php$PHPVERSION-iconv > /dev/null 2>&1" 'Instalando extensión PHP: iconv'
-fi
-
 # Validar e instalar DBASE si no está instalada
 if ! php -m | grep -iq dbase; then
     run_ok "apt install -y php$PHPVERSION-dbase > /dev/null 2>&1" 'Instalando extensión PHP: dbase'
