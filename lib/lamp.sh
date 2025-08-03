@@ -72,6 +72,76 @@ if [[ -z "$PHPROOT" ]]; then
     exit 1
 fi
 
+echo "Elige la versión de PHP a instalar (recomendada para Laravel 12: PHP 8.3):"
+echo "1) PHP 8.2"
+echo "2) PHP 8.3 (Recomendada)"
+echo "3) PHP 8.4"
+
+read -rp "Ingresa el número de la versión que deseas instalar: " PHPOPTION
+
+case $PHPOPTION in
+    1) PHPVERSION="8.2" ;;
+    2) PHPVERSION="8.3" ;;
+    3) PHPVERSION="8.4" ;;
+    *)
+        echo "Opción inválida. Saliendo."
+        exit 1
+        ;;
+esac
+
+echo
+echo "Selecciona uno o varios softwares para instalar, separa con espacios:"
+echo "1) Visual Studio Code"
+echo "2) Brave"
+echo "3) Google Chrome"
+echo "4) FtpZilla"
+
+read -rp "Ingresa los números de las opciones elegidas (ejemplo: 1 3 4): " -a SELECCIONES
+
+# Array con los nombres
+SOFTWARES=("Visual Studio Code" "Brave" "Google Chrome" "FtpZilla")
+
+SOFTWARES_SELECCIONADOS=()
+
+for num in "${SELECCIONES[@]}"; do
+    if [[ "$num" =~ ^[1-4]$ ]]; then
+        SOFTWARES_SELECCIONADOS+=("${SOFTWARES[$((num-1))]}")
+    else
+        echo "Opción inválida: $num. Saliendo."
+        exit 1
+    fi
+done
+
+echo
+echo "Resumen de configuración:"
+echo "-------------------------"
+echo "Nombre del proyecto Laravel: $PROYECTO"
+echo "Contraseña phpMyAdmin: $PHPADMIN"
+echo "Contraseña root base de datos: $PHPROOT"
+echo "Versión PHP seleccionada: PHP $PHPVERSION"
+echo "Softwares seleccionados:"
+
+if [ ${#SOFTWARES_SELECCIONADOS[@]} -eq 0 ]; then
+    echo "  Ninguno"
+else
+    for software in "${SOFTWARES_SELECCIONADOS[@]}"; do
+        echo "  - $software"
+    done
+fi
+
+read -rp "¿Quieres continuar? [s/n]: " RESPUESTA
+
+case "${RESPUESTA,,}" in  # convierte a minúscula
+    s) 
+        echo "Continuando..." 
+        ;;
+    *)
+        echo "Instalación cancelada."
+        exit 1
+        ;;
+esac
+
+
 
 # Crear carpeta ./tmp si no existe
 mkdir -p ./tmp
