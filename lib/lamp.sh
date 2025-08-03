@@ -72,12 +72,14 @@ if [[ -z "$PHPROOT" ]]; then
     exit 1
 fi
 
+# Selección versión PHP
 echo "Elige la versión de PHP a instalar (recomendada para Laravel 12: PHP 8.3):"
 echo "1) PHP 8.2"
 echo "2) PHP 8.3 (Recomendada)"
 echo "3) PHP 8.4"
 
-read -rp "Ingresa el número de la versión que deseas instalar: " PHPOPTION
+read -rp "Ingresa el número de la versión que deseas instalar [2]: " PHPOPTION
+PHPOPTION=${PHPOPTION:-2}
 
 case $PHPOPTION in
     1) PHPVERSION="8.2" ;;
