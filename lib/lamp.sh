@@ -186,6 +186,72 @@ if ! dpkg -l | grep -qw "php$PHPVERSION"; then
     run_ok "apt install -y php$PHPVERSION > /dev/null 2>&1 &" "Instalando PHP $PHPVERSION"
 fi
 
+# Extensiones PHP necesarias para Laravel 12 y WordPress (una por una)
+
+# Laravel 12
+if ! php -m | grep -iq bcmath; then
+    run_ok "apt install -y php$PHPVERSION-bcmath > /dev/null 2>&1 &" "Instalando extensión PHP: bcmath"
+fi
+if ! php -m | grep -iq ctype; then
+    run_ok "apt install -y php$PHPVERSION-ctype > /dev/null 2>&1 &" "Instalando extensión PHP: ctype"
+fi
+if ! php -m | grep -iq curl; then
+    run_ok "apt install -y php$PHPVERSION-curl > /dev/null 2>&1 &" "Instalando extensión PHP: curl"
+fi
+if ! php -m | grep -iq dom; then
+    run_ok "apt install -y php$PHPVERSION-dom > /dev/null 2>&1 &" "Instalando extensión PHP: dom"
+fi
+if ! php -m | grep -iq fileinfo; then
+    run_ok "apt install -y php$PHPVERSION-fileinfo > /dev/null 2>&1 &" "Instalando extensión PHP: fileinfo"
+fi
+if ! php -m | grep -iq mbstring; then
+    run_ok "apt install -y php$PHPVERSION-mbstring > /dev/null 2>&1 &" "Instalando extensión PHP: mbstring"
+fi
+if ! php -m | grep -iq openssl; then
+    run_ok "apt install -y php$PHPVERSION-openssl > /dev/null 2>&1 &" "Instalando extensión PHP: openssl"
+fi
+if ! php -m | grep -iq pdo; then
+    run_ok "apt install -y php$PHPVERSION-pdo > /dev/null 2>&1 &" "Instalando extensión PHP: pdo"
+fi
+if ! php -m | grep -iq tokenizer; then
+    run_ok "apt install -y php$PHPVERSION-tokenizer > /dev/null 2>&1 &" "Instalando extensión PHP: tokenizer"
+fi
+if ! php -m | grep -iq xml; then
+    run_ok "apt install -y php$PHPVERSION-xml > /dev/null 2>&1 &" "Instalando extensión PHP: xml"
+fi
+if ! php -m | grep -iq json; then
+    run_ok "apt install -y php$PHPVERSION-json > /dev/null 2>&1 &" "Instalando extensión PHP: json"
+fi
+if ! php -m | grep -iq zip; then
+    run_ok "apt install -y php$PHPVERSION-zip > /dev/null 2>&1 &" "Instalando extensión PHP: zip"
+fi
+
+# Extensiones PHP para bases de datos MySQL/MariaDB
+if ! php -m | grep -iq mysqli; then
+    run_ok "apt install -y php$PHPVERSION-mysqli > /dev/null 2>&1 &" "Instalando extensión PHP: mysqli"
+fi
+if ! php -m | grep -iq pdo_mysql; then
+    run_ok "apt install -y php$PHPVERSION-mysql > /dev/null 2>&1 &" "Instalando extensión PHP: pdo_mysql"
+fi
+
+# Extensiones PHP adicionales para WordPress
+if ! php -m | grep -iq gd; then
+    run_ok "apt install -y php$PHPVERSION-gd > /dev/null 2>&1 &" "Instalando extensión PHP: gd"
+fi
+if ! php -m | grep -iq xmlrpc; then
+    run_ok "apt install -y php$PHPVERSION-xmlrpc > /dev/null 2>&1 &" "Instalando extensión PHP: xmlrpc"
+fi
+if ! php -m | grep -iq exif; then
+    run_ok "apt install -y php$PHPVERSION-exif > /dev/null 2>&1 &" "Instalando extensión PHP: exif"
+fi
+if ! php -m | grep -iq soap; then
+    run_ok "apt install -y php$PHPVERSION-soap > /dev/null 2>&1 &" "Instalando extensión PHP: soap"
+fi
+if ! php -m | grep -iq gettext; then
+    run_ok "apt install -y php$PHPVERSION-gettext > /dev/null 2>&1 &" "Instalando extensión PHP: gettext"
+fi
+
+
 # Validar si info.php existe en /var/www/html y crearlo si no existe (usando tee para evitar problemas de permisos)
 if [[ ! -f /var/www/html/info.php ]]; then
     echo "<?php phpinfo(); ?>" | tee /var/www/html/info.php > /dev/null
