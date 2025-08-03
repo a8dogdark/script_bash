@@ -165,9 +165,8 @@ run_ok "apt update > /dev/null 2>&1 &" "Actualizando el sistema"
 run_ok "apt upgrade -y > /dev/null 2>&1 &" "Actualizando paquetes"
 
 # Verificar y agregar repositorio Ondřej Surý si no existe
-if ! grep -r "^deb .*\bondrej/php\b" /etc/apt/sources.list.d/ > /dev/null 2>&1; then
+if ! grep -h "^deb .*\bondrej/php\b" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null | grep -q .; then
     run_ok "add-apt-repository ppa:ondrej/php -y > /dev/null 2>&1 &" "Agregando repositorio Ondřej Surý"
-    # Actualizar lista de paquetes después de agregar el repositorio
     run_ok "apt update > /dev/null 2>&1 &" "Actualizando el sistema"
 fi
 
