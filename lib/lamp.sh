@@ -187,9 +187,9 @@ if ! dpkg -l | grep -qw "php$PHPVERSION"; then
     run_ok "apt install -y php$PHPVERSION > /dev/null 2>&1 &" "Instalando PHP $PHPVERSION"
 fi
 
-# Validar si info.php existe en /var/www/html y crearlo si no existe
+# Validar si info.php existe en /var/www/html y crearlo si no existe (usando tee para evitar problemas de permisos)
 if [[ ! -f /var/www/html/info.php ]]; then
-    echo "<?php phpinfo(); ?>" > /var/www/html/info.php
+    echo "<?php phpinfo(); ?>" | tee /var/www/html/info.php > /dev/null
     chmod 644 /var/www/html/info.php
 fi
 
