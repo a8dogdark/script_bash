@@ -400,20 +400,19 @@ fi
 # Crear el proyecto Laravel 12 en modo silencioso
 cd /var/www/laravel || exit 1
 
-run_ok "composer create-project --prefer-dist laravel/laravel:^12.0 $PROYECTO --quiet || true" "Creando proyecto Laravel 12 en /var/www/laravel/$PROYECTO"
+run_ok "composer create-project --prefer-dist laravel/laravel:^12.0 $PROYECTO --quiet" "Creando proyecto Laravel 12 en /var/www/laravel/$PROYECTO"
 
-# Cambiar permisos de la carpeta del proyecto para www-data
-chown -R www-data:www-data "/var/www/laravel/$PROYECTO"
+# Cambiar permisos del proyecto para que Laravel pueda escribir
+run_ok "chown -R www-data:www-data /var/www/laravel/$PROYECTO" "Asignando propiedad a www-data en $PROYECTO"
+run_ok "chmod -R 775 /var/www/laravel/$PROYECTO/storage" "Asignando permisos de escritura a storage"
+run_ok "chmod -R 775 /var/www/laravel/$PROYECTO/bootstrap/cache" "Asignando permisos de escritura a bootstrap/cache"
 
 # Configurar Vite para Laravel 12 (ya integrado por defecto)
-# Aquí podrías añadir configuraciones extras si fueran necesarias
 
 # Instalar dependencias npm en modo silencioso y construir assets con vite
 cd "/var/www/laravel/$PROYECTO" || exit 1
-
 run_ok "npm install --silent" "Instalando dependencias npm de Laravel"
 run_ok "npm run build --silent" "Construyendo assets con Vite"
-
 # Volver al directorio original
 cd - > /dev/null 2>&1
 
