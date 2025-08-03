@@ -28,3 +28,13 @@ if ! { { [ "$DISTRO" = "ubuntu" ] && { [ "$VERDISTRO" = "22.04" ] || [ "$VERDIST
   echo "Sistema no soportado. Solo Ubuntu 22.04, 24.04 o Debian 11, 12."
   exit 1
 fi
+
+
+read -rp "Ingrese el nombre del proyecto: " PROYECTO
+
+if [ -z "$PROYECTO" ]; then
+  echo "No ingresó un nombre de proyecto. Saliendo."
+  exit 1
+fi
+
+echo "El nombre del proyecto es: $PROYECTO"
