@@ -281,10 +281,6 @@ if ! php -m | grep -iw imagick > /dev/null; then
     run_ok "apt install -y php-imagick > /dev/null 2>&1" 'Instalando extensión PHP: imagick'
 fi
 
-if ! php -m | grep -iw dbase > /dev/null; then
-    run_ok "apt install -y php$PHPVERSION-dbase > /dev/null 2>&1" 'Instalando extensión PHP: dbase'
-fi
-
 # Validar si info.php existe en /var/www/html y crearlo si no existe (usando tee para evitar problemas de permisos)
 if [[ ! -f /var/www/html/info.php ]]; then
     echo "<?php phpinfo(); ?>" | tee /var/www/html/info.php > /dev/null
