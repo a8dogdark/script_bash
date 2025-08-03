@@ -1,9 +1,11 @@
 #!/bin/bash
-
+clear
 #####################################
 # Instalador de servidor Lamp para  #
 # Laravel 12 y creador de proyectos #
 #####################################
+sleep 2s
+
 
 # se debe instalar como usuario root 
 if [ "$EUID" -ne 0 ]; then
