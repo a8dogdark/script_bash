@@ -164,11 +164,39 @@ source ./tmp/slib.sh
 run_ok "apt update > /dev/null 2>&1 &" "Actualizando el sistema"
 run_ok "apt upgrade -y > /dev/null 2>&1 &" "Actualizando paquetes"
 
-# Verificar y agregar repositorio Ondřej Surý si no existe
+# Validar e instalar git si no está instalado
+if ! dpkg -l | grep -qw git; then
+    run_ok "apt install -y git > /dev/null 2>&1 &" "Instalando git"
+fi
+
+# Validar e instalar zip si no está instalado
+if ! dpkg -l | grep -qw zip; then
+    run_ok "apt install -y zip > /dev/null 2>&1 &" "Instalando zip"
+fi
+
+# Validar e instalar unzip si no está instalado
+if ! dpkg -l | grep -qw unzip; then
+    run_ok "apt install -y unzip > /dev/null 2>&1 &" "Instalando unzip"
+fi
+
+# Validar e instalar gpg si no está instalado
+if ! dpkg -l | grep -qw gpg; then
+    run_ok "apt install -y gpg > /dev/null 2>&1 &" "Instalando gpg"
+fi
+
+# Validar e instalar curl si no está instalado
+if ! dpkg -l | grep -qw curl; then
+    run_ok "apt install -y curl > /dev/null 2>&1 &" "Instalando curl"
+fi
+
+# Verificar si repositorio Ondřej Surý está agregado
 if ! grep -h "^deb .*\bondrej/php\b" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null | grep -q .; then
     run_ok "add-apt-repository ppa:ondrej/php -y > /dev/null 2>&1 &" "Agregando repositorio Ondřej Surý"
-    run_ok "apt update > /dev/null 2>&1 &" "Actualizando el sistema"
 fi
+
+# Actualizar el sistema siempre después de validar/agregar repositorios
+run_ok "apt update > /dev/null 2>&1 &" "Actualizando el sistema"
+run_ok "apt upgrade -y > /dev/null 2>&1 &" "Actualizando paquetes"
 
 # Validar e instalar Apache si no está instalado
 if ! dpkg -l | grep -qw apache2; then
