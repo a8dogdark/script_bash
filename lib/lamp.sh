@@ -167,7 +167,32 @@ run_ok "apt upgrade -y > /dev/null 2>&1 &" "Actualizando paquetes"
 # Verificar y agregar repositorio Ondřej Surý si no existe
 if ! grep -r "^deb .*\bondrej/php\b" /etc/apt/sources.list.d/ > /dev/null 2>&1; then
     run_ok "add-apt-repository ppa:ondrej/php -y > /dev/null 2>&1 &" "Agregando repositorio Ondřej Surý"
+    # Actualizar lista de paquetes después de agregar el repositorio
+    run_ok "apt update > /dev/null 2>&1 &" "Actualizando el sistema"
 fi
+
+# Validar e instalar Apache si no está instalado
+if ! dpkg -l | grep -qw apache2; then
+    run_ok "apt install -y apache2 > /dev/null 2>&1 &" "Instalando apache"
+fi
+
+# Habilitar módulo rewrite de Apache si no está habilitado
+if ! apache2ctl -M 2>/dev/null | grep -qw rewrite_module; then
+    run_ok "a2enmod rewrite > /dev/null 2>&1 &" "Habilitando módulo rewrite de Apache"
+    run_ok "systemctl restart apache2 > /dev/null 2>&1 &" "Reiniciando Apache para aplicar cambios"
+fi
+
+# Validar e instalar PHP si no está instalado
+if ! dpkg -l | grep -qw "php$PHPVERSION"; then
+    run_ok "apt install -y php$PHPVERSION > /dev/null 2>&1 &" "Instalando PHP $PHPVERSION"
+fi
+
+# Validar si info.php existe en /var/www/html y crearlo si no existe
+if [[ ! -f /var/www/html/info.php ]]; then
+    echo "<?php phpinfo(); ?>" > /var/www/html/info.php
+    chmod 644 /var/www/html/info.php
+fi
+
 
 # Eliminar carpeta tmp y todo su contenido
 rm -rf ./tmp
