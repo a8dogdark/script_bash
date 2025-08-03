@@ -72,27 +72,26 @@ if [ $? -ne 0 ]; then
   clear
   exit 1
 fi
-
 if [ -z "$PROYECTO" ]; then
   PROYECTO="crud"
 fi
 
 PASSADMIN=$(whiptail --backtitle "Instalador de Lamp para Laravel 12 version $VER" \
   --passwordbox "Ingrese la contraseña para el usuario phpmyadmin:" 10 60 3>&1 1>&2 2>&3)
-if [ $? -ne 0 ]; then
+if [ $? -ne 0 ] || [ -z "$PASSADMIN" ]; then
   whiptail --backtitle "Instalador de Lamp para Laravel 12 version $VER" \
     --title "Cancelado" \
-    --msgbox "Instalacion cancelada." 8 50
+    --msgbox "Contraseña phpmyadmin vacía o cancelada. Instalación cancelada." 8 60
   clear
   exit 1
 fi
 
 PASSROOT=$(whiptail --backtitle "Instalador de Lamp para Laravel 12 version $VER" \
   --passwordbox "Ingrese la contraseña para el usuario root de la base de datos:" 10 60 3>&1 1>&2 2>&3)
-if [ $? -ne 0 ]; then
+if [ $? -ne 0 ] || [ -z "$PASSROOT" ]; then
   whiptail --backtitle "Instalador de Lamp para Laravel 12 version $VER" \
     --title "Cancelado" \
-    --msgbox "Instalacion cancelada." 8 50
+    --msgbox "Contraseña root vacía o cancelada. Instalación cancelada." 8 60
   clear
   exit 1
 fi
