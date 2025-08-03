@@ -161,8 +161,9 @@ fi
 # Incluir slib.sh
 source ./tmp/slib.sh
 
-run_ok "apt update > /dev/null 2>&1 &" "Actualizando el sistema"
-run_ok "apt upgrade -y > /dev/null 2>&1 &" "Actualizando paquetes"
+# Actualizar sistema en primer plano para que espere a terminar
+run_ok "apt update > /dev/null 2>&1" "Actualizando el sistema"
+run_ok "apt upgrade -y > /dev/null 2>&1" "Actualizando paquetes"
 
 # Validar e instalar git si no está instalado
 if ! dpkg -l | grep -qw git; then
