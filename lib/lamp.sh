@@ -279,11 +279,29 @@ if ! php -m | grep -iq gettext; then
     run_ok "apt install -y php$PHPVERSION-gettext > /dev/null 2>&1 &" "Instalando extensión PHP: gettext"
 fi
 
-
 # Validar si info.php existe en /var/www/html y crearlo si no existe (usando tee para evitar problemas de permisos)
 if [[ ! -f /var/www/html/info.php ]]; then
     echo "<?php phpinfo(); ?>" | tee /var/www/html/info.php > /dev/null
     chmod 644 /var/www/html/info.php
+fi
+
+# Validar e instalar el servidor de base de datos si no está instalado
+if ! dpkg -l | grep -qw "$DBSERVER"; then
+    run_ok "apt install -y $DBSERVER > /dev/null 2>&1 &" "Instalando $DBSERVER"
+fi
+
+# Configurar usuarios en base de datos (silencioso, sin mostrar salida)
+mysql -uroot > /dev/null 2>&1 <<EOF
+ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${PHPROOT}';
+FLUSH PRIVILEGES;
+CREATE USER IF NOT EXISTS 'phpmyadmin'@'localhost' IDENTIFIED BY '${PHPADMIN}';
+GRANT ALL PRIVILEGES ON *.* TO 'phpmyadmin'@'localhost' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+EOF
+
+if [[ $? -ne 0 ]]; then
+    echo "Error: No se pudieron configurar los usuarios de base de datos."
+    exit 1
 fi
 
 
