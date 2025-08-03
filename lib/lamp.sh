@@ -165,136 +165,132 @@ source ./tmp/slib.sh
 run_ok "apt update > /dev/null 2>&1" "Actualizando el sistema"
 run_ok "apt upgrade -y > /dev/null 2>&1" "Actualizando paquetes"
 
-# Validar e instalar git si no está instalado
+# Validar e instalar paquetes esenciales antes de Ondrej
 if ! dpkg -l | grep -qw git; then
-    run_ok "apt install -y git > /dev/null 2>&1 &" "Instalando git"
+    run_ok "apt install -y git > /dev/null 2>&1" "Instalando git"
 fi
 
-# Validar e instalar zip si no está instalado
 if ! dpkg -l | grep -qw zip; then
-    run_ok "apt install -y zip > /dev/null 2>&1 &" "Instalando zip"
+    run_ok "apt install -y zip > /dev/null 2>&1" "Instalando zip"
 fi
 
-# Validar e instalar unzip si no está instalado
 if ! dpkg -l | grep -qw unzip; then
-    run_ok "apt install -y unzip > /dev/null 2>&1 &" "Instalando unzip"
+    run_ok "apt install -y unzip > /dev/null 2>&1" "Instalando unzip"
 fi
 
-# Validar e instalar gpg si no está instalado
 if ! dpkg -l | grep -qw gpg; then
-    run_ok "apt install -y gpg > /dev/null 2>&1 &" "Instalando gpg"
+    run_ok "apt install -y gpg > /dev/null 2>&1" "Instalando gpg"
 fi
 
-# Validar e instalar curl si no está instalado
 if ! dpkg -l | grep -qw curl; then
-    run_ok "apt install -y curl > /dev/null 2>&1 &" "Instalando curl"
+    run_ok "apt install -y curl > /dev/null 2>&1" "Instalando curl"
 fi
 
 # Verificar si repositorio Ondřej Surý está agregado
 if ! grep -h "^deb .*\bondrej/php\b" /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null | grep -q .; then
-    run_ok "add-apt-repository ppa:ondrej/php -y > /dev/null 2>&1 &" "Agregando repositorio Ondřej Surý"
+    run_ok "add-apt-repository ppa:ondrej/php -y > /dev/null 2>&1" "Agregando repositorio Ondřej Surý"
 fi
 
 # Actualizar sistema en primer plano para que espere a terminar
 run_ok "apt update > /dev/null 2>&1" "Actualizando el sistema"
 run_ok "apt upgrade -y > /dev/null 2>&1" "Actualizando paquetes"
-
+    
 # Validar e instalar Apache si no está instalado
 if ! dpkg -l | grep -qw apache2; then
-    run_ok "apt install -y apache2 > /dev/null 2>&1 &" "Instalando apache"
+    run_ok "apt install -y apache2 > /dev/null 2>&1" "Instalando apache"
 fi
 
 # Habilitar módulo rewrite de Apache si no está habilitado
 if ! apache2ctl -M 2>/dev/null | grep -qw rewrite_module; then
-    run_ok "a2enmod rewrite > /dev/null 2>&1 &" "Habilitando módulo rewrite de Apache"
-    run_ok "systemctl restart apache2 > /dev/null 2>&1 &" "Reiniciando Apache para aplicar cambios"
+    run_ok "a2enmod rewrite > /dev/null 2>&1" "Habilitando módulo rewrite de Apache"
+    run_ok "systemctl restart apache2 > /dev/null 2>&1" "Reiniciando Apache para aplicar cambios"
 fi
 
 # Validar e instalar PHP si no está instalado
 if ! dpkg -l | grep -qw "php$PHPVERSION"; then
-    run_ok "apt install -y php$PHPVERSION > /dev/null 2>&1 &" "Instalando PHP $PHPVERSION"
+    run_ok "apt install -y php$PHPVERSION > /dev/null 2>&1" "Instalando PHP $PHPVERSION"
 fi
 
 # Validar e instalar extensiones PHP requeridas para Laravel, WordPress y MySQL/MariaDB
 if ! php -m | grep -iq bcmath; then
-    run_ok "apt install -y php$PHPVERSION-bcmath > /dev/null 2>&1 &" 'Instalando extensión PHP: bcmath'
+    run_ok "apt install -y php$PHPVERSION-bcmath > /dev/null 2>&1" 'Instalando extensión PHP: bcmath'
 fi
 
 if ! php -m | grep -iq ctype; then
-    run_ok "apt install -y php$PHPVERSION-ctype > /dev/null 2>&1 &" 'Instalando extensión PHP: ctype'
+    run_ok "apt install -y php$PHPVERSION-ctype > /dev/null 2>&1" 'Instalando extensión PHP: ctype'
 fi
 
 if ! php -m | grep -iq fileinfo; then
-    run_ok "apt install -y php$PHPVERSION-fileinfo > /dev/null 2>&1 &" 'Instalando extensión PHP: fileinfo'
+    run_ok "apt install -y php$PHPVERSION-fileinfo > /dev/null 2>&1" 'Instalando extensión PHP: fileinfo'
 fi
 
 if ! php -m | grep -iq json; then
-    run_ok "apt install -y php$PHPVERSION-json > /dev/null 2>&1 &" 'Instalando extensión PHP: json'
+    run_ok "apt install -y php$PHPVERSION-json > /dev/null 2>&1" 'Instalando extensión PHP: json'
 fi
 
 if ! php -m | grep -iq mbstring; then
-    run_ok "apt install -y php$PHPVERSION-mbstring > /dev/null 2>&1 &" 'Instalando extensión PHP: mbstring'
+    run_ok "apt install -y php$PHPVERSION-mbstring > /dev/null 2>&1" 'Instalando extensión PHP: mbstring'
 fi
 
 if ! php -m | grep -iq openssl; then
-    run_ok "apt install -y php$PHPVERSION-openssl > /dev/null 2>&1 &" 'Instalando extensión PHP: openssl'
+    run_ok "apt install -y php$PHPVERSION-openssl > /dev/null 2>&1" 'Instalando extensión PHP: openssl'
 fi
 
 if ! php -m | grep -iq pdo; then
-    run_ok "apt install -y php$PHPVERSION-pdo > /dev/null 2>&1 &" 'Instalando extensión PHP: pdo'
+    run_ok "apt install -y php$PHPVERSION-pdo > /dev/null 2>&1" 'Instalando extensión PHP: pdo'
 fi
 
 if ! php -m | grep -iq tokenizer; then
-    run_ok "apt install -y php$PHPVERSION-tokenizer > /dev/null 2>&1 &" 'Instalando extensión PHP: tokenizer'
+    run_ok "apt install -y php$PHPVERSION-tokenizer > /dev/null 2>&1" 'Instalando extensión PHP: tokenizer'
 fi
 
 if ! php -m | grep -iq xml; then
-    run_ok "apt install -y php$PHPVERSION-xml > /dev/null 2>&1 &" 'Instalando extensión PHP: xml'
+    run_ok "apt install -y php$PHPVERSION-xml > /dev/null 2>&1" 'Instalando extensión PHP: xml'
 fi
 
 if ! php -m | grep -iq curl; then
-    run_ok "apt install -y php$PHPVERSION-curl > /dev/null 2>&1 &" 'Instalando extensión PHP: curl'
+    run_ok "apt install -y php$PHPVERSION-curl > /dev/null 2>&1" 'Instalando extensión PHP: curl'
 fi
 
 if ! php -m | grep -iq intl; then
-    run_ok "apt install -y php$PHPVERSION-intl > /dev/null 2>&1 &" 'Instalando extensión PHP: intl'
+    run_ok "apt install -y php$PHPVERSION-intl > /dev/null 2>&1" 'Instalando extensión PHP: intl'
 fi
 
 if ! php -m | grep -iq mysql; then
-    run_ok "apt install -y php$PHPVERSION-mysql > /dev/null 2>&1 &" 'Instalando extensión PHP: mysql'
+    run_ok "apt install -y php$PHPVERSION-mysql > /dev/null 2>&1" 'Instalando extensión PHP: mysql'
 fi
 
 if ! php -m | grep -iq dom; then
-    run_ok "apt install -y php$PHPVERSION-dom > /dev/null 2>&1 &" 'Instalando extensión PHP: dom'
+    run_ok "apt install -y php$PHPVERSION-dom > /dev/null 2>&1" 'Instalando extensión PHP: dom'
 fi
 
 if ! php -m | grep -iq simplexml; then
-    run_ok "apt install -y php$PHPVERSION-simplexml > /dev/null 2>&1 &" 'Instalando extensión PHP: simplexml'
+    run_ok "apt install -y php$PHPVERSION-simplexml > /dev/null 2>&1" 'Instalando extensión PHP: simplexml'
 fi
 
 if ! php -m | grep -iq zip; then
-    run_ok "apt install -y php$PHPVERSION-zip > /dev/null 2>&1 &" 'Instalando extensión PHP: zip'
+    run_ok "apt install -y php$PHPVERSION-zip > /dev/null 2>&1" 'Instalando extensión PHP: zip'
 fi
 
 if ! php -m | grep -iq exif; then
-    run_ok "apt install -y php$PHPVERSION-exif > /dev/null 2>&1 &" 'Instalando extensión PHP: exif'
+    run_ok "apt install -y php$PHPVERSION-exif > /dev/null 2>&1" 'Instalando extensión PHP: exif'
 fi
 
 if ! php -m | grep -iq gd; then
-    run_ok "apt install -y php$PHPVERSION-gd > /dev/null 2>&1 &" 'Instalando extensión PHP: gd'
+    run_ok "apt install -y php$PHPVERSION-gd > /dev/null 2>&1" 'Instalando extensión PHP: gd'
 fi
 
 if ! php -m | grep -iq imagick; then
-    run_ok "apt install -y php$PHPVERSION-imagick > /dev/null 2>&1 &" 'Instalando extensión PHP: imagick'
+    run_ok "apt install -y php$PHPVERSION-imagick > /dev/null 2>&1" 'Instalando extensión PHP: imagick'
 fi
 
 if ! php -m | grep -iq iconv; then
-    run_ok "apt install -y php$PHPVERSION-iconv > /dev/null 2>&1 &" 'Instalando extensión PHP: iconv'
+    run_ok "apt install -y php$PHPVERSION-iconv > /dev/null 2>&1" 'Instalando extensión PHP: iconv'
 fi
 
 # Validar e instalar DBASE si no está instalada
 if ! php -m | grep -iq dbase; then
-    run_ok "apt install -y php$PHPVERSION-dbase > /dev/null 2>&1 &" 'Instalando extensión PHP: dbase'
+    run_ok "apt install -y php$PHPVERSION-dbase > /dev/null 2>&1" 'Instalando extensión PHP: dbase'
 fi
 
 # Validar si info.php existe en /var/www/html y crearlo si no existe (usando tee para evitar problemas de permisos)
@@ -306,7 +302,7 @@ fi
 
 # Validar e instalar el servidor de base de datos si no está instalado
 if ! dpkg -l | grep -qw "$DBSERVER"; then
-    run_ok "apt install -y $DBSERVER > /dev/null 2>&1 &" "Instalando $DBSERVER"
+    run_ok "apt install -y $DBSERVER > /dev/null 2>&1" "Instalando $DBSERVER"
 fi
 
 # Configurar usuarios en base de datos (silencioso, sin mostrar salida)
@@ -325,12 +321,12 @@ fi
 
 # Validar e instalar phpmyadmin si no está instalado
 if ! dpkg -l | grep -qw phpmyadmin; then
-    run_ok "apt install -y phpmyadmin > /dev/null 2>&1 &" "Instalando phpMyAdmin"
+    run_ok "apt install -y phpmyadmin > /dev/null 2>&1" "Instalando phpMyAdmin"
 
     if [[ -f /etc/phpmyadmin/apache.conf ]]; then
-        run_ok "ln -s /etc/phpmyadmin/apache.conf /etc/apache2/conf-available/phpmyadmin.conf > /dev/null 2>&1 &" "Configurando Apache para phpMyAdmin"
-        run_ok "a2enconf phpmyadmin > /dev/null 2>&1 &" "Habilitando configuración phpMyAdmin en Apache"
-        run_ok "systemctl reload apache2 > /dev/null 2>&1 &" "Recargando Apache"
+        run_ok "ln -s /etc/phpmyadmin/apache.conf /etc/apache2/conf-available/phpmyadmin.conf > /dev/null 2>&1" "Configurando Apache para phpMyAdmin"
+        run_ok "a2enconf phpmyadmin > /dev/null 2>&1" "Habilitando configuración phpMyAdmin en Apache"
+        run_ok "systemctl reload apache2 > /dev/null 2>&1" "Recargando Apache"
     fi
 fi
 
