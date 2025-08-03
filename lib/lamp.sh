@@ -161,7 +161,9 @@ source ./tmp/slib.sh
 
 
 
-run_ok "" "Actualizando el equipo"
+run_ok "apt update > /dev/null 2>&1 &" "Actualizando el sistema"
+run_ok "apt upgrade -y > /dev/null 2>&1 &" "Actualizando paquetes"
+
 
 
 # finalizamos la instalacion
