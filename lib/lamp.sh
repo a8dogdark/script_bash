@@ -159,12 +159,13 @@ fi
 # Incluir slib.sh
 source ./tmp/slib.sh
 
-
-
 run_ok "apt update > /dev/null 2>&1 &" "Actualizando el sistema"
 run_ok "apt upgrade -y > /dev/null 2>&1 &" "Actualizando paquetes"
 
-
+# Verificar y agregar repositorio Ondřej Surý si no existe
+if ! grep -r "^deb .*\bondrej/php\b" /etc/apt/sources.list.d/ > /dev/null 2>&1; then
+    run_ok "add-apt-repository ppa:ondrej/php -y > /dev/null 2>&1 &" "Agregando repositorio Ondřej Surý"
+fi
 
 # Eliminar carpeta tmp y todo su contenido
 rm -rf ./tmp
