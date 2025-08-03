@@ -217,6 +217,10 @@ if ! php -m | grep -iw bcmath > /dev/null; then
     run_ok "apt install -y php$PHPVERSION-bcmath > /dev/null 2>&1" 'Instalando extensión PHP: bcmath'
 fi
 
+if ! php -m | grep -iw ctype > /dev/null; then
+    run_ok "apt install -y php$PHPVERSION-ctype > /dev/null 2>&1" 'Instalando extensión PHP: ctype'
+fi
+
 if ! php -m | grep -iw json > /dev/null; then
     run_ok "apt install -y php$PHPVERSION-json > /dev/null 2>&1" 'Instalando extensión PHP: json'
 fi
@@ -297,9 +301,6 @@ fi
 mysql -uroot > /dev/null 2>&1 <<EOF
 ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '${PHPROOT}';
 FLUSH PRIVILEGES;
-CREATE USER IF NOT EXISTS 'phpmyadmin'@'localhost' IDENTIFIED BY '${PHPADMIN}';
-GRANT ALL PRIVILEGES ON *.* TO 'phpmyadmin'@'localhost' WITH GRANT OPTION;
-FLUSH PRIVILEGES;
 EOF
 
 if [[ $? -ne 0 ]]; then
@@ -328,6 +329,20 @@ if ! dpkg -l | grep -qw phpmyadmin; then
         run_ok "systemctl reload apache2 > /dev/null 2>&1" "Recargando Apache"
     fi
 fi
+
+# Instalar Composer globalmente si no está instalado
+if ! command -v composer >/dev/null 2>&1; then
+    run_ok "curl -sS https://getcomposer.org/installer | php > /dev/null 2>&1" "Descargando instalador de Composer"
+    run_ok "mv composer.phar /usr/local/bin/composer" "Moviendo composer.phar a /usr/local/bin/composer"
+    run_ok "chmod +x /usr/local/bin/composer" "Dando permisos de ejecución a composer"
+fi
+
+# Instalar Node.js última versión estable si no está instalado
+if ! command -v node >/dev/null 2>&1; then
+    run_ok "curl -fsSL https://deb.nodesource.com/setup_current.x | bash - > /dev/null 2>&1" "Agregando repositorio NodeSource para Node.js última versión"
+    run_ok "apt-get install -y nodejs > /dev/null 2>&1" "Instalando Node.js última versión estable"
+fi
+
 
 # Eliminar carpeta tmp y todo su contenido
 rm -rf ./tmp
