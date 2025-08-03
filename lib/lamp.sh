@@ -391,10 +391,43 @@ if [[ " ${SOFTWARES_SELECCIONADOS[*]} " == *"FtpZilla"* ]]; then
     fi
 fi
 
+# Crear carpeta laravel dentro de /var/www si no existe
+if [[ ! -d /var/www/laravel ]]; then
+    mkdir -p /var/www/laravel
+    chown -R www-data:www-data /var/www/laravel
+fi
+
+# Crear el proyecto Laravel 12 en modo silencioso
+cd /var/www/laravel || exit 1
+
+run_ok "composer create-project --prefer-dist laravel/laravel:^12.0 $PROYECTO --quiet" "Creando proyecto Laravel 12 en /var/www/laravel/$PROYECTO"
+
+# Cambiar permisos de la carpeta del proyecto para www-data
+chown -R www-data:www-data "/var/www/laravel/$PROYECTO"
+
+# Configurar Vite para Laravel 12 (ya integrado por defecto)
+# Aquí podrías añadir configuraciones extras si fueran necesarias
+
+# Instalar dependencias npm en modo silencioso y construir assets con vite
+cd "/var/www/laravel/$PROYECTO" || exit 1
+
+run_ok "npm install --silent" "Instalando dependencias npm de Laravel"
+run_ok "npm run build --silent" "Construyendo assets con Vite"
+
+# Volver al directorio original
+cd - > /dev/null 2>&1
+
 
 # Eliminar carpeta tmp y todo su contenido
 rm -rf ./tmp
 
+# Dar permisos totales a la carpeta /var/www/laravel para que cualquier usuario pueda crear y modificar proyectos
+chmod -R 777 /var/www/laravel
+
+echo
+echo "La carpeta /var/www/laravel y todo su contenido tienen permisos 777."
+echo "Esto permite que cualquier usuario pueda crear o modificar proyectos Laravel en esa ubicación."
+echo "Si quieres restringir los permisos, puedes ajustarlos manualmente luego."
+
 echo
 echo "Fin de Instalación."
-
