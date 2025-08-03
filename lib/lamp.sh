@@ -162,3 +162,8 @@ source ./tmp/slib.sh
 
 
 run_ok "" "Actualizando el equipo"
+
+
+# finalizamos la instalacion
+rm -rf ./tmp
+
