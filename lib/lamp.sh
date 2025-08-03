@@ -166,6 +166,9 @@ run_ok "apt upgrade -y > /dev/null 2>&1 &" "Actualizando paquetes"
 
 
 
-# finalizamos la instalacion
+# Eliminar carpeta tmp y todo su contenido
 rm -rf ./tmp
+
+echo
+echo "Fin de Instalación."
 
