@@ -195,9 +195,9 @@ if ! grep -h "^deb .*\bondrej/php\b" /etc/apt/sources.list /etc/apt/sources.list
     run_ok "add-apt-repository ppa:ondrej/php -y > /dev/null 2>&1 &" "Agregando repositorio Ondřej Surý"
 fi
 
-# Actualizar el sistema siempre después de validar/agregar repositorios
-run_ok "apt update > /dev/null 2>&1 &" "Actualizando el sistema"
-run_ok "apt upgrade -y > /dev/null 2>&1 &" "Actualizando paquetes"
+# Actualizar sistema en primer plano para que espere a terminar
+run_ok "apt update > /dev/null 2>&1" "Actualizando el sistema"
+run_ok "apt upgrade -y > /dev/null 2>&1" "Actualizando paquetes"
 
 # Validar e instalar Apache si no está instalado
 if ! dpkg -l | grep -qw apache2; then
