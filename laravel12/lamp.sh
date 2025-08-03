@@ -1,6 +1,7 @@
 #!/bin/bash
 export LANG=es_ES.UTF-8
 export LC_ALL=es_ES.UTF-8
+
 clear
 
 DBASE=""
@@ -29,7 +30,7 @@ if [ -f /etc/os-release ]; then
   DISTRO="$NAME"
   VERDIS="$VERSION_ID"
 else
-  echo "No se pudo detectar la distribución. Abortando."
+  echo "No se pudo detectar la distribucion. Abortando."
   exit 1
 fi
 
@@ -63,3 +64,21 @@ else
   clear
   exit 1
 fi
+
+PROYECTO=$(whiptail --backtitle "Instalador de Lamp para Laravel 12 version $VER" \
+  --inputbox "Ingrese el nombre del proyecto (default: crud):" 10 60 3>&1 1>&2 2>&3)
+
+exitstatus=$?
+if [ $exitstatus != 0 ]; then
+  whiptail --backtitle "Instalador de Lamp para Laravel 12 version $VER" \
+    --title "Cancelado" \
+    --msgbox "No se ingreso un nombre de proyecto. Instalacion cancelada." 8 50
+  clear
+  exit 1
+fi
+
+if [ -z "$PROYECTO" ]; then
+  PROYECTO="crud"
+fi
+
+echo "Nombre del proyecto: $PROYECTO"
