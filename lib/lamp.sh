@@ -212,80 +212,76 @@ if ! dpkg -l | grep -qw "php$PHPVERSION"; then
 fi
 
 # Validar e instalar extensiones PHP requeridas para Laravel, WordPress y MySQL/MariaDB
-if ! php -m | grep -iq bcmath; then
+
+if ! php -m | grep -iw bcmath > /dev/null; then
     run_ok "apt install -y php$PHPVERSION-bcmath > /dev/null 2>&1" 'Instalando extensión PHP: bcmath'
 fi
 
-if ! php -m | grep -iq ctype; then
-    run_ok "apt install -y php$PHPVERSION-ctype > /dev/null 2>&1" 'Instalando extensión PHP: ctype'
-fi
-
-if ! php -m | grep -iq fileinfo; then
-    run_ok "apt install -y php$PHPVERSION-fileinfo > /dev/null 2>&1" 'Instalando extensión PHP: fileinfo'
-fi
-
-if ! php -m | grep -iq json; then
+if ! php -m | grep -iw json > /dev/null; then
     run_ok "apt install -y php$PHPVERSION-json > /dev/null 2>&1" 'Instalando extensión PHP: json'
 fi
 
-if ! php -m | grep -iq mbstring; then
+if ! php -m | grep -iw mbstring > /dev/null; then
     run_ok "apt install -y php$PHPVERSION-mbstring > /dev/null 2>&1" 'Instalando extensión PHP: mbstring'
 fi
 
-if ! php -m | grep -iq openssl; then
+if ! php -m | grep -iw openssl > /dev/null; then
     run_ok "apt install -y php$PHPVERSION-openssl > /dev/null 2>&1" 'Instalando extensión PHP: openssl'
 fi
 
-if ! php -m | grep -iq pdo; then
+if ! php -m | grep -iw pdo > /dev/null; then
     run_ok "apt install -y php$PHPVERSION-pdo > /dev/null 2>&1" 'Instalando extensión PHP: pdo'
 fi
 
-if ! php -m | grep -iq tokenizer; then
+if ! php -m | grep -iw tokenizer > /dev/null; then
     run_ok "apt install -y php$PHPVERSION-tokenizer > /dev/null 2>&1" 'Instalando extensión PHP: tokenizer'
 fi
 
-if ! php -m | grep -iq xml; then
+if ! php -m | grep -iw xml > /dev/null; then
     run_ok "apt install -y php$PHPVERSION-xml > /dev/null 2>&1" 'Instalando extensión PHP: xml'
 fi
 
-if ! php -m | grep -iq curl; then
+if ! php -m | grep -iw curl > /dev/null; then
     run_ok "apt install -y php$PHPVERSION-curl > /dev/null 2>&1" 'Instalando extensión PHP: curl'
 fi
 
-if ! php -m | grep -iq intl; then
+if ! php -m | grep -iw intl > /dev/null; then
     run_ok "apt install -y php$PHPVERSION-intl > /dev/null 2>&1" 'Instalando extensión PHP: intl'
 fi
 
-if ! php -m | grep -iq mysql; then
-    run_ok "apt install -y php$PHPVERSION-mysql > /dev/null 2>&1" 'Instalando extensión PHP: mysql'
+if ! php -m | grep -iw mysqli > /dev/null; then
+    run_ok "apt install -y php$PHPVERSION-mysqli > /dev/null 2>&1" 'Instalando extensión PHP: mysqli'
 fi
 
-if ! php -m | grep -iq dom; then
-    run_ok "apt install -y php$PHPVERSION-dom > /dev/null 2>&1" 'Instalando extensión PHP: dom'
+if ! php -m | grep -iw pdo_mysql > /dev/null; then
+    run_ok "apt install -y php$PHPVERSION-pdo-mysql > /dev/null 2>&1" 'Instalando extensión PHP: pdo_mysql'
 fi
 
-if ! php -m | grep -iq simplexml; then
-    run_ok "apt install -y php$PHPVERSION-simplexml > /dev/null 2>&1" 'Instalando extensión PHP: simplexml'
+if ! php -m | grep -iw dom > /dev/null; then
+    run_ok "apt install -y php$PHPVERSION-xml > /dev/null 2>&1" 'Instalando extensión PHP: dom (xml)'
 fi
 
-if ! php -m | grep -iq zip; then
+if ! php -m | grep -iw simplexml > /dev/null; then
+    run_ok "apt install -y php$PHPVERSION-xml > /dev/null 2>&1" 'Instalando extensión PHP: simplexml (xml)'
+fi
+
+if ! php -m | grep -iw zip > /dev/null; then
     run_ok "apt install -y php$PHPVERSION-zip > /dev/null 2>&1" 'Instalando extensión PHP: zip'
 fi
 
-if ! php -m | grep -iq exif; then
+if ! php -m | grep -iw exif > /dev/null; then
     run_ok "apt install -y php$PHPVERSION-exif > /dev/null 2>&1" 'Instalando extensión PHP: exif'
 fi
 
-if ! php -m | grep -iq gd; then
+if ! php -m | grep -iw gd > /dev/null; then
     run_ok "apt install -y php$PHPVERSION-gd > /dev/null 2>&1" 'Instalando extensión PHP: gd'
 fi
 
-if ! php -m | grep -iq imagick; then
-    run_ok "apt install -y php$PHPVERSION-imagick > /dev/null 2>&1" 'Instalando extensión PHP: imagick'
+if ! php -m | grep -iw imagick > /dev/null; then
+    run_ok "apt install -y php-imagick > /dev/null 2>&1" 'Instalando extensión PHP: imagick'
 fi
 
-# Validar e instalar DBASE si no está instalada
-if ! php -m | grep -iq dbase; then
+if ! php -m | grep -iw dbase > /dev/null; then
     run_ok "apt install -y php$PHPVERSION-dbase > /dev/null 2>&1" 'Instalando extensión PHP: dbase'
 fi
 
