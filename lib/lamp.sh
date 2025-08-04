@@ -312,33 +312,30 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 
-php -v
-
 # Preconfigurar phpMyAdmin para instalación no interactiva
-echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
-echo "phpmyadmin phpmyadmin/app-password-confirm password ${PHPADMIN}" | debconf-set-selections
-echo "phpmyadmin phpmyadmin/mysql/admin-pass password ${PHPROOT}" | debconf-set-selections
-echo "phpmyadmin phpmyadmin/mysql/app-pass password ${PHPADMIN}" | debconf-set-selections
-echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
+run_ok "echo 'phpmyadmin phpmyadmin/dbconfig-install boolean true' | debconf-set-selections" "Configurando phpMyAdmin (no interactivo)"
+run_ok "echo 'phpmyadmin phpmyadmin/app-password-confirm password $PHPADMIN' | debconf-set-selections" ""
+run_ok "echo 'phpmyadmin phpmyadmin/mysql/admin-pass password $PHPROOT' | debconf-set-selections" ""
+run_ok "echo 'phpmyadmin phpmyadmin/mysql/app-pass password $PHPADMIN' | debconf-set-selections" ""
+run_ok "echo 'phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2' | debconf-set-selections" ""
 
-php -v
-
-# Instalar phpMyAdmin solo si fue seleccionado y no está instalado
-if [[ "$ADDITIONAL" == *"phpmyadmin"* ]] && ! dpkg -l | grep -qw phpmyadmin; then
-    run_ok "echo 'phpmyadmin phpmyadmin/dbconfig-install boolean true' | debconf-set-selections" "Configurando phpMyAdmin"
-    run_ok "echo 'phpmyadmin phpmyadmin/app-password-confirm password $PHPADMIN' | debconf-set-selections" ""
-    run_ok "echo 'phpmyadmin phpmyadmin/mysql/admin-pass password $PHPROOT' | debconf-set-selections" ""
-    run_ok "echo 'phpmyadmin phpmyadmin/mysql/app-pass password $PHPADMIN' | debconf-set-selections" ""
-    run_ok "echo 'phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2' | debconf-set-selections" ""
+# Instalar phpMyAdmin si no está instalado
+if ! dpkg -l | grep -qw phpmyadmin; then
     run_ok "apt install -y phpmyadmin > /dev/null 2>&1" "Instalando phpMyAdmin"
 
-    # Restaurar versión CLI de PHP elegida por el usuario (por si fue cambiada durante la instalación)
+    # Configurar Apache para phpMyAdmin si existe la configuración
+    if [[ -f /etc/phpmyadmin/apache.conf ]]; then
+        if [[ ! -L /etc/apache2/conf-enabled/phpmyadmin.conf ]]; then
+            run_ok "ln -s /etc/phpmyadmin/apache.conf /etc/apache2/conf-enabled/phpmyadmin.conf" "Habilitando configuración de phpMyAdmin en Apache"
+        fi
+        run_ok "systemctl reload apache2" "Recargando Apache"
+    fi
+
+    # Restaurar versión PHP CLI elegida por el usuario (por si fue cambiada)
     if update-alternatives --list php | grep -q "/usr/bin/php$PHPVERSION"; then
         run_ok "update-alternatives --set php /usr/bin/php$PHPVERSION > /dev/null 2>&1" "Restaurando PHP CLI a $PHPVERSION tras instalar phpMyAdmin"
     fi
 fi
-
-php -v
 
 # Instalar Composer globalmente si no está instalado
 if ! command -v composer >/dev/null 2>&1; then
