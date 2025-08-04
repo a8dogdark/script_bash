@@ -312,8 +312,6 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 
-
-
 # Instalar phpMyAdmin si no está instalado
 if ! dpkg -l | grep -qw phpmyadmin; then
     # Preconfigurar phpMyAdmin para instalación no interactiva
@@ -346,13 +344,13 @@ if ! command -v composer >/dev/null 2>&1; then
     run_ok "mv composer.phar /usr/local/bin/composer" "Moviendo composer.phar a /usr/local/bin/composer"
     run_ok "chmod +x /usr/local/bin/composer" "Dando permisos de ejecución a composer"
 fi
-php -v
+
 # Instalar Node.js última versión estable si no está instalado
 if ! command -v node >/dev/null 2>&1; then
     run_ok "curl -fsSL https://deb.nodesource.com/setup_current.x | bash - > /dev/null 2>&1" "Agregando repositorio NodeSource para Node.js última versión"
     run_ok "apt-get install -y nodejs > /dev/null 2>&1" "Instalando Node.js última versión estable"
 fi
-php -v
+
 # Instalar Visual Studio Code si fue seleccionado y no está instalado
 if [[ " ${SOFTWARES_SELECCIONADOS[*]} " == *"Visual Studio Code"* ]]; then
     if ! command -v code >/dev/null 2>&1; then
@@ -421,7 +419,7 @@ cd "/var/www/laravel/$PROYECTO" || exit 1
 if [ ! -f .env ]; then
     cp .env.example .env
 fi
-sudo -u www-data php artisan key:generate
+sudo -u www-data php artisan key:generate > /dev/null 2>&1
 
 # Activar modo debug en .env para desarrollo temporalmente
 sed -i 's/APP_DEBUG=false/APP_DEBUG=true/' .env
@@ -429,9 +427,6 @@ sed -i 's/APP_DEBUG=false/APP_DEBUG=true/' .env
 # Instalar dependencias npm en modo silencioso y construir assets con vite
 run_ok "npm install --silent" "Instalando dependencias npm de Laravel"
 run_ok "npm run build --silent" "Construyendo assets con Vite"
-
-
-
 
 # Volver al directorio original
 cd - > /dev/null 2>&1
