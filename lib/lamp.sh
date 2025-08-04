@@ -296,6 +296,12 @@ if [[ ! -f /var/www/html/info.php ]]; then
     chmod 644 /var/www/html/info.php
 fi
 
+# Reconfigurar Apache para usar la versión PHP seleccionada
+run_ok "a2dismod php8.4 php8.3 php8.2 php8.1 php8.0 > /dev/null 2>&1" "Deshabilitando módulos PHP antiguos en Apache"
+
+run_ok "a2enmod php$PHPVERSION > /dev/null 2>&1" "Habilitando PHP $PHPVERSION en Apache"
+
+run_ok "systemctl restart apache2" "Reiniciando Apache con PHP $PHPVERSION"
 
 # Validar e instalar el servidor de base de datos si no está instalado
 if ! dpkg -l | grep -qw "$DBSERVER"; then
