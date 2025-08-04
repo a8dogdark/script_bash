@@ -312,12 +312,16 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 
+php -v
+
 # Preconfigurar phpMyAdmin para instalación no interactiva
 echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
 echo "phpmyadmin phpmyadmin/app-password-confirm password ${PHPADMIN}" | debconf-set-selections
 echo "phpmyadmin phpmyadmin/mysql/admin-pass password ${PHPROOT}" | debconf-set-selections
 echo "phpmyadmin phpmyadmin/mysql/app-pass password ${PHPADMIN}" | debconf-set-selections
 echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
+
+php -v
 
 # Validar e instalar phpmyadmin si no está instalado
 if ! dpkg -l | grep -qw phpmyadmin; then
@@ -334,47 +338,48 @@ if ! dpkg -l | grep -qw phpmyadmin; then
     fi
 fi
 
-# Deshabilitar módulos PHP antiguos de forma independiente
+php -v
 
+# Deshabilitar módulos PHP antiguos de forma independiente
 if [[ "$PHPVERSION" != "8.0" ]] && [[ -e /etc/apache2/mods-enabled/php8.0.load ]]; then
     run_ok "a2dismod php8.0 > /dev/null 2>&1" "Deshabilitando módulo PHP 8.0 en Apache"
 fi
-
+php -v
 if [[ "$PHPVERSION" != "8.1" ]] && [[ -e /etc/apache2/mods-enabled/php8.1.load ]]; then
     run_ok "a2dismod php8.1 > /dev/null 2>&1" "Deshabilitando módulo PHP 8.1 en Apache"
 fi
-
+php -v
 if [[ "$PHPVERSION" != "8.2" ]] && [[ -e /etc/apache2/mods-enabled/php8.2.load ]]; then
     run_ok "a2dismod php8.2 > /dev/null 2>&1" "Deshabilitando módulo PHP 8.2 en Apache"
 fi
-
+php -v
 if [[ "$PHPVERSION" != "8.3" ]] && [[ -e /etc/apache2/mods-enabled/php8.3.load ]]; then
     run_ok "a2dismod php8.3 > /dev/null 2>&1" "Deshabilitando módulo PHP 8.3 en Apache"
 fi
-
+php -v
 if [[ "$PHPVERSION" != "8.4" ]] && [[ -e /etc/apache2/mods-enabled/php8.4.load ]]; then
     run_ok "a2dismod php8.4 > /dev/null 2>&1" "Deshabilitando módulo PHP 8.4 en Apache"
 fi
-
+php -v
 # Habilitar el módulo PHP elegido
 run_ok "a2enmod php$PHPVERSION > /dev/null 2>&1" "Habilitando PHP $PHPVERSION en Apache"
-
+php -v
 # Reiniciar Apache para aplicar cambios
 run_ok "systemctl restart apache2" "Reiniciando Apache con PHP $PHPVERSION"
-
+php -v
 # Instalar Composer globalmente si no está instalado
 if ! command -v composer >/dev/null 2>&1; then
     run_ok "curl -sS https://getcomposer.org/installer | php > /dev/null 2>&1" "Descargando instalador de Composer"
     run_ok "mv composer.phar /usr/local/bin/composer" "Moviendo composer.phar a /usr/local/bin/composer"
     run_ok "chmod +x /usr/local/bin/composer" "Dando permisos de ejecución a composer"
 fi
-
+php -v
 # Instalar Node.js última versión estable si no está instalado
 if ! command -v node >/dev/null 2>&1; then
     run_ok "curl -fsSL https://deb.nodesource.com/setup_current.x | bash - > /dev/null 2>&1" "Agregando repositorio NodeSource para Node.js última versión"
     run_ok "apt-get install -y nodejs > /dev/null 2>&1" "Instalando Node.js última versión estable"
 fi
-
+php -v
 # Instalar Visual Studio Code si fue seleccionado y no está instalado
 if [[ " ${SOFTWARES_SELECCIONADOS[*]} " == *"Visual Studio Code"* ]]; then
     if ! command -v code >/dev/null 2>&1; then
