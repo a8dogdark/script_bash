@@ -397,22 +397,37 @@ if [[ ! -d /var/www/laravel ]]; then
     chown -R www-data:www-data /var/www/laravel
 fi
 
-# Crear el proyecto Laravel 12 en modo silencioso
+# Crear el proyecto Laravel 12 en modo silencioso (ignorar errores con || true)
 cd /var/www/laravel || exit 1
-
 run_ok "composer create-project --prefer-dist laravel/laravel:^12.0 $PROYECTO --quiet || true" "Creando proyecto Laravel 12 en /var/www/laravel/$PROYECTO"
 
-# Cambiar permisos del proyecto para que Laravel pueda escribir
-run_ok "chown -R www-data:www-data /var/www/laravel/$PROYECTO" "Asignando propiedad a www-data en $PROYECTO"
-run_ok "chmod -R 775 /var/www/laravel/$PROYECTO/storage" "Asignando permisos de escritura a storage"
-run_ok "chmod -R 775 /var/www/laravel/$PROYECTO/bootstrap/cache" "Asignando permisos de escritura a bootstrap/cache"
+# Cambiar permisos de la carpeta del proyecto para www-data
+chown -R www-data:www-data "/var/www/laravel/$PROYECTO"
 
-# Configurar Vite para Laravel 12 (ya integrado por defecto)
+# Crear carpeta logs si no existe y asignar permisos para evitar error 500
+mkdir -p "/var/www/laravel/$PROYECTO/storage/logs"
+chown -R www-data:www-data "/var/www/laravel/$PROYECTO/storage"
+chown -R www-data:www-data "/var/www/laravel/$PROYECTO/bootstrap/cache"
+chmod -R 775 "/var/www/laravel/$PROYECTO/storage"
+chmod -R 775 "/var/www/laravel/$PROYECTO/bootstrap/cache"
+
+# Preparar archivo .env y generar key de aplicación
+cd "/var/www/laravel/$PROYECTO" || exit 1
+if [ ! -f .env ]; then
+    cp .env.example .env
+fi
+sudo -u www-data php artisan key:generate
+
+# Activar modo debug en .env para desarrollo temporalmente
+sed -i 's/APP_DEBUG=false/APP_DEBUG=true/' .env
 
 # Instalar dependencias npm en modo silencioso y construir assets con vite
-cd "/var/www/laravel/$PROYECTO" || exit 1
 run_ok "npm install --silent" "Instalando dependencias npm de Laravel"
 run_ok "npm run build --silent" "Construyendo assets con Vite"
+
+
+
+
 # Volver al directorio original
 cd - > /dev/null 2>&1
 
