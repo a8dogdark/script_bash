@@ -405,28 +405,38 @@ cd /var/www/laravel || exit 1
 run_ok "composer create-project --prefer-dist laravel/laravel:^12.0 $PROYECTO --quiet || true" "Creando proyecto Laravel 12 en /var/www/laravel/$PROYECTO"
 
 # Cambiar permisos de la carpeta del proyecto para www-data
-chown -R www-data:www-data "/var/www/laravel/$PROYECTO"
+#chown -R www-data:www-data "/var/www/laravel/$PROYECTO"
 
 # Crear carpeta logs si no existe y asignar permisos para evitar error 500
-mkdir -p "/var/www/laravel/$PROYECTO/storage/logs"
-chown -R www-data:www-data "/var/www/laravel/$PROYECTO/storage"
-chown -R www-data:www-data "/var/www/laravel/$PROYECTO/bootstrap/cache"
-chmod -R 775 "/var/www/laravel/$PROYECTO/storage"
-chmod -R 775 "/var/www/laravel/$PROYECTO/bootstrap/cache"
+#mkdir -p "/var/www/laravel/$PROYECTO/storage/logs"
+#chown -R www-data:www-data "/var/www/laravel/$PROYECTO/storage"
+#chown -R www-data:www-data "/var/www/laravel/$PROYECTO/bootstrap/cache"
+#chmod -R 775 "/var/www/laravel/$PROYECTO/storage"
+#chmod -R 775 "/var/www/laravel/$PROYECTO/bootstrap/cache"
 
 # Preparar archivo .env y generar key de aplicación
 cd "/var/www/laravel/$PROYECTO" || exit 1
 if [ ! -f .env ]; then
     cp .env.example .env
 fi
-sudo -u www-data php artisan key:generate > /dev/null 2>&1
 
-# Activar modo debug en .env para desarrollo temporalmente
-sed -i 's/APP_DEBUG=false/APP_DEBUG=true/' .env
+# Configurar conexión MySQL en .env
+run_ok "sed -i \"s/^DB_CONNECTION=.*/DB_CONNECTION=mysql/\" .env" "Configurando DB_CONNECTION en .env"
+run_ok "sed -i \"s/^DB_HOST=.*/DB_HOST=127.0.0.1/\" .env" "Configurando DB_HOST en .env"
+run_ok "sed -i \"s/^DB_PORT=.*/DB_PORT=3306/\" .env" "Configurando DB_PORT en .env"
+run_ok "sed -i \"s/^DB_DATABASE=.*/DB_DATABASE=${PROYECTO}_db/\" .env" "Configurando DB_DATABASE en .env"
+run_ok "sed -i \"s/^DB_USERNAME=.*/DB_USERNAME=root/\" .env" "Configurando DB_USERNAME en .env"
+run_ok "sed -i \"s/^DB_PASSWORD=.*/DB_PASSWORD=${PHPROOT}/\" .env" "Configurando DB_PASSWORD en .env"
 
-# Instalar dependencias npm en modo silencioso y construir assets con vite
-run_ok "npm install --silent" "Instalando dependencias npm de Laravel"
-run_ok "npm run build --silent" "Construyendo assets con Vite"
+# Crear base de datos MySQL para Laravel (si no existe)
+mysql -uroot -p"${PHPROOT}" -e "CREATE DATABASE IF NOT EXISTS ${PROYECTO}_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+run_ok "sudo -u www-data php artisan key:generate > /dev/null 2>&1" "Generando key de aplicación Laravel"
+run_ok "sudo -u www-data php artisan config:clear > /dev/null 2>&1" "Limpiando configuración Laravel"
+run_ok "sudo -u www-data php artisan cache:clear > /dev/null 2>&1" "Limpiando cache Laravel"
+run_ok "sudo -u www-data php artisan migrate --force > /dev/null 2>&1" "Ejecutando migraciones Laravel"
+run_ok "chown -R www-data:www-data /var/www/laravel/$PROYECTO" "Asignando propiedad www-data a proyecto"
+run_ok "chmod -R 755 /var/www/laravel/$PROYECTO" "Ajustando permisos del proyecto"
 
 # Volver al directorio original
 cd - > /dev/null 2>&1
