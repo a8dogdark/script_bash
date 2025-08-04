@@ -296,36 +296,6 @@ if [[ ! -f /var/www/html/info.php ]]; then
     chmod 644 /var/www/html/info.php
 fi
 
-
-
-# Deshabilitar módulos PHP antiguos de forma independiente
-
-if [[ "$PHPVERSION" != "8.0" ]] && [[ -e /etc/apache2/mods-enabled/php8.0.load ]]; then
-    run_ok "a2dismod php8.0 > /dev/null 2>&1" "Deshabilitando módulo PHP 8.0 en Apache"
-fi
-
-if [[ "$PHPVERSION" != "8.1" ]] && [[ -e /etc/apache2/mods-enabled/php8.1.load ]]; then
-    run_ok "a2dismod php8.1 > /dev/null 2>&1" "Deshabilitando módulo PHP 8.1 en Apache"
-fi
-
-if [[ "$PHPVERSION" != "8.2" ]] && [[ -e /etc/apache2/mods-enabled/php8.2.load ]]; then
-    run_ok "a2dismod php8.2 > /dev/null 2>&1" "Deshabilitando módulo PHP 8.2 en Apache"
-fi
-
-if [[ "$PHPVERSION" != "8.3" ]] && [[ -e /etc/apache2/mods-enabled/php8.3.load ]]; then
-    run_ok "a2dismod php8.3 > /dev/null 2>&1" "Deshabilitando módulo PHP 8.3 en Apache"
-fi
-
-if [[ "$PHPVERSION" != "8.4" ]] && [[ -e /etc/apache2/mods-enabled/php8.4.load ]]; then
-    run_ok "a2dismod php8.4 > /dev/null 2>&1" "Deshabilitando módulo PHP 8.4 en Apache"
-fi
-
-# Habilitar el módulo PHP elegido
-run_ok "a2enmod php$PHPVERSION > /dev/null 2>&1" "Habilitando PHP $PHPVERSION en Apache"
-
-# Reiniciar Apache para aplicar cambios
-run_ok "systemctl restart apache2" "Reiniciando Apache con PHP $PHPVERSION"
-
 # Validar e instalar el servidor de base de datos si no está instalado
 if ! dpkg -l | grep -qw "$DBSERVER"; then
     run_ok "apt install -y $DBSERVER > /dev/null 2>&1" "Instalando $DBSERVER"
@@ -364,7 +334,33 @@ if ! dpkg -l | grep -qw phpmyadmin; then
     fi
 fi
 
-exit 1
+# Deshabilitar módulos PHP antiguos de forma independiente
+
+if [[ "$PHPVERSION" != "8.0" ]] && [[ -e /etc/apache2/mods-enabled/php8.0.load ]]; then
+    run_ok "a2dismod php8.0 > /dev/null 2>&1" "Deshabilitando módulo PHP 8.0 en Apache"
+fi
+
+if [[ "$PHPVERSION" != "8.1" ]] && [[ -e /etc/apache2/mods-enabled/php8.1.load ]]; then
+    run_ok "a2dismod php8.1 > /dev/null 2>&1" "Deshabilitando módulo PHP 8.1 en Apache"
+fi
+
+if [[ "$PHPVERSION" != "8.2" ]] && [[ -e /etc/apache2/mods-enabled/php8.2.load ]]; then
+    run_ok "a2dismod php8.2 > /dev/null 2>&1" "Deshabilitando módulo PHP 8.2 en Apache"
+fi
+
+if [[ "$PHPVERSION" != "8.3" ]] && [[ -e /etc/apache2/mods-enabled/php8.3.load ]]; then
+    run_ok "a2dismod php8.3 > /dev/null 2>&1" "Deshabilitando módulo PHP 8.3 en Apache"
+fi
+
+if [[ "$PHPVERSION" != "8.4" ]] && [[ -e /etc/apache2/mods-enabled/php8.4.load ]]; then
+    run_ok "a2dismod php8.4 > /dev/null 2>&1" "Deshabilitando módulo PHP 8.4 en Apache"
+fi
+
+# Habilitar el módulo PHP elegido
+run_ok "a2enmod php$PHPVERSION > /dev/null 2>&1" "Habilitando PHP $PHPVERSION en Apache"
+
+# Reiniciar Apache para aplicar cambios
+run_ok "systemctl restart apache2" "Reiniciando Apache con PHP $PHPVERSION"
 
 # Instalar Composer globalmente si no está instalado
 if ! command -v composer >/dev/null 2>&1; then
