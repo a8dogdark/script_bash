@@ -287,7 +287,7 @@ if ! php -m | grep -iw gd > /dev/null; then
 fi
 
 if ! php -m | grep -iw imagick > /dev/null; then
-    run_ok "apt install -y php-imagick > /dev/null 2>&1" 'Instalando extensión PHP: imagick'
+    run_ok "apt install -y php$PHPVERSION-imagick > /dev/null 2>&1" "Instalando extensión PHP: imagick para PHP $PHPVERSION"
 fi
 
 # Validar si info.php existe en /var/www/html y crearlo si no existe (usando tee para evitar problemas de permisos)
