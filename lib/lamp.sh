@@ -440,7 +440,7 @@ chmod 600 /root/.my.cnf
 mysql -e \"CREATE DATABASE IF NOT EXISTS ${PROYECTO}_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\"
 
 rm -f /root/.my.cnf
-" "Creando base de datos MySQL para Laravel sin mostrar password en línea de comandos"
+" "Creando base de datos MySQL"
 
 
 run_ok "bash -c 'sudo -u www-data php artisan key:generate > /dev/null 2>&1'" "Generando key de aplicación Laravel"
