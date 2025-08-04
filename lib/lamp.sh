@@ -338,6 +338,8 @@ if [[ "$ADDITIONAL" == *"phpmyadmin"* ]] && ! dpkg -l | grep -qw phpmyadmin; the
     fi
 fi
 
+php -v
+
 # Instalar Composer globalmente si no está instalado
 if ! command -v composer >/dev/null 2>&1; then
     run_ok "curl -sS https://getcomposer.org/installer | php > /dev/null 2>&1" "Descargando instalador de Composer"
