@@ -431,10 +431,10 @@ run_ok "sed -i \"s/^DB_PASSWORD=.*/DB_PASSWORD=${PHPROOT}/\" .env" "Configurando
 # Crear base de datos MySQL para Laravel (si no existe)
 mysql -uroot -p"${PHPROOT}" -e "CREATE DATABASE IF NOT EXISTS ${PROYECTO}_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 
-run_ok "sudo -u www-data php artisan key:generate > /dev/null 2>&1" "Generando key de aplicación Laravel"
+run_ok "bash -c 'sudo -u www-data php artisan key:generate > /dev/null 2>&1'" "Generando key de aplicación Laravel"
+run_ok "bash -c 'sudo -u www-data php artisan cache:clear > /dev/null 2>&1'" "Limpiando cache Laravel"
+run_ok "bash -c 'sudo -u www-data php artisan migrate --force > /dev/null 2>&1'" "Ejecutando migraciones Laravel"
 run_ok "sudo -u www-data php artisan config:clear > /dev/null 2>&1" "Limpiando configuración Laravel"
-run_ok "sudo -u www-data php artisan cache:clear > /dev/null 2>&1" "Limpiando cache Laravel"
-run_ok "sudo -u www-data php artisan migrate --force > /dev/null 2>&1" "Ejecutando migraciones Laravel"
 run_ok "chown -R www-data:www-data /var/www/laravel/$PROYECTO" "Asignando propiedad www-data a proyecto"
 run_ok "chmod -R 755 /var/www/laravel/$PROYECTO" "Ajustando permisos del proyecto"
 
