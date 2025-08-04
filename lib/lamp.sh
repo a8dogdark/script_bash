@@ -323,50 +323,21 @@ echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf
 
 php -v
 
-# Validar e instalar phpmyadmin si no está instalado
-if ! dpkg -l | grep -qw phpmyadmin; then
+# Instalar phpMyAdmin solo si fue seleccionado y no está instalado
+if [[ "$ADDITIONAL" == *"phpmyadmin"* ]] && ! dpkg -l | grep -qw phpmyadmin; then
+    run_ok "echo 'phpmyadmin phpmyadmin/dbconfig-install boolean true' | debconf-set-selections" "Configurando phpMyAdmin"
+    run_ok "echo 'phpmyadmin phpmyadmin/app-password-confirm password $PHPADMIN' | debconf-set-selections" ""
+    run_ok "echo 'phpmyadmin phpmyadmin/mysql/admin-pass password $PHPROOT' | debconf-set-selections" ""
+    run_ok "echo 'phpmyadmin phpmyadmin/mysql/app-pass password $PHPADMIN' | debconf-set-selections" ""
+    run_ok "echo 'phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2' | debconf-set-selections" ""
     run_ok "apt install -y phpmyadmin > /dev/null 2>&1" "Instalando phpMyAdmin"
 
-    if [[ -f /etc/phpmyadmin/apache.conf ]]; then
-        # Corrección aquí para evitar error por enlace ya existente
-        if [[ ! -L /etc/apache2/conf-available/phpmyadmin.conf ]]; then
-            run_ok "ln -s /etc/phpmyadmin/apache.conf /etc/apache2/conf-available/phpmyadmin.conf > /dev/null 2>&1" "Configurando Apache para phpMyAdmin"
-        fi
-
-        run_ok "a2enconf phpmyadmin > /dev/null 2>&1" "Habilitando configuración phpMyAdmin en Apache"
-        run_ok "systemctl reload apache2 > /dev/null 2>&1" "Recargando Apache"
+    # Restaurar versión CLI de PHP elegida por el usuario (por si fue cambiada durante la instalación)
+    if update-alternatives --list php | grep -q "/usr/bin/php$PHPVERSION"; then
+        run_ok "update-alternatives --set php /usr/bin/php$PHPVERSION > /dev/null 2>&1" "Restaurando PHP CLI a $PHPVERSION tras instalar phpMyAdmin"
     fi
 fi
 
-php -v
-
-# Deshabilitar módulos PHP antiguos de forma independiente
-if [[ "$PHPVERSION" != "8.0" ]] && [[ -e /etc/apache2/mods-enabled/php8.0.load ]]; then
-    run_ok "a2dismod php8.0 > /dev/null 2>&1" "Deshabilitando módulo PHP 8.0 en Apache"
-fi
-php -v
-if [[ "$PHPVERSION" != "8.1" ]] && [[ -e /etc/apache2/mods-enabled/php8.1.load ]]; then
-    run_ok "a2dismod php8.1 > /dev/null 2>&1" "Deshabilitando módulo PHP 8.1 en Apache"
-fi
-php -v
-if [[ "$PHPVERSION" != "8.2" ]] && [[ -e /etc/apache2/mods-enabled/php8.2.load ]]; then
-    run_ok "a2dismod php8.2 > /dev/null 2>&1" "Deshabilitando módulo PHP 8.2 en Apache"
-fi
-php -v
-if [[ "$PHPVERSION" != "8.3" ]] && [[ -e /etc/apache2/mods-enabled/php8.3.load ]]; then
-    run_ok "a2dismod php8.3 > /dev/null 2>&1" "Deshabilitando módulo PHP 8.3 en Apache"
-fi
-php -v
-if [[ "$PHPVERSION" != "8.4" ]] && [[ -e /etc/apache2/mods-enabled/php8.4.load ]]; then
-    run_ok "a2dismod php8.4 > /dev/null 2>&1" "Deshabilitando módulo PHP 8.4 en Apache"
-fi
-php -v
-# Habilitar el módulo PHP elegido
-run_ok "a2enmod php$PHPVERSION > /dev/null 2>&1" "Habilitando PHP $PHPVERSION en Apache"
-php -v
-# Reiniciar Apache para aplicar cambios
-run_ok "systemctl restart apache2" "Reiniciando Apache con PHP $PHPVERSION"
-php -v
 # Instalar Composer globalmente si no está instalado
 if ! command -v composer >/dev/null 2>&1; then
     run_ok "curl -sS https://getcomposer.org/installer | php > /dev/null 2>&1" "Descargando instalador de Composer"
