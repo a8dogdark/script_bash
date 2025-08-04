@@ -428,8 +428,20 @@ run_ok "sed -i \"s/^DB_DATABASE=.*/DB_DATABASE=${PROYECTO}_db/\" .env" "Configur
 run_ok "sed -i \"s/^DB_USERNAME=.*/DB_USERNAME=root/\" .env" "Configurando DB_USERNAME en .env"
 run_ok "sed -i \"s/^DB_PASSWORD=.*/DB_PASSWORD=${PHPROOT}/\" .env" "Configurando DB_PASSWORD en .env"
 
-# Crear base de datos MySQL para Laravel (si no existe)
-mysql -uroot -p"${PHPROOT}" -e "CREATE DATABASE IF NOT EXISTS ${PROYECTO}_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+# Crear archivo mysql client config temporal para root, evitar warning contraseña en CLI
+run_ok "
+cat > /root/.my.cnf <<EOF
+[client]
+user=root
+password=\"${PHPROOT}\"
+EOF
+chmod 600 /root/.my.cnf
+
+mysql -e \"CREATE DATABASE IF NOT EXISTS ${PROYECTO}_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\"
+
+rm -f /root/.my.cnf
+" "Creando base de datos MySQL para Laravel sin mostrar password en línea de comandos"
+
 
 run_ok "bash -c 'sudo -u www-data php artisan key:generate > /dev/null 2>&1'" "Generando key de aplicación Laravel"
 run_ok "bash -c 'sudo -u www-data php artisan cache:clear > /dev/null 2>&1'" "Limpiando cache Laravel"
