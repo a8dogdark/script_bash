@@ -326,14 +326,6 @@ run_ok "a2enmod php$PHPVERSION > /dev/null 2>&1" "Habilitando PHP $PHPVERSION en
 # Reiniciar Apache para aplicar cambios
 run_ok "systemctl restart apache2" "Reiniciando Apache con PHP $PHPVERSION"
 
-
-
-
-exit 1
-
-
-
-
 # Validar e instalar el servidor de base de datos si no está instalado
 if ! dpkg -l | grep -qw "$DBSERVER"; then
     run_ok "apt install -y $DBSERVER > /dev/null 2>&1" "Instalando $DBSERVER"
@@ -371,6 +363,8 @@ if ! dpkg -l | grep -qw phpmyadmin; then
         run_ok "systemctl reload apache2 > /dev/null 2>&1" "Recargando Apache"
     fi
 fi
+
+exit 1
 
 # Instalar Composer globalmente si no está instalado
 if ! command -v composer >/dev/null 2>&1; then
