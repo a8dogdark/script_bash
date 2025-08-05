@@ -63,6 +63,20 @@ if ! command -v whiptail &> /dev/null; then
 fi
 
 # ---------------------------------------------------------
+# Cuadro de bienvenida
+# ---------------------------------------------------------
+VER="2.0"
+
+if (whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Bienvenido" --yesno "Este script instalará los componentes necesarios en su sistema $DISTRO $DISVER.\n\nEl servidor de base de datos a instalar será: $DBSERVER.\n\n¿Desea continuar con la instalación?" 12 70) then
+    # El usuario seleccionó Aceptar, se continúa con la barra de progreso
+    echo "" # Se agrega un salto de línea para separar la salida del whiptail
+else
+    # El usuario seleccionó Cancelar, se muestra un mensaje y se sale del script
+    whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
+    exit 1
+fi
+
+# ---------------------------------------------------------
 # Barra de progreso con whiptail
 # ---------------------------------------------------------
 (
