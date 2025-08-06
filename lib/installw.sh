@@ -163,13 +163,76 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# ---------------------------------------------------------
+# Barra de progreso con whiptail
+# ---------------------------------------------------------
+(
+    # Paso 1: Actualización de repositorios
+    echo "XXX"
+    echo "5"
+    echo "Actualizando lista de repositorios..."
+    echo "XXX"
+    apt update >/dev/null 2>&1
+    sleep 1
+
+    # Paso 2: Actualización de sistema
+    echo "XXX"
+    echo "10"
+    echo "Actualizando el sistema..."
+    echo "XXX"
+    apt upgrade -y >/dev/null 2>&1
+    sleep 1
+
+    # Paso 3: Validar e integrar el repositorio de Ondrej si la versión de PHP no es la del sistema
+    echo "XXX"
+    echo "15"
+    echo "Validando versión de PHP y agregando PPA de Ondrej si es necesario..."
+    echo "XXX"
+
+    if command -v php &>/dev/null; then
+        CURRENT_PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;")
+    else
+        CURRENT_PHP_VERSION="none"
+    fi
+    
+    if [[ "$CURRENT_PHP_VERSION" != "$PHPUSER" ]]; then
+        if ! grep -q "^deb .*ondrej/php" /etc/apt/sources.list.d/* 2>/dev/null; then
+            apt install -y software-properties-common >/dev/null 2>&1
+            add-apt-repository ppa:ondrej/php -y >/dev/null 2>&1
+            apt update >/dev/null 2>&1
+        fi
+    fi
+    sleep 1
+
+    # Paso 4: Verificación e instalación de Apache
+    echo "XXX"
+    echo "25"
+    echo "Verificando e instalando Apache..."
+    echo "XXX"
+    
+    if ! dpkg -s apache2 >/dev/null 2>&1; then
+        apt install -y apache2 >/dev/null 2>&1
+    fi
+    sleep 1
+    
+    # Paso 5: Verificación e instalación de PHP base
+    echo "XXX"
+    echo "35"
+    echo "Verificando e instalando PHP base..."
+    echo "XXX"
+    
+    if [[ "$CURRENT_PHP_VERSION" != "$PHPUSER" ]]; then
+        apt install -y "php$PHPUSER" "libapache2-mod-php$PHPUSER" >/dev/null 2>&1
+    fi
+    sleep 1
+
     # -----------------------------------------------------
     # Instalación de extensiones de PHP por separado
     # -----------------------------------------------------
 
     # Laravel/WordPress
     echo "XXX"
-    echo "45"
+    echo "40"
     echo "Instalando php${PHPUSER}-xml (Laravel/WP)..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-xml" >/dev/null 2>&1; then
@@ -177,7 +240,7 @@ fi
     fi
 
     echo "XXX"
-    echo "50"
+    echo "45"
     echo "Instalando php${PHPUSER}-zip (Laravel/WP)..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-zip" >/dev/null 2>&1; then
@@ -185,7 +248,7 @@ fi
     fi
 
     echo "XXX"
-    echo "55"
+    echo "50"
     echo "Instalando php${PHPUSER}-mbstring (Laravel/WP)..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-mbstring" >/dev/null 2>&1; then
@@ -193,7 +256,7 @@ fi
     fi
 
     echo "XXX"
-    echo "60"
+    echo "55"
     echo "Instalando php${PHPUSER}-dom (Laravel/WP)..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-dom" >/dev/null 2>&1; then
@@ -201,7 +264,7 @@ fi
     fi
     
     echo "XXX"
-    echo "65"
+    echo "60"
     echo "Instalando php${PHPUSER}-curl (Laravel/WP)..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-curl" >/dev/null 2>&1; then
@@ -209,7 +272,7 @@ fi
     fi
     
     echo "XXX"
-    echo "70"
+    echo "65"
     echo "Instalando php${PHPUSER}-fileinfo (Laravel/WP)..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-fileinfo" >/dev/null 2>&1; then
@@ -218,7 +281,7 @@ fi
 
     # Laravel
     echo "XXX"
-    echo "75"
+    echo "70"
     echo "Instalando php${PHPUSER}-bcmath (Laravel)..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-bcmath" >/dev/null 2>&1; then
@@ -227,7 +290,7 @@ fi
 
     # WordPress
     echo "XXX"
-    echo "80"
+    echo "75"
     echo "Instalando php${PHPUSER}-gmp (WordPress)..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-gmp" >/dev/null 2>&1; then
@@ -235,21 +298,29 @@ fi
     fi
     
     echo "XXX"
-    echo "85"
+    echo "80"
     echo "Instalando php${PHPUSER}-imagick (WordPress)..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-imagick" >/dev/null 2>&1; then
         apt install -y "php${PHPUSER}-imagick" >/dev/null 2>&1
     fi
+    
+    echo "XXX"
+    echo "85"
+    echo "Instalando php${PHPUSER}-gd (WordPress)..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-gd" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-gd" >/dev/null 2>&1
+    fi
 
     echo "XXX"
     echo "90"
-    echo "Instalando php${PHPUSER}-exif (WordPress)..."
+    echo "Instalando php${PHPUSER}-iconv (WordPress)..."
     echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-exif" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-exif" >/dev/null 2>&1
+    if ! dpkg -s "php${PHPUSER}-iconv" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-iconv" >/dev/null 2>&1
     fi
-    
+
     # Base de datos
     echo "XXX"
     echo "95"
@@ -267,5 +338,4 @@ fi
     sleep 3
     
 ) | whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalador de componentes" --gauge "Iniciando la instalación..." 6 60 0
-
 exit 0
