@@ -4,6 +4,20 @@
 # Script de instalación para Ubuntu/Debian/AnduinOS (64 bits)
 # =========================================================
 
+clear
+
+# ---------------------------------------------------------
+# Declaración de variables
+# ---------------------------------------------------------
+DBSERVER=""
+DISTRO=""
+PASSADMIN=""
+PASSROOT=""
+PHPUSER=""
+PROYECTO=""
+SOFTWARESUSER=""
+VER="2.0"
+
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
 # ---------------------------------------------------------
@@ -122,6 +136,32 @@ if [ -z "$PASSROOT" ]; then
     PASSROOT="12345"
 fi
 
+# ---------------------------------------------------------
+# Selección de versión de PHP
+# ---------------------------------------------------------
+PHPUSER=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Seleccionar versión de PHP" --radiolist "Seleccione la versión de PHP a instalar:" 15 60 3 \
+"8.2" "Recomendada para Laravel 12" ON \
+"8.3" "" OFF \
+"8.4" "" OFF 3>&1 1>&2 2>&3)
+
+if [ $? -ne 0 ]; then
+    whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
+    exit 1
+fi
+
+# ---------------------------------------------------------
+# Selección de software adicional
+# ---------------------------------------------------------
+SOFTWARESUSER=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Software Adicional" --checklist "Seleccione el software adicional que desea instalar:" 15 60 4 \
+"vscode" "Visual Studio Code" OFF \
+"brave" "Brave Browser" OFF \
+"chrome" "Google Chrome" OFF \
+"filezilla" "FileZilla" OFF 3>&1 1>&2 2>&3)
+
+if [ $? -ne 0 ]; then
+    whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
+    exit 1
+fi
 
 # ---------------------------------------------------------
 # Barra de progreso con whiptail
