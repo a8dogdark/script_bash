@@ -163,48 +163,103 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# ---------------------------------------------------------
-# Barra de progreso con whiptail
-# ---------------------------------------------------------
-(
-    # Paso 1: Actualización de repositorios
-    echo "XXX"
-    echo "20"
-    echo "Actualizando lista de repositorios..."
-    echo "XXX"
-    apt update >/dev/null 2>&1
-    sleep 1
+    # -----------------------------------------------------
+    # Instalación de extensiones de PHP por separado
+    # -----------------------------------------------------
 
-    # Paso 2: Actualización de sistema
+    # Laravel/WordPress
     echo "XXX"
-    echo "40"
-    echo "Actualizando el sistema..."
+    echo "45"
+    echo "Instalando php${PHPUSER}-xml (Laravel/WP)..."
     echo "XXX"
-    apt upgrade -y >/dev/null 2>&1
-    sleep 1
+    if ! dpkg -s "php${PHPUSER}-xml" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-xml" >/dev/null 2>&1
+    fi
 
-    # Paso 3: Instalación de paquetes LAMP
+    echo "XXX"
+    echo "50"
+    echo "Instalando php${PHPUSER}-zip (Laravel/WP)..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-zip" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-zip" >/dev/null 2>&1
+    fi
+
+    echo "XXX"
+    echo "55"
+    echo "Instalando php${PHPUSER}-mbstring (Laravel/WP)..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-mbstring" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-mbstring" >/dev/null 2>&1
+    fi
+
     echo "XXX"
     echo "60"
-    echo "Ejecutando el tercer paso..."
+    echo "Instalando php${PHPUSER}-dom (Laravel/WP)..."
     echo "XXX"
-    sleep 1
+    if ! dpkg -s "php${PHPUSER}-dom" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-dom" >/dev/null 2>&1
+    fi
+    
+    echo "XXX"
+    echo "65"
+    echo "Instalando php${PHPUSER}-curl (Laravel/WP)..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-curl" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-curl" >/dev/null 2>&1
+    fi
+    
+    echo "XXX"
+    echo "70"
+    echo "Instalando php${PHPUSER}-fileinfo (Laravel/WP)..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-fileinfo" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-fileinfo" >/dev/null 2>&1
+    fi
 
-    # Paso 4: Instalación de paquetes PHP y Composer
+    # Laravel
+    echo "XXX"
+    echo "75"
+    echo "Instalando php${PHPUSER}-bcmath (Laravel)..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-bcmath" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-bcmath" >/dev/null 2>&1
+    fi
+
+    # WordPress
     echo "XXX"
     echo "80"
-    echo "Ejecutando el cuarto paso..."
+    echo "Instalando php${PHPUSER}-gmp (WordPress)..."
     echo "XXX"
-    sleep 1
+    if ! dpkg -s "php${PHPUSER}-gmp" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-gmp" >/dev/null 2>&1
+    fi
     
-    # Paso 5: Finalizar y limpiar (90-100%)
     echo "XXX"
-    echo "99"
-    echo "Finalizando la instalación..."
+    echo "85"
+    echo "Instalando php${PHPUSER}-imagick (WordPress)..."
     echo "XXX"
-    sleep 1
+    if ! dpkg -s "php${PHPUSER}-imagick" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-imagick" >/dev/null 2>&1
+    fi
+
+    echo "XXX"
+    echo "90"
+    echo "Instalando php${PHPUSER}-exif (WordPress)..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-exif" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-exif" >/dev/null 2>&1
+    fi
     
-    # Finalización
+    # Base de datos
+    echo "XXX"
+    echo "95"
+    echo "Instalando php${PHPUSER}-mysql (Base de Datos)..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-mysql" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-mysql" >/dev/null 2>&1
+    fi
+
+    # Paso Final: Fin de la instalación
     echo "XXX"
     echo "100"
     echo "Fin Instalación"
