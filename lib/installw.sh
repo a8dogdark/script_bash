@@ -169,38 +169,39 @@ fi
 (
     # Paso 1: Acción de instalación (0-20%)
     echo "XXX"
-    echo "10"
+    echo "25"
     echo "Ejecutando el primer paso..."
     echo "XXX"
-    # Aquí puedes añadir tu primer comando
+    sleep 1
 
     # Paso 2: Acción de instalación (20-60%)
     echo "XXX"
-    echo "40"
+    echo "50"
     echo "Ejecutando el segundo paso..."
     echo "XXX"
-    # Aquí puedes añadir tu segundo comando
+    sleep 1
 
     # Paso 3: Acción de instalación (60-90%)
     echo "XXX"
     echo "75"
     echo "Ejecutando el tercer paso..."
     echo "XXX"
-    # Aquí puedes añadir tu tercer comando
+    sleep 1
 
     # Paso 4: Finalizar y limpiar (90-100%)
     echo "XXX"
-    echo "95"
+    echo "99"
     echo "Finalizando la instalación..."
     echo "XXX"
-    # Aquí puedes añadir tu comando final
+    sleep 1
     
     # Finalización
     echo "XXX"
     echo "100"
-    echo "Instalación completada."
+    echo "Fin Instalación"
     echo "XXX"
-
-) | whiptail --title "Instalador de componentes" --gauge "Iniciando la instalación..." 6 60 0
+    sleep 3
+    
+) | whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalador de componentes" --gauge "Iniciando la instalación..." 6 60 0
 
 exit 0
