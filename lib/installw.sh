@@ -167,28 +167,37 @@ fi
 # Barra de progreso con whiptail
 # ---------------------------------------------------------
 (
-    # Paso 1: Acción de instalación (0-20%)
+    # Paso 1: Actualización de repositorios
     echo "XXX"
-    echo "25"
-    echo "Ejecutando el primer paso..."
+    echo "20"
+    echo "Actualizando lista de repositorios..."
     echo "XXX"
+    apt update >/dev/null 2>&1
     sleep 1
 
-    # Paso 2: Acción de instalación (20-60%)
+    # Paso 2: Actualización de sistema
     echo "XXX"
-    echo "50"
-    echo "Ejecutando el segundo paso..."
+    echo "40"
+    echo "Actualizando el sistema..."
     echo "XXX"
+    apt upgrade -y >/dev/null 2>&1
     sleep 1
 
-    # Paso 3: Acción de instalación (60-90%)
+    # Paso 3: Instalación de paquetes LAMP
     echo "XXX"
-    echo "75"
+    echo "60"
     echo "Ejecutando el tercer paso..."
     echo "XXX"
     sleep 1
 
-    # Paso 4: Finalizar y limpiar (90-100%)
+    # Paso 4: Instalación de paquetes PHP y Composer
+    echo "XXX"
+    echo "80"
+    echo "Ejecutando el cuarto paso..."
+    echo "XXX"
+    sleep 1
+    
+    # Paso 5: Finalizar y limpiar (90-100%)
     echo "XXX"
     echo "99"
     echo "Finalizando la instalación..."
