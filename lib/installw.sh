@@ -66,8 +66,9 @@ fi
 # Cuadro de bienvenida
 # ---------------------------------------------------------
 VER="2.0"
+MENSAJE_BIENVENIDA="Bienvenido al Instalador de Lamp para Laravel 12. Se instalarán los siguientes paquetes:\n\n- Apache\n- PHP\n- $DBSERVER\n- Phpmyadmin\n- Composer\n- NodeJs\n- Programas de Creación de proyecto\n\n¿Desea continuar con la instalación?"
 
-if (whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Bienvenido" --yesno "Este script instalará los componentes necesarios en su sistema $DISTRO $DISVER.\n\nEl servidor de base de datos a instalar será: $DBSERVER.\n\n¿Desea continuar con la instalación?" 12 70) then
+if (whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Bienvenido" --yesno "$MENSAJE_BIENVENIDA" 16 70) then
     # El usuario seleccionó Aceptar, se continúa con la barra de progreso
     echo "" # Se agrega un salto de línea para separar la salida del whiptail
 else
@@ -75,6 +76,52 @@ else
     whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
     exit 1
 fi
+
+# ---------------------------------------------------------
+# Solicitar el nombre del proyecto
+# ---------------------------------------------------------
+PROYECTO=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Nombre del Proyecto" --inputbox "Por favor, introduce el nombre de tu proyecto:\n(Si lo dejas en blanco, se usará 'crud' por defecto)" 10 60 "" 3>&1 1>&2 2>&3)
+
+if [ $? -ne 0 ]; then
+    whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
+    exit 1
+fi
+
+# Asignar valor por defecto si el campo se dejó en blanco
+if [ -z "$PROYECTO" ]; then
+    PROYECTO="crud"
+fi
+
+# ---------------------------------------------------------
+# Solicitar la contraseña de Phpmyadmin
+# ---------------------------------------------------------
+PASSADMIN=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Contraseña de Phpmyadmin" --passwordbox "Por favor, introduce la contraseña para el usuario 'pma' de Phpmyadmin:\n(Si la dejas en blanco, se usará '12345' por defecto)" 10 70 "" 3>&1 1>&2 2>&3)
+
+if [ $? -ne 0 ]; then
+    whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
+    exit 1
+fi
+
+# Asignar valor por defecto si el campo se dejó en blanco
+if [ -z "$PASSADMIN" ]; then
+    PASSADMIN="12345"
+fi
+
+# ---------------------------------------------------------
+# Solicitar la contraseña de Root de la base de datos
+# ---------------------------------------------------------
+PASSROOT=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Contraseña de Root para la Base de Datos" --passwordbox "Por favor, introduce la contraseña para el usuario 'root' de la base de datos:\n(Si la dejas en blanco, se usará '12345' por defecto)" 10 70 "" 3>&1 1>&2 2>&3)
+
+if [ $? -ne 0 ]; then
+    whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
+    exit 1
+fi
+
+# Asignar valor por defecto si el campo se dejó en blanco
+if [ -z "$PASSROOT" ]; then
+    PASSROOT="12345"
+fi
+
 
 # ---------------------------------------------------------
 # Barra de progreso con whiptail
