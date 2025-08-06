@@ -203,10 +203,46 @@ fi
         fi
     fi
     sleep 1
+    
+    # -----------------------------------------------------
+    # Nuevo paso: Instalación de paquetes de utilidades
+    # -----------------------------------------------------
 
-    # Paso 4: Verificación e instalación de Apache
     echo "XXX"
-    echo "25"
+    echo "20"
+    echo "Instalando zip..."
+    echo "XXX"
+    if ! dpkg -s "zip" >/dev/null 2>&1; then
+        apt install -y "zip" >/dev/null 2>&1
+    fi
+
+    echo "XXX"
+    echo "23"
+    echo "Instalando gpg..."
+    echo "XXX"
+    if ! dpkg -s "gpg" >/dev/null 2>&1; then
+        apt install -y "gpg" >/dev/null 2>&1
+    fi
+
+    echo "XXX"
+    echo "26"
+    echo "Instalando curl..."
+    echo "XXX"
+    if ! dpkg -s "curl" >/dev/null 2>&1; then
+        apt install -y "curl" >/dev/null 2>&1
+    fi
+
+    echo "XXX"
+    echo "29"
+    echo "Instalando unzip..."
+    echo "XXX"
+    if ! dpkg -s "unzip" >/dev/null 2>&1; then
+        apt install -y "unzip" >/dev/null 2>&1
+    fi
+
+    # Paso 4 (anterior): Verificación e instalación de Apache
+    echo "XXX"
+    echo "32"
     echo "Verificando e instalando Apache..."
     echo "XXX"
     
@@ -215,7 +251,7 @@ fi
     fi
     sleep 1
     
-    # Paso 5: Verificación e instalación de PHP base
+    # Paso 5 (anterior): Verificación e instalación de PHP base
     echo "XXX"
     echo "35"
     echo "Verificando e instalando PHP base..."
