@@ -56,6 +56,7 @@ fi
 # ---------------------------------------------------------
 if ! command -v whiptail &> /dev/null; then
     apt install -y whiptail >/dev/null 2>&1
+    sleep 1
 fi
 
 # ---------------------------------------------------------
@@ -178,6 +179,7 @@ fi
     echo "XXX"
     if ! dpkg -s "zip" >/dev/null 2>&1; then
         apt install -y "zip" >/dev/null 2>&1
+        sleep 1
     fi
 
     echo "XXX"
@@ -186,6 +188,7 @@ fi
     echo "XXX"
     if ! dpkg -s "gpg" >/dev/null 2>&1; then
         apt install -y "gpg" >/dev/null 2>&1
+        sleep 1
     fi
 
     echo "XXX"
@@ -194,6 +197,7 @@ fi
     echo "XXX"
     if ! dpkg -s "curl" >/dev/null 2>&1; then
         apt install -y "curl" >/dev/null 2>&1
+        sleep 1
     fi
 
     echo "XXX"
@@ -202,7 +206,19 @@ fi
     echo "XXX"
     if ! dpkg -s "unzip" >/dev/null 2>&1; then
         apt install -y "unzip" >/dev/null 2>&1
+        sleep 1
     fi
+    
+    # Nuevo: Instalar apt-transport-https antes de la instalación de VS Code
+    echo "XXX"
+    echo "29"
+    echo "Verificando e instalando apt-transport-https..."
+    echo "XXX"
+    if ! dpkg -s apt-transport-https >/dev/null 2>&1; then
+        apt install -y apt-transport-https >/dev/null 2>&1
+        sleep 1
+    fi
+    
 
     # Paso 4: Verificación e instalación de Apache
     echo "XXX"
@@ -252,6 +268,7 @@ fi
     if ! dpkg -s "$DBSERVER" >/dev/null 2>&1; then
         apt install -y "$DBSERVER" >/dev/null 2>&1
     fi
+    sleep 1
 
     echo "XXX"
     echo "65"
@@ -264,6 +281,7 @@ fi
     mysql -u root -p"$PASSROOT" -e "GRANT ALL PRIVILEGES ON *.* TO 'phpmyadmin'@'localhost' WITH GRANT OPTION;" >/dev/null 2>&1
     mysql -u root -p"$PASSROOT" -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
     systemctl restart mysql >/dev/null 2>&1
+    sleep 1
     
     # -----------------------------------------------------
     # Instalación y configuración de phpmyadmin
@@ -285,6 +303,7 @@ fi
         ln -s /etc/phpmyadmin/apache.conf /etc/apache2/conf-available/phpmyadmin.conf >/dev/null 2>&1
         a2enconf phpmyadmin >/dev/null 2>&1
     fi
+    sleep 1
     # -----------------------------------------------------
     # Validación y configuración de la versión de PHP
     # -----------------------------------------------------
@@ -299,6 +318,7 @@ fi
     # Asegurar que la versión del CLI sea la correcta
     update-alternatives --set php "/usr/bin/php$PHPUSER" >/dev/null 2>&1
     systemctl restart apache2 >/dev/null 2>&1
+    sleep 1
     
     # -----------------------------------------------------
     # Crear archivo info.php para verificar la instalación
@@ -309,6 +329,7 @@ fi
     echo "XXX"
     echo "<?php phpinfo(); ?>" > /var/www/html/info.php
     chown www-data:www-data /var/www/html/info.php >/dev/null 2>&1
+    sleep 1
 
     # -----------------------------------------------------
     # Instalación de Composer
@@ -338,24 +359,43 @@ fi
     # -----------------------------------------------------
     # Instalación de software adicional
     # -----------------------------------------------------
-    echo "XXX"
-    echo "91"
-    echo "Instalando software adicional..."
-    echo "XXX"
     
     # Instalación de Visual Studio Code
     if [[ " $SOFTWARESUSER " =~ " vscode " ]]; then
         if ! command -v code &> /dev/null; then
             echo "XXX"
-            echo "93"
-            echo "Instalando Visual Studio Code..."
+            echo "92"
+            echo "Instalando Visual Studio Code: Paso 1 de 3..."
             echo "XXX"
-            curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg >/dev/null 2>&1
-            install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg >/dev/null 2>&1
-            sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list' >/dev/null 2>&1
-            rm -f packages.microsoft.gpg >/dev/null 2>&1
+            # Paso 1: Obtener la clave GPG de Microsoft
+            wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg >/dev/null 2>&1
+            install -D -o root -g root -m 644 microsoft.gpg /usr/share/keyrings/microsoft.gpg >/dev/null 2>&1
+            rm -f microsoft.gpg >/dev/null 2>&1
+            sleep 1
+            
+            echo "XXX"
+            echo "93"
+            echo "Instalando Visual Studio Code: Paso 2 de 3..."
+            echo "XXX"
+            # Paso 2: Crear el archivo de fuentes del repositorio
+            cat <<EOF | tee /etc/apt/sources.list.d/vscode.sources >/dev/null 2>&1
+Types: deb
+URIs: https://packages.microsoft.com/repos/code
+Suites: stable
+Components: main
+Architectures: amd64,arm64,armhf
+Signed-By: /usr/share/keyrings/microsoft.gpg
+EOF
+            sleep 1
+            
+            echo "XXX"
+            echo "94"
+            echo "Instalando Visual Studio Code: Paso 3 de 3..."
+            echo "XXX"
+            # Paso 3: Actualizar los repositorios e instalar VS Code
             apt update >/dev/null 2>&1
             apt install -y code >/dev/null 2>&1
+            sleep 1
         fi
     fi
 
@@ -371,6 +411,7 @@ fi
             echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main"|sudo tee /etc/apt/sources.list.d/brave-browser-release.list >/dev/null 2>&1
             apt update >/dev/null 2>&1
             apt install -y brave-browser >/dev/null 2>&1
+            sleep 1
         fi
     fi
 
@@ -385,6 +426,7 @@ fi
             sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list' >/dev/null 2>&1
             apt update >/dev/null 2>&1
             apt install -y google-chrome-stable >/dev/null 2>&1
+            sleep 1
         fi
     fi
     
@@ -396,6 +438,7 @@ fi
             echo "Instalando FileZilla..."
             echo "XXX"
             apt install -y filezilla >/dev/null 2>&1
+            sleep 1
         fi
     fi
     
