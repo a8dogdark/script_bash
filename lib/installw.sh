@@ -79,10 +79,7 @@ fi
 # ---------------------------------------------------------
 # Cuadro de bienvenida
 # ---------------------------------------------------------
-VER="2.0"
-MENSAJE_BIENVENIDA="Bienvenido al Instalador de Lamp para Laravel 12. Se instalarán los siguientes paquetes:\n\n- Apache\n- PHP\n- $DBSERVER\n- Phpmyadmin\n- Composer\n- NodeJs\n- Programas de Creación de proyecto\n\n¿Desea continuar con la instalación?"
-
-if (whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Bienvenido" --yesno "$MENSAJE_BIENVENIDA" 16 70) then
+if (whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Bienvenido" --yesno "Bienvenido al Instalador de Lamp para Laravel 12. Se instalarán los siguientes paquetes:\n\n- Apache\n- PHP\n- $DBSERVER\n- Phpmyadmin\n- Composer\n- NodeJs\n- Programas de Creación de proyecto\n\n¿Desea continuar con la instalación?" 16 70) then
     # El usuario seleccionó Aceptar, se continúa con la barra de progreso
     echo "" # Se agrega un salto de línea para separar la salida del whiptail
 else
