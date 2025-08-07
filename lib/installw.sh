@@ -14,6 +14,7 @@ DISTRO=""
 PASSADMIN=""
 PASSROOT=""
 PHPUSER=""
+PROYECTO=""
 SOFTWARESUSER=""
 VER="2.0"
 
@@ -67,6 +68,16 @@ if (whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Bienve
     echo "" # Se agrega un salto de línea para separar la salida del whiptail
 else
     # El usuario seleccionó Cancelar, se muestra un mensaje y se sale del script
+    whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
+    exit 1
+fi
+
+# ---------------------------------------------------------
+# Solicitar nombre del proyecto Laravel
+# ---------------------------------------------------------
+PROYECTO=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Nombre del Proyecto Laravel" --inputbox "Por favor, introduce el nombre del proyecto Laravel a crear en /var/www/html/: (Ej: mi_app)" 10 70 "" 3>&1 1>&2 2>&3)
+
+if [ $? -ne 0 ]; then
     whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
     exit 1
 fi
@@ -440,6 +451,18 @@ EOF
             apt install -y filezilla >/dev/null 2>&1
             sleep 1
         fi
+    fi
+    
+    # Creación del proyecto Laravel
+    if [[ ! -z "$PROYECTO" ]]; then
+        echo "XXX"
+        echo "99"
+        echo "Creando el proyecto Laravel '$PROYECTO'..."
+        echo "XXX"
+        cd /var/www/html >/dev/null 2>&1
+        composer create-project laravel/laravel "$PROYECTO" >/dev/null 2>&1
+        chown -R www-data:www-data "/var/www/html/$PROYECTO" >/dev/null 2>&1
+        sleep 1
     fi
     
     # Paso Final: Fin de la instalación
