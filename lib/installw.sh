@@ -73,13 +73,18 @@ else
 fi
 
 # ---------------------------------------------------------
-# Solicitar nombre del proyecto Laravel
+# Solicitar nombre del proyecto Laravel (con valor por defecto)
 # ---------------------------------------------------------
-PROYECTO=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Nombre del Proyecto Laravel" --inputbox "Por favor, introduce el nombre del proyecto Laravel a crear en /var/www/html/: (Ej: mi_app)" 10 70 "" 3>&1 1>&2 2>&3)
+PROYECTO=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Nombre del Proyecto Laravel" --inputbox "Por favor, introduce el nombre del proyecto Laravel a crear en /var/www/html/: (Por defecto: crud)" 10 70 "crud" 3>&1 1>&2 2>&3)
 
 if [ $? -ne 0 ]; then
     whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
     exit 1
+fi
+
+# Asignar valor por defecto si el campo se dejó en blanco
+if [ -z "$PROYECTO" ]; then
+    PROYECTO="crud"
 fi
 
 # ---------------------------------------------------------
