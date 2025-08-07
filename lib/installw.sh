@@ -238,7 +238,7 @@ fi
     echo "XXX"
 
     if ! a2enmod rewrite >/dev/null 2>&1; then
-        echo "Error al habilitar mod_rewrite."
+        echo "Error al habilitar mod_rewrite." 1>&2
     fi
     systemctl restart apache2 >/dev/null 2>&1
     sleep 1
@@ -258,10 +258,9 @@ fi
     # Instalación de extensiones de PHP por separado
     # -----------------------------------------------------
 
-    # Laravel/WordPress
     echo "XXX"
     echo "47"
-    echo "Instalando php${PHPUSER}-xml (Laravel/WP)..."
+    echo "Instalando php${PHPUSER}-xml..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-xml" >/dev/null 2>&1; then
         apt install -y "php${PHPUSER}-xml" >/dev/null 2>&1
@@ -269,7 +268,7 @@ fi
 
     echo "XXX"
     echo "51"
-    echo "Instalando php${PHPUSER}-zip (Laravel/WP)..."
+    echo "Instalando php${PHPUSER}-zip..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-zip" >/dev/null 2>&1; then
         apt install -y "php${PHPUSER}-zip" >/dev/null 2>&1
@@ -277,7 +276,7 @@ fi
 
     echo "XXX"
     echo "55"
-    echo "Instalando php${PHPUSER}-mbstring (Laravel/WP)..."
+    echo "Instalando php${PHPUSER}-mbstring..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-mbstring" >/dev/null 2>&1; then
         apt install -y "php${PHPUSER}-mbstring" >/dev/null 2>&1
@@ -285,7 +284,7 @@ fi
 
     echo "XXX"
     echo "59"
-    echo "Instalando php${PHPUSER}-dom (Laravel/WP)..."
+    echo "Instalando php${PHPUSER}-dom..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-dom" >/dev/null 2>&1; then
         apt install -y "php${PHPUSER}-dom" >/dev/null 2>&1
@@ -293,7 +292,7 @@ fi
     
     echo "XXX"
     echo "63"
-    echo "Instalando php${PHPUSER}-curl (Laravel/WP)..."
+    echo "Instalando php${PHPUSER}-curl..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-curl" >/dev/null 2>&1; then
         apt install -y "php${PHPUSER}-curl" >/dev/null 2>&1
@@ -301,25 +300,23 @@ fi
     
     echo "XXX"
     echo "67"
-    echo "Instalando php${PHPUSER}-fileinfo (Laravel/WP)..."
+    echo "Instalando php${PHPUSER}-fileinfo..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-fileinfo" >/dev/null 2>&1; then
         apt install -y "php${PHPUSER}-fileinfo" >/dev/null 2>&1
     fi
 
-    # Laravel
     echo "XXX"
     echo "71"
-    echo "Instalando php${PHPUSER}-bcmath (Laravel)..."
+    echo "Instalando php${PHPUSER}-bcmath..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-bcmath" >/dev/null 2>&1; then
         apt install -y "php${PHPUSER}-bcmath" >/dev/null 2>&1
     fi
 
-    # WordPress
     echo "XXX"
     echo "75"
-    echo "Instalando php${PHPUSER}-gmp (WordPress)..."
+    echo "Instalando php${PHPUSER}-gmp..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-gmp" >/dev/null 2>&1; then
         apt install -y "php${PHPUSER}-gmp" >/dev/null 2>&1
@@ -327,7 +324,7 @@ fi
     
     echo "XXX"
     echo "79"
-    echo "Instalando php${PHPUSER}-imagick (WordPress)..."
+    echo "Instalando php${PHPUSER}-imagick..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-imagick" >/dev/null 2>&1; then
         apt install -y "php${PHPUSER}-imagick" >/dev/null 2>&1
@@ -335,7 +332,7 @@ fi
     
     echo "XXX"
     echo "83"
-    echo "Instalando php${PHPUSER}-exif (WordPress)..."
+    echo "Instalando php${PHPUSER}-exif..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-exif" >/dev/null 2>&1; then
         apt install -y "php${PHPUSER}-exif" >/dev/null 2>&1
@@ -343,7 +340,7 @@ fi
     
     echo "XXX"
     echo "87"
-    echo "Instalando php${PHPUSER}-gd (WordPress)..."
+    echo "Instalando php${PHPUSER}-gd..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-gd" >/dev/null 2>&1; then
         apt install -y "php${PHPUSER}-gd" >/dev/null 2>&1
@@ -351,7 +348,7 @@ fi
 
     echo "XXX"
     echo "91"
-    echo "Instalando php${PHPUSER}-iconv (WordPress)..."
+    echo "Instalando php${PHPUSER}-iconv..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-iconv" >/dev/null 2>&1; then
         apt install -y "php${PHPUSER}-iconv" >/dev/null 2>&1
@@ -359,22 +356,10 @@ fi
 
     echo "XXX"
     echo "92"
-    echo "Instalando php${PHPUSER}-mysql (Base de Datos)..."
+    echo "Instalando php${PHPUSER}-mysql..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-mysql" >/dev/null 2>&1; then
         apt install -y "php${PHPUSER}-mysql" >/dev/null 2>&1
-    fi
-
-    # -----------------------------------------------------
-    # Instalación y configuración de la base de datos
-    # -----------------------------------------------------
-
-    echo "XXX"
-    echo "93"
-    echo "Instalando MariaDB/MySQL Server..."
-    echo "XXX"
-    if ! dpkg -s "$DBSERVER" >/dev/null 2>&1; then
-        apt install -y "$DBSERVER" >/dev/null 2>&1
     fi
 
     # -----------------------------------------------------
@@ -423,11 +408,21 @@ fi
     fi
 
     # -----------------------------------------------------
+    # Crear archivo info.php para verificar la instalación
+    # -----------------------------------------------------
+    echo "XXX"
+    echo "97"
+    echo "Creando archivo info.php y configurando permisos..."
+    echo "XXX"
+    echo "<?php phpinfo(); ?>" > /var/www/html/info.php >/dev/null 2>&1
+    chown www-data:www-data /var/www/html/info.php >/dev/null 2>&1
+
+    # -----------------------------------------------------
     # Validación y configuración de la versión de PHP
     # -----------------------------------------------------
 
     echo "XXX"
-    echo "98"
+    echo "99"
     echo "Validando y configurando la versión de PHP..."
     echo "XXX"
     # Deshabilitar todas las versiones de PHP en Apache y habilitar la elegida
