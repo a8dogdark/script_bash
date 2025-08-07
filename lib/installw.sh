@@ -147,298 +147,311 @@ fi
 # Barra de progreso con whiptail
 # ---------------------------------------------------------
 (
-    # Paso 1: Actualización de repositorios
-    echo "XXX"
-    echo "5"
-    echo "Actualizando lista de repositorios..."
-    echo "XXX"
-    apt update >/dev/null 2>&1
-    sleep 1
+    # Paso 1: Actualización de repositorios
+    echo "XXX"
+    echo "5"
+    echo "Actualizando lista de repositorios..."
+    echo "XXX"
+    apt update >/dev/null 2>&1
+    sleep 1
 
-    # Paso 2: Actualización de sistema
-    echo "XXX"
-    echo "10"
-    echo "Actualizando el sistema..."
-    echo "XXX"
-    apt upgrade -y >/dev/null 2>&1
-    sleep 1
+    # Paso 2: Actualización de sistema
+    echo "XXX"
+    echo "10"
+    echo "Actualizando el sistema..."
+    echo "XXX"
+    apt upgrade -y >/dev/null 2>&1
+    sleep 1
 
-    # Paso 3: Validar e integrar el repositorio de Ondrej si la versión de PHP no es la del sistema
-    echo "XXX"
-    echo "15"
-    echo "Validando versión de PHP y agregando PPA de Ondrej si es necesario..."
-    echo "XXX"
+    # Paso 3: Validar e integrar el repositorio de Ondrej si la versión de PHP no es la del sistema
+    echo "XXX"
+    echo "15"
+    echo "Validando versión de PHP y agregando PPA de Ondrej si es necesario..."
+    echo "XXX"
 
-    if command -v php &>/dev/null; then
-        CURRENT_PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;")
-    else
-        CURRENT_PHP_VERSION="none"
-    fi
-    
-    if [[ "$CURRENT_PHP_VERSION" != "$PHPUSER" ]]; then
-        if ! grep -q "^deb .*ondrej/php" /etc/apt/sources.list.d/* 2>/dev/null; then
-            apt install -y software-properties-common >/dev/null 2>&1
-            add-apt-repository ppa:ondrej/php -y >/dev/null 2>&1
-            apt update >/dev/null 2>&1
-        fi
-    fi
-    sleep 1
-    
-    # -----------------------------------------------------
-    # Instalación de paquetes de utilidades
-    # -----------------------------------------------------
+    if command -v php &>/dev/null; then
+        CURRENT_PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;")
+    else
+        CURRENT_PHP_VERSION="none"
+    fi
+    
+    if [[ "$CURRENT_PHP_VERSION" != "$PHPUSER" ]]; then
+        if ! grep -q "^deb .*ondrej/php" /etc/apt/sources.list.d/* 2>/dev/null; then
+            apt install -y software-properties-common >/dev/null 2>&1
+            add-apt-repository ppa:ondrej/php -y >/dev/null 2>&1
+            apt update >/dev/null 2>&1
+        fi
+    fi
+    sleep 1
+    
+    # -----------------------------------------------------
+    # Instalación de paquetes de utilidades
+    # -----------------------------------------------------
 
-    echo "XXX"
-    echo "19"
-    echo "Instalando zip..."
-    echo "XXX"
-    if ! dpkg -s "zip" >/dev/null 2>&1; then
-        apt install -y "zip" >/dev/null 2>&1
-    fi
+    echo "XXX"
+    echo "18"
+    echo "Instalando zip..."
+    echo "XXX"
+    if ! dpkg -s "zip" >/dev/null 2>&1; then
+        apt install -y "zip" >/dev/null 2>&1
+    fi
 
-    echo "XXX"
-    echo "23"
-    echo "Instalando gpg..."
-    echo "XXX"
-    if ! dpkg -s "gpg" >/dev/null 2>&1; then
-        apt install -y "gpg" >/dev/null 2>&1
-    fi
+    echo "XXX"
+    echo "21"
+    echo "Instalando gpg..."
+    echo "XXX"
+    if ! dpkg -s "gpg" >/dev/null 2>&1; then
+        apt install -y "gpg" >/dev/null 2>&1
+    fi
 
-    echo "XXX"
-    echo "27"
-    echo "Instalando curl..."
-    echo "XXX"
-    if ! dpkg -s "curl" >/dev/null 2>&1; then
-        apt install -y "curl" >/dev/null 2>&1
-    fi
+    echo "XXX"
+    echo "24"
+    echo "Instalando curl..."
+    echo "XXX"
+    if ! dpkg -s "curl" >/dev/null 2>&1; then
+        apt install -y "curl" >/dev/null 2>&1
+    fi
 
-    echo "XXX"
-    echo "31"
-    echo "Instalando unzip..."
-    echo "XXX"
-    if ! dpkg -s "unzip" >/dev/null 2>&1; then
-        apt install -y "unzip" >/dev/null 2>&1
-    fi
+    echo "XXX"
+    echo "27"
+    echo "Instalando unzip..."
+    echo "XXX"
+    if ! dpkg -s "unzip" >/dev/null 2>&1; then
+        apt install -y "unzip" >/dev/null 2>&1
+    fi
 
-    # Paso 4: Verificación e instalación de Apache
-    echo "XXX"
-    echo "35"
-    echo "Verificando e instalando Apache..."
-    echo "XXX"
-    
-    if ! dpkg -s apache2 >/dev/null 2>&1; then
-        apt install -y apache2 >/dev/null 2>&1
-    fi
-    sleep 1
-    
-    # Nuevo paso: Habilitar mod_rewrite para URLs dinámicas
-    echo "XXX"
-    echo "39"
-    echo "Habilitando mod_rewrite en Apache..."
-    echo "XXX"
+    # Paso 4: Verificación e instalación de Apache
+    echo "XXX"
+    echo "30"
+    echo "Verificando e instalando Apache..."
+    echo "XXX"
+    
+    if ! dpkg -s apache2 >/dev/null 2>&1; then
+        apt install -y apache2 >/dev/null 2>&1
+    fi
+    sleep 1
+    
+    # Nuevo paso: Habilitar mod_rewrite para URLs dinámicas
+    echo "XXX"
+    echo "33"
+    echo "Habilitando mod_rewrite en Apache..."
+    echo "XXX"
 
-    if ! a2enmod rewrite >/dev/null 2>&1; then
-        echo "Error al habilitar mod_rewrite." 1>&2
-    fi
-    systemctl restart apache2 >/dev/null 2>&1
-    sleep 1
-    
-    # Paso 5: Verificación e instalación de PHP base
-    echo "XXX"
-    echo "43"
-    echo "Verificando e instalando PHP base..."
-    echo "XXX"
-    
-    if [[ "$CURRENT_PHP_VERSION" != "$PHPUSER" ]]; then
-        apt install -y "php$PHPUSER" "libapache2-mod-php$PHPUSER" >/dev/null 2>&1
-    fi
-    sleep 1
+    if ! a2enmod rewrite >/dev/null 2>&1; then
+        echo "Error al habilitar mod_rewrite." 1>&2
+    fi
+    systemctl restart apache2 >/dev/null 2>&1
+    sleep 1
+    
+    # Paso 5: Verificación e instalación de PHP base
+    echo "XXX"
+    echo "36"
+    echo "Verificando e instalando PHP base..."
+    echo "XXX"
+    
+    if [[ "$CURRENT_PHP_VERSION" != "$PHPUSER" ]]; then
+        apt install -y "php$PHPUSER" "libapache2-mod-php$PHPUSER" >/dev/null 2>&1
+    fi
+    sleep 1
 
-    # -----------------------------------------------------
-    # Instalación de extensiones de PHP por separado
-    # -----------------------------------------------------
+    # -----------------------------------------------------
+    # Instalación de extensiones de PHP por separado
+    # -----------------------------------------------------
 
-    echo "XXX"
-    echo "47"
-    echo "Instalando php${PHPUSER}-xml..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-xml" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-xml" >/dev/null 2>&1
-    fi
+    echo "XXX"
+    echo "40"
+    echo "Instalando php${PHPUSER}-xml..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-xml" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-xml" >/dev/null 2>&1
+    fi
 
-    echo "XXX"
-    echo "51"
-    echo "Instalando php${PHPUSER}-zip..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-zip" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-zip" >/dev/null 2>&1
-    fi
+    echo "XXX"
+    echo "44"
+    echo "Instalando php${PHPUSER}-zip..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-zip" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-zip" >/dev/null 2>&1
+    fi
 
-    echo "XXX"
-    echo "55"
-    echo "Instalando php${PHPUSER}-mbstring..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-mbstring" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-mbstring" >/dev/null 2>&1
-    fi
+    echo "XXX"
+    echo "48"
+    echo "Instalando php${PHPUSER}-mbstring..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-mbstring" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-mbstring" >/dev/null 2>&1
+    fi
 
-    echo "XXX"
-    echo "59"
-    echo "Instalando php${PHPUSER}-dom..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-dom" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-dom" >/dev/null 2>&1
-    fi
-    
-    echo "XXX"
-    echo "63"
-    echo "Instalando php${PHPUSER}-curl..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-curl" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-curl" >/dev/null 2>&1
-    fi
-    
-    echo "XXX"
-    echo "67"
-    echo "Instalando php${PHPUSER}-fileinfo..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-fileinfo" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-fileinfo" >/dev/null 2>&1
-    fi
+    echo "XXX"
+    echo "52"
+    echo "Instalando php${PHPUSER}-dom..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-dom" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-dom" >/dev/null 2>&1
+    fi
+    
+    echo "XXX"
+    echo "56"
+    echo "Instalando php${PHPUSER}-curl..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-curl" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-curl" >/dev/null 2>&1
+    fi
+    
+    echo "XXX"
+    echo "60"
+    echo "Instalando php${PHPUSER}-fileinfo..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-fileinfo" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-fileinfo" >/dev/null 2>&1
+    fi
 
-    echo "XXX"
-    echo "71"
-    echo "Instalando php${PHPUSER}-bcmath..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-bcmath" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-bcmath" >/dev/null 2>&1
-    fi
+    echo "XXX"
+    echo "64"
+    echo "Instalando php${PHPUSER}-bcmath..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-bcmath" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-bcmath" >/dev/null 2>&1
+    fi
 
-    echo "XXX"
-    echo "75"
-    echo "Instalando php${PHPUSER}-gmp..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-gmp" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-gmp" >/dev/null 2>&1
-    fi
-    
-    echo "XXX"
-    echo "79"
-    echo "Instalando php${PHPUSER}-imagick..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-imagick" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-imagick" >/dev/null 2>&1
-    fi
-    
-    echo "XXX"
-    echo "83"
-    echo "Instalando php${PHPUSER}-exif..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-exif" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-exif" >/dev/null 2>&1
-    fi
-    
-    echo "XXX"
-    echo "87"
-    echo "Instalando php${PHPUSER}-gd..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-gd" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-gd" >/dev/null 2>&1
-    fi
+    echo "XXX"
+    echo "68"
+    echo "Instalando php${PHPUSER}-gmp..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-gmp" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-gmp" >/dev/null 2>&1
+    fi
+    
+    echo "XXX"
+    echo "72"
+    echo "Instalando php${PHPUSER}-imagick..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-imagick" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-imagick" >/dev/null 2>&1
+    fi
+    
+    echo "XXX"
+    echo "76"
+    echo "Instalando php${PHPUSER}-exif..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-exif" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-exif" >/dev/null 2>&1
+    fi
+    
+    echo "XXX"
+    echo "80"
+    echo "Instalando php${PHPUSER}-gd..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-gd" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-gd" >/dev/null 2>&1
+    fi
 
-    echo "XXX"
-    echo "91"
-    echo "Instalando php${PHPUSER}-iconv..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-iconv" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-iconv" >/dev/null 2>&1
-    fi
+    echo "XXX"
+    echo "84"
+    echo "Instalando php${PHPUSER}-iconv..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-iconv" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-iconv" >/dev/null 2>&1
+    fi
 
-    echo "XXX"
-    echo "92"
-    echo "Instalando php${PHPUSER}-mysql..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-mysql" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-mysql" >/dev/null 2>&1
-    fi
+    echo "XXX"
+    echo "88"
+    echo "Instalando php${PHPUSER}-mysql..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-mysql" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-mysql" >/dev/null 2>&1
+    fi
 
-    # -----------------------------------------------------
-    # Instalación y configuración de la base de datos
-    # -----------------------------------------------------
+    # -----------------------------------------------------
+    # Instalación y configuración de la base de datos
+    # -----------------------------------------------------
 
-    echo "XXX"
-    echo "93"
-    echo "Instalando MariaDB/MySQL Server..."
-    echo "XXX"
-    if ! dpkg -s "$DBSERVER" >/dev/null 2>&1; then
-        apt install -y "$DBSERVER" >/dev/null 2>&1
-    fi
+    echo "XXX"
+    echo "90"
+    echo "Instalando MariaDB/MySQL Server..."
+    echo "XXX"
+    if ! dpkg -s "$DBSERVER" >/dev/null 2>&1; then
+        apt install -y "$DBSERVER" >/dev/null 2>&1
+    fi
 
-    echo "XXX"
-    echo "94"
-    echo "Configurando contraseñas para la base de datos..."
-    echo "XXX"
-    # Configuración de usuario root y phpmyadmin
-    mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$PASSROOT';" >/dev/null 2>&1
-    mysql -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
-    mysql -u root -p"$PASSROOT" -e "CREATE USER 'phpmyadmin'@'localhost' IDENTIFIED BY '$PASSADMIN';" >/dev/null 2>&1
-    mysql -u root -p"$PASSROOT" -e "GRANT ALL PRIVILEGES ON *.* TO 'phpmyadmin'@'localhost' WITH GRANT OPTION;" >/dev/null 2>&1
-    mysql -u root -p"$PASSROOT" -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
-    systemctl restart mysql >/dev/null 2>&1
-    
-    # -----------------------------------------------------
-    # Instalación y configuración de phpmyadmin
-    # -----------------------------------------------------
+    echo "XXX"
+    echo "92"
+    echo "Configurando contraseñas para la base de datos..."
+    echo "XXX"
+    # Configuración de usuario root y phpmyadmin
+    mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$PASSROOT';" >/dev/null 2>&1
+    mysql -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
+    mysql -u root -p"$PASSROOT" -e "CREATE USER 'phpmyadmin'@'localhost' IDENTIFIED BY '$PASSADMIN';" >/dev/null 2>&1
+    mysql -u root -p"$PASSROOT" -e "GRANT ALL PRIVILEGES ON *.* TO 'phpmyadmin'@'localhost' WITH GRANT OPTION;" >/dev/null 2>&1
+    mysql -u root -p"$PASSROOT" -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
+    systemctl restart mysql >/dev/null 2>&1
+    
+    # -----------------------------------------------------
+    # Instalación y configuración de phpmyadmin
+    # -----------------------------------------------------
 
-    echo "XXX"
-    echo "96"
-    echo "Instalando y configurando Phpmyadmin..."
-    echo "XXX"
+    echo "XXX"
+    echo "94"
+    echo "Instalando y configurando Phpmyadmin..."
+    echo "XXX"
 
-    if ! dpkg -s phpmyadmin >/dev/null 2>&1; then
-        # Configuración no interactiva para phpmyadmin
-        echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
-        echo "phpmyadmin phpmyadmin/app-password-confirm password $PASSADMIN" | debconf-set-selections
-        echo "phpmyadmin phpmyadmin/mysql/admin-pass password $PASSROOT" | debconf-set-selections
-        echo "phpmyadmin phpmyadmin/mysql/app-pass password $PASSADMIN" | debconf-set-selections
-        echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
-        apt install -y phpmyadmin >/dev/null 2>&1
-        ln -s /etc/phpmyadmin/apache.conf /etc/apache2/conf-available/phpmyadmin.conf >/dev/null 2>&1
-        a2enconf phpmyadmin >/dev/null 2>&1
-    fi
+    if ! dpkg -s phpmyadmin >/dev/null 2>&1; then
+        # Configuración no interactiva para phpmyadmin
+        echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
+        echo "phpmyadmin phpmyadmin/app-password-confirm password $PASSADMIN" | debconf-set-selections
+        echo "phpmyadmin phpmyadmin/mysql/admin-pass password $PASSROOT" | debconf-set-selections
+        echo "phpmyadmin phpmyadmin/mysql/app-pass password $PASSADMIN" | debconf-set-selections
+        echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
+        apt install -y phpmyadmin >/dev/null 2>&1
+        ln -s /etc/phpmyadmin/apache.conf /etc/apache2/conf-available/phpmyadmin.conf >/dev/null 2>&1
+        a2enconf phpmyadmin >/dev/null 2>&1
+    fi
 
-    # -----------------------------------------------------
-    # Crear archivo info.php para verificar la instalación
-    # -----------------------------------------------------
-    echo "XXX"
-    echo "97"
-    echo "Creando archivo info.php y configurando permisos..."
-    echo "XXX"
-    echo "<?php phpinfo(); ?>" > /var/www/html/info.php
-    chown www-data:www-data /var/www/html/info.php >/dev/null 2>&1
+    # -----------------------------------------------------
+    # Crear archivo info.php para verificar la instalación
+    # -----------------------------------------------------
+    echo "XXX"
+    echo "96"
+    echo "Creando archivo info.php y configurando permisos..."
+    echo "XXX"
+    echo "<?php phpinfo(); ?>" > /var/www/html/info.php
+    chown www-data:www-data /var/www/html/info.php >/dev/null 2>&1
 
-    # -----------------------------------------------------
-    # Validación y configuración de la versión de PHP
-    # -----------------------------------------------------
+    # -----------------------------------------------------
+    # Instalación de Composer
+    # -----------------------------------------------------
+    echo "XXX"
+    echo "98"
+    echo "Verificando e instalando Composer..."
+    echo "XXX"
+    if ! command -v composer &> /dev/null; then
+        curl -sS https://getcomposer.org/installer | php >/dev/null 2>&1
+        mv composer.phar /usr/local/bin/composer >/dev/null 2>&1
+        chmod +x /usr/local/bin/composer >/dev/null 2>&1
+    fi
+    sleep 1
+    # -----------------------------------------------------
+    # Validación y configuración de la versión de PHP
+    # -----------------------------------------------------
 
-    echo "XXX"
-    echo "99"
-    echo "Validando y configurando la versión de PHP..."
-    echo "XXX"
-    # Deshabilitar todas las versiones de PHP en Apache y habilitar la elegida
-    a2dismod php* >/dev/null 2>&1
-    a2enmod "php$PHPUSER" >/dev/null 2>&1
-    # Asegurar que la versión del CLI sea la correcta
-    update-alternatives --set php "/usr/bin/php$PHPUSER" >/dev/null 2>&1
-    systemctl restart apache2 >/dev/null 2>&1
-    
-    # Paso Final: Fin de la instalación
-    echo "XXX"
-    echo "100"
-    echo "Fin Instalación"
-    echo "XXX"
-    sleep 3
-    
+    echo "XXX"
+    echo "99"
+    echo "Validando y configurando la versión de PHP..."
+    echo "XXX"
+    # Deshabilitar todas las versiones de PHP en Apache y habilitar la elegida
+    a2dismod php* >/dev/null 2>&1
+    a2enmod "php$PHPUSER" >/dev/null 2>&1
+    # Asegurar que la versión del CLI sea la correcta
+    update-alternatives --set php "/usr/bin/php$PHPUSER" >/dev/null 2>&1
+    systemctl restart apache2 >/dev/null 2>&1
+    
+    # Paso Final: Fin de la instalación
+    echo "XXX"
+    echo "100"
+    echo "Fin Instalación"
+    echo "XXX"
+    sleep 3
+    
 ) | whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalador de componentes" --gauge "Iniciando la instalación..." 6 60 0
 
 
