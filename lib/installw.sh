@@ -406,12 +406,26 @@ fi
         ln -s /etc/phpmyadmin/apache.conf /etc/apache2/conf-available/phpmyadmin.conf >/dev/null 2>&1
         a2enconf phpmyadmin >/dev/null 2>&1
     fi
+    # -----------------------------------------------------
+    # Validación y configuración de la versión de PHP
+    # -----------------------------------------------------
 
+    echo "XXX"
+    echo "96"
+    echo "Validando y configurando la versión de PHP..."
+    echo "XXX"
+    # Deshabilitar todas las versiones de PHP en Apache y habilitar la elegida
+    a2dismod php* >/dev/null 2>&1
+    a2enmod "php$PHPUSER" >/dev/null 2>&1
+    # Asegurar que la versión del CLI sea la correcta
+    update-alternatives --set php "/usr/bin/php$PHPUSER" >/dev/null 2>&1
+    systemctl restart apache2 >/dev/null 2>&1
+    
     # -----------------------------------------------------
     # Crear archivo info.php para verificar la instalación
     # -----------------------------------------------------
     echo "XXX"
-    echo "96"
+    echo "97"
     echo "Creando archivo info.php y configurando permisos..."
     echo "XXX"
     echo "<?php phpinfo(); ?>" > /var/www/html/info.php
@@ -431,20 +445,6 @@ fi
     fi
     sleep 1
     # -----------------------------------------------------
-    # Validación y configuración de la versión de PHP
-    # -----------------------------------------------------
-
-    echo "XXX"
-    echo "99"
-    echo "Validando y configurando la versión de PHP..."
-    echo "XXX"
-    # Deshabilitar todas las versiones de PHP en Apache y habilitar la elegida
-    a2dismod php* >/dev/null 2>&1
-    a2enmod "php$PHPUSER" >/dev/null 2>&1
-    # Asegurar que la versión del CLI sea la correcta
-    update-alternatives --set php "/usr/bin/php$PHPUSER" >/dev/null 2>&1
-    systemctl restart apache2 >/dev/null 2>&1
-    
     # Paso Final: Fin de la instalación
     echo "XXX"
     echo "100"
