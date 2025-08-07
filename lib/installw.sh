@@ -52,7 +52,6 @@ else
     exit 1
 fi
 
-
 # ---------------------------------------------------------
 # Instalar whiptail si no está presente
 # ---------------------------------------------------------
@@ -378,14 +377,28 @@ fi
         apt install -y "$DBSERVER" >/dev/null 2>&1
     fi
 
+    # -----------------------------------------------------
+    # Instalación y configuración de la base de datos
+    # -----------------------------------------------------
+
+    echo "XXX"
+    echo "93"
+    echo "Instalando MariaDB/MySQL Server..."
+    echo "XXX"
+    if ! dpkg -s "$DBSERVER" >/dev/null 2>&1; then
+        apt install -y "$DBSERVER" >/dev/null 2>&1
+    fi
+
     echo "XXX"
     echo "94"
     echo "Configurando contraseñas para la base de datos..."
     echo "XXX"
-    mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$PASSROOT';" >/dev/null 2>&1
-    mysql -e "CREATE USER 'phpmyadmin'@'localhost' IDENTIFIED BY '$PASSADMIN';" >/dev/null 2>&1
-    mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'phpmyadmin'@'localhost' WITH GRANT OPTION;" >/dev/null 2>&1
+    # Configuración de usuario root y phpmyadmin
+    mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$PASSROOT';" >/dev/null 2>&1
     mysql -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
+    mysql -u root -p"$PASSROOT" -e "CREATE USER 'phpmyadmin'@'localhost' IDENTIFIED BY '$PASSADMIN';" >/dev/null 2>&1
+    mysql -u root -p"$PASSROOT" -e "GRANT ALL PRIVILEGES ON *.* TO 'phpmyadmin'@'localhost' WITH GRANT OPTION;" >/dev/null 2>&1
+    mysql -u root -p"$PASSROOT" -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
     systemctl restart mysql >/dev/null 2>&1
     
     # -----------------------------------------------------
