@@ -34,40 +34,24 @@ if [[ "$(uname -m)" != "x86_64" ]]; then
     exit 1
 fi
 
-# ---------------------------------------------------------
-# Validar la distribución, versión y definir variables
-# ---------------------------------------------------------
-# Define la versión de la distribución una vez
-DISVER=$(grep -i 'VERSION_ID' /etc/os-release | cut -d= -f2 | tr -d '"')
-
+# Validar que sea Ubuntu, Debian o AnduinOS, y definir DISTRO, DISVER y DBSERVER
 if grep -qi 'AnduinOS' /etc/os-release; then
-    if [[ "$DISVER" == "1.1" || "$DISVER" == "1.3" ]]; then
-        DISTRO="AnduinOS"
-        DBSERVER="mysql-server"
-    else
-        echo "Error: AnduinOS $DISVER no es una versión compatible. Se requiere 1.1.x o 1.3.x." 1>&2
-        exit 1
-    fi
+    DISTRO="AnduinOS"
+    DISVER=$(grep -i 'VERSION_ID' /etc/os-release | cut -d= -f2 | tr -d '"')
+    DBSERVER="mysql-server"
 elif grep -qi 'Ubuntu' /etc/os-release; then
-    if [[ "$DISVER" == "22.04" || "$DISVER" == "24.04" ]]; then
-        DISTRO="Ubuntu"
-        DBSERVER="mysql-server"
-    else
-        echo "Error: Ubuntu $DISVER no es una versión compatible. Se requiere 22.04 o 24.04." 1>&2
-        exit 1
-    fi
+    DISTRO="Ubuntu"
+    DISVER=$(grep -i 'VERSION_ID' /etc/os-release | cut -d= -f2 | tr -d '"')
+    DBSERVER="mysql-server"
 elif grep -qi 'Debian' /etc/os-release; then
-    if [[ "$DISVER" == "11" || "$DISVER" == "12" ]]; then
-        DISTRO="Debian"
-        DBSERVER="mariadb-server"
-    else
-        echo "Error: Debian $DISVER no es una versión compatible. Se requiere 11 o 12." 1>&2
-        exit 1
-    fi
+    DISTRO="Debian"
+    DISVER=$(grep -i 'VERSION_ID' /etc/os-release | cut -d= -f2 | tr -d '"')
+    DBSERVER="mariadb-server"
 else
-    echo "Error: Este script solo puede ejecutarse en Ubuntu, Debian o AnduinOS." 1>&2
+    echo "Este script solo puede ejecutarse en Ubuntu, Debian o AnduinOS."
     exit 1
 fi
+
 
 # ---------------------------------------------------------
 # Instalar whiptail si no está presente
