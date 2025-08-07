@@ -14,7 +14,6 @@ DISTRO=""
 PASSADMIN=""
 PASSROOT=""
 PHPUSER=""
-PROYECTO=""
 SOFTWARESUSER=""
 VER="2.0"
 
@@ -62,28 +61,13 @@ fi
 # ---------------------------------------------------------
 # Cuadro de bienvenida
 # ---------------------------------------------------------
-if (whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Bienvenido" --yesno "Bienvenido al Instalador de Lamp para Laravel 12. Se instalarán los siguientes paquetes:\n\n- Apache\n- PHP\n- $DBSERVER\n- Phpmyadmin\n- Composer\n- NodeJs\n- Programas de Creación de proyecto\n\n¿Desea continuar con la instalación?" 16 70) then
+if (whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Bienvenido" --yesno "Bienvenido al Instalador de Lamp para Laravel 12. Se instalarán los siguientes paquetes:\n\n- Apache\n- PHP\n- $DBSERVER\n- Phpmyadmin\n- Composer\n- NodeJs\n- Software Adicional (Opcional)\n\n¿Desea continuar con la instalación?" 16 70) then
     # El usuario seleccionó Aceptar, se continúa con la barra de progreso
     echo "" # Se agrega un salto de línea para separar la salida del whiptail
 else
     # El usuario seleccionó Cancelar, se muestra un mensaje y se sale del script
     whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
     exit 1
-fi
-
-# ---------------------------------------------------------
-# Solicitar el nombre del proyecto
-# ---------------------------------------------------------
-PROYECTO=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Nombre del Proyecto" --inputbox "Por favor, introduce el nombre de tu proyecto:\n(Si lo dejas en blanco, se usará 'crud' por defecto)" 10 60 "" 3>&1 1>&2 2>&3)
-
-if [ $? -ne 0 ]; then
-    whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
-    exit 1
-fi
-
-# Asignar valor por defecto si el campo se dejó en blanco
-if [ -z "$PROYECTO" ]; then
-    PROYECTO="crud"
 fi
 
 # ---------------------------------------------------------
@@ -354,72 +338,65 @@ fi
     # -----------------------------------------------------
     # Instalación de software adicional
     # -----------------------------------------------------
+    echo "XXX"
+    echo "91"
+    echo "Instalando software adicional..."
+    echo "XXX"
+    
+    # Instalación de Visual Studio Code
+    if [[ " $SOFTWARESUSER " =~ " vscode " ]]; then
+        if ! command -v code &> /dev/null; then
+            echo "XXX"
+            echo "93"
+            echo "Instalando Visual Studio Code..."
+            echo "XXX"
+            curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg >/dev/null 2>&1
+            install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg >/dev/null 2>&1
+            sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list' >/dev/null 2>&1
+            rm -f packages.microsoft.gpg >/dev/null 2>&1
+            apt update >/dev/null 2>&1
+            apt install -y code >/dev/null 2>&1
+        fi
+    fi
 
-    # Solo si el usuario seleccionó software adicional
-    if [ ! -z "$SOFTWARESUSER" ]; then
-        echo "XXX"
-        echo "93"
-        echo "Instalando software adicional..."
-        echo "XXX"
-        
-        # Iterar sobre las selecciones del usuario
-        for software in $SOFTWARESUSER; do
-            case "$software" in
-                "vscode")
-                    # Instalación de Visual Studio Code
-                    if ! command -v code &> /dev/null; then
-                        echo "XXX"
-                        echo "95"
-                        echo "Instalando Visual Studio Code..."
-                        echo "XXX"
-                        curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg >/dev/null 2>&1
-                        install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg >/dev/null 2>&1
-                        sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list' >/dev/null 2>&1
-                        rm -f packages.microsoft.gpg >/dev/null 2>&1
-                        apt update >/dev/null 2>&1
-                        apt install -y code >/dev/null 2>&1
-                    fi
-                    ;;
-                "brave")
-                    # Instalación de Brave Browser
-                    if ! dpkg -s brave-browser >/dev/null 2>&1; then
-                        echo "XXX"
-                        echo "96"
-                        echo "Instalando Brave Browser..."
-                        echo "XXX"
-                        apt install -y apt-transport-https curl >/dev/null 2>&1
-                        curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg >/dev/null 2>&1
-                        echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main"|sudo tee /etc/apt/sources.list.d/brave-browser-release.list >/dev/null 2>&1
-                        apt update >/dev/null 2>&1
-                        apt install -y brave-browser >/dev/null 2>&1
-                    fi
-                    ;;
-                "chrome")
-                    # Instalación de Google Chrome
-                    if ! dpkg -s google-chrome-stable >/dev/null 2>&1; then
-                        echo "XXX"
-                        echo "97"
-                        echo "Instalando Google Chrome..."
-                        echo "XXX"
-                        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add - >/dev/null 2>&1
-                        sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list' >/dev/null 2>&1
-                        apt update >/dev/null 2>&1
-                        apt install -y google-chrome-stable >/dev/null 2>&1
-                    fi
-                    ;;
-                "filezilla")
-                    # Instalación de FileZilla
-                    if ! dpkg -s filezilla >/dev/null 2>&1; then
-                        echo "XXX"
-                        echo "98"
-                        echo "Instalando FileZilla..."
-                        echo "XXX"
-                        apt install -y filezilla >/dev/null 2>&1
-                    fi
-                    ;;
-            esac
-        done
-        sleep 1
+    # Instalación de Brave Browser
+    if [[ " $SOFTWARESUSER " =~ " brave " ]]; then
+        if ! dpkg -s brave-browser >/dev/null 2>&1; then
+            echo "XXX"
+            echo "95"
+            echo "Instalando Brave Browser..."
+            echo "XXX"
+            apt install -y apt-transport-https curl >/dev/null 2>&1
+            curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg >/dev/null 2>&1
+            echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main"|sudo tee /etc/apt/sources.list.d/brave-browser-release.list >/dev/null 2>&1
+            apt update >/dev/null 2>&1
+            apt install -y brave-browser >/dev/null 2>&1
+        fi
+    fi
+
+    # Instalación de Google Chrome
+    if [[ " $SOFTWARESUSER " =~ " chrome " ]]; then
+        if ! dpkg -s google-chrome-stable >/dev/null 2>&1; then
+            echo "XXX"
+            echo "97"
+            echo "Instalando Google Chrome..."
+            echo "XXX"
+            wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add - >/dev/null 2>&1
+            sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list' >/dev/null 2>&1
+            apt update >/dev/null 2>&1
+            apt install -y google-chrome-stable >/dev/null 2>&1
+        fi
+    fi
+    
+    # Instalación de FileZilla
+    if [[ " $SOFTWARESUSER " =~ " filezilla " ]]; then
+        if ! dpkg -s filezilla >/dev/null 2>&1; then
+            echo "XXX"
+            echo "99"
+            echo "Instalando FileZilla..."
+            echo "XXX"
+            apt install -y filezilla >/dev/null 2>&1
+        fi
     fi
     
     # Paso Final: Fin de la instalación
