@@ -378,7 +378,7 @@ fi
     fi
 
     echo "XXX"
-    echo "95"
+    echo "92"
     echo "Instalando php${PHPUSER}-mysql (Base de Datos)..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-mysql" >/dev/null 2>&1; then
@@ -390,7 +390,7 @@ fi
     # -----------------------------------------------------
 
     echo "XXX"
-    echo "97"
+    echo "93"
     echo "Instalando MariaDB/MySQL Server..."
     echo "XXX"
     if ! dpkg -s "$DBSERVER" >/dev/null 2>&1; then
@@ -398,7 +398,7 @@ fi
     fi
 
     echo "XXX"
-    echo "98"
+    echo "94"
     echo "Configurando contraseñas para la base de datos..."
     echo "XXX"
     mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$PASSROOT';" >/dev/null 2>&1
@@ -406,6 +406,42 @@ fi
     mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'phpmyadmin'@'localhost' WITH GRANT OPTION;" >/dev/null 2>&1
     mysql -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
     systemctl restart mysql >/dev/null 2>&1
+    
+    # -----------------------------------------------------
+    # Instalación y configuración de phpmyadmin
+    # -----------------------------------------------------
+
+    echo "XXX"
+    echo "96"
+    echo "Instalando y configurando Phpmyadmin..."
+    echo "XXX"
+
+    if ! dpkg -s phpmyadmin >/dev/null 2>&1; then
+        # Configuración no interactiva para phpmyadmin
+        echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
+        echo "phpmyadmin phpmyadmin/app-password-confirm password $PASSADMIN" | debconf-set-selections
+        echo "phpmyadmin phpmyadmin/mysql/admin-pass password $PASSROOT" | debconf-set-selections
+        echo "phpmyadmin phpmyadmin/mysql/app-pass password $PASSADMIN" | debconf-set-selections
+        echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
+        apt install -y phpmyadmin >/dev/null 2>&1
+        ln -s /etc/phpmyadmin/apache.conf /etc/apache2/conf-available/phpmyadmin.conf >/dev/null 2>&1
+        a2enconf phpmyadmin >/dev/null 2>&1
+    fi
+
+    # -----------------------------------------------------
+    # Validación y configuración de la versión de PHP
+    # -----------------------------------------------------
+
+    echo "XXX"
+    echo "98"
+    echo "Validando y configurando la versión de PHP..."
+    echo "XXX"
+    # Deshabilitar todas las versiones de PHP en Apache y habilitar la elegida
+    a2dismod php* >/dev/null 2>&1
+    a2enmod "php$PHPUSER" >/dev/null 2>&1
+    # Asegurar que la versión del CLI sea la correcta
+    update-alternatives --set php "/usr/bin/php$PHPUSER" >/dev/null 2>&1
+    systemctl restart apache2 >/dev/null 2>&1
     
     # Paso Final: Fin de la instalación
     echo "XXX"
