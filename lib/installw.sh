@@ -209,7 +209,7 @@ fi
     # -----------------------------------------------------
 
     echo "XXX"
-    echo "20"
+    echo "19"
     echo "Instalando zip..."
     echo "XXX"
     if ! dpkg -s "zip" >/dev/null 2>&1; then
@@ -225,7 +225,7 @@ fi
     fi
 
     echo "XXX"
-    echo "26"
+    echo "27"
     echo "Instalando curl..."
     echo "XXX"
     if ! dpkg -s "curl" >/dev/null 2>&1; then
@@ -233,7 +233,7 @@ fi
     fi
 
     echo "XXX"
-    echo "29"
+    echo "31"
     echo "Instalando unzip..."
     echo "XXX"
     if ! dpkg -s "unzip" >/dev/null 2>&1; then
@@ -242,7 +242,7 @@ fi
 
     # Paso 4: Verificación e instalación de Apache
     echo "XXX"
-    echo "32"
+    echo "35"
     echo "Verificando e instalando Apache..."
     echo "XXX"
     
@@ -253,7 +253,7 @@ fi
     
     # Nuevo paso: Habilitar mod_rewrite para URLs dinámicas
     echo "XXX"
-    echo "35"
+    echo "39"
     echo "Habilitando mod_rewrite en Apache..."
     echo "XXX"
 
@@ -265,7 +265,7 @@ fi
     
     # Paso 5: Verificación e instalación de PHP base
     echo "XXX"
-    echo "40"
+    echo "43"
     echo "Verificando e instalando PHP base..."
     echo "XXX"
     
@@ -280,7 +280,7 @@ fi
 
     # Laravel/WordPress
     echo "XXX"
-    echo "44"
+    echo "47"
     echo "Instalando php${PHPUSER}-xml (Laravel/WP)..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-xml" >/dev/null 2>&1; then
@@ -288,7 +288,7 @@ fi
     fi
 
     echo "XXX"
-    echo "48"
+    echo "51"
     echo "Instalando php${PHPUSER}-zip (Laravel/WP)..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-zip" >/dev/null 2>&1; then
@@ -296,7 +296,7 @@ fi
     fi
 
     echo "XXX"
-    echo "52"
+    echo "55"
     echo "Instalando php${PHPUSER}-mbstring (Laravel/WP)..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-mbstring" >/dev/null 2>&1; then
@@ -304,7 +304,7 @@ fi
     fi
 
     echo "XXX"
-    echo "56"
+    echo "59"
     echo "Instalando php${PHPUSER}-dom (Laravel/WP)..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-dom" >/dev/null 2>&1; then
@@ -312,7 +312,7 @@ fi
     fi
     
     echo "XXX"
-    echo "60"
+    echo "63"
     echo "Instalando php${PHPUSER}-curl (Laravel/WP)..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-curl" >/dev/null 2>&1; then
@@ -320,7 +320,7 @@ fi
     fi
     
     echo "XXX"
-    echo "64"
+    echo "67"
     echo "Instalando php${PHPUSER}-fileinfo (Laravel/WP)..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-fileinfo" >/dev/null 2>&1; then
@@ -329,7 +329,7 @@ fi
 
     # Laravel
     echo "XXX"
-    echo "68"
+    echo "71"
     echo "Instalando php${PHPUSER}-bcmath (Laravel)..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-bcmath" >/dev/null 2>&1; then
@@ -338,7 +338,7 @@ fi
 
     # WordPress
     echo "XXX"
-    echo "72"
+    echo "75"
     echo "Instalando php${PHPUSER}-gmp (WordPress)..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-gmp" >/dev/null 2>&1; then
@@ -346,7 +346,7 @@ fi
     fi
     
     echo "XXX"
-    echo "76"
+    echo "79"
     echo "Instalando php${PHPUSER}-imagick (WordPress)..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-imagick" >/dev/null 2>&1; then
@@ -354,7 +354,7 @@ fi
     fi
     
     echo "XXX"
-    echo "80"
+    echo "83"
     echo "Instalando php${PHPUSER}-exif (WordPress)..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-exif" >/dev/null 2>&1; then
@@ -362,7 +362,7 @@ fi
     fi
     
     echo "XXX"
-    echo "84"
+    echo "87"
     echo "Instalando php${PHPUSER}-gd (WordPress)..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-gd" >/dev/null 2>&1; then
@@ -370,22 +370,43 @@ fi
     fi
 
     echo "XXX"
-    echo "88"
+    echo "91"
     echo "Instalando php${PHPUSER}-iconv (WordPress)..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-iconv" >/dev/null 2>&1; then
         apt install -y "php${PHPUSER}-iconv" >/dev/null 2>&1
     fi
 
-    # Base de datos
     echo "XXX"
-    echo "92"
+    echo "95"
     echo "Instalando php${PHPUSER}-mysql (Base de Datos)..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-mysql" >/dev/null 2>&1; then
         apt install -y "php${PHPUSER}-mysql" >/dev/null 2>&1
     fi
 
+    # -----------------------------------------------------
+    # Instalación y configuración de la base de datos
+    # -----------------------------------------------------
+
+    echo "XXX"
+    echo "97"
+    echo "Instalando MariaDB/MySQL Server..."
+    echo "XXX"
+    if ! dpkg -s "$DBSERVER" >/dev/null 2>&1; then
+        apt install -y "$DBSERVER" >/dev/null 2>&1
+    fi
+
+    echo "XXX"
+    echo "98"
+    echo "Configurando contraseñas para la base de datos..."
+    echo "XXX"
+    mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '$PASSROOT';" >/dev/null 2>&1
+    mysql -e "CREATE USER 'phpmyadmin'@'localhost' IDENTIFIED BY '$PASSADMIN';" >/dev/null 2>&1
+    mysql -e "GRANT ALL PRIVILEGES ON *.* TO 'phpmyadmin'@'localhost' WITH GRANT OPTION;" >/dev/null 2>&1
+    mysql -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
+    systemctl restart mysql >/dev/null 2>&1
+    
     # Paso Final: Fin de la instalación
     echo "XXX"
     echo "100"
@@ -394,7 +415,6 @@ fi
     sleep 3
     
 ) | whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalador de componentes" --gauge "Iniciando la instalación..." 6 60 0
-
 
 
 
