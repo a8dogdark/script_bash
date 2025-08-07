@@ -383,25 +383,16 @@ fi
             echo "92"
             echo "Instalando Visual Studio Code: Paso 1 de 3..."
             echo "XXX"
-            # Paso 1: Obtener la clave GPG de Microsoft
-            wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > microsoft.gpg >/dev/null 2>&1
-            install -D -o root -g root -m 644 microsoft.gpg /usr/share/keyrings/microsoft.gpg >/dev/null 2>&1
-            rm -f microsoft.gpg >/dev/null 2>&1
+            # Paso 1: Añadir la clave GPG de Microsoft
+            curl -sL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /usr/share/keyrings/microsoft-archive-keyring.gpg >/dev/null
             sleep 1
             
             echo "XXX"
             echo "93"
             echo "Instalando Visual Studio Code: Paso 2 de 3..."
             echo "XXX"
-            # Paso 2: Crear el archivo de fuentes del repositorio
-            cat <<EOF | tee /etc/apt/sources.list.d/vscode.sources >/dev/null 2>&1
-Types: deb
-URIs: https://packages.microsoft.com/repos/code
-Suites: stable
-Components: main
-Architectures: amd64,arm64,armhf
-Signed-By: /usr/share/keyrings/microsoft.gpg
-EOF
+            # Paso 2: Añadir el repositorio de VS Code
+            echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-archive-keyring.gpg] https://packages.microsoft.com/repos/vscode stable main" | tee /etc/apt/sources.list.d/vscode.list >/dev/null
             sleep 1
             
             echo "XXX"
@@ -415,6 +406,7 @@ EOF
         fi
     fi
 
+    
     # Instalación de Brave Browser
     if [[ " $SOFTWARESUSER " =~ " brave " ]]; then
         if ! dpkg -s brave-browser >/dev/null 2>&1; then
