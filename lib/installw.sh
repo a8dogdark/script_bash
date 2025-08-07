@@ -375,7 +375,7 @@ fi
     fi
 
     echo "XXX"
-    echo "92"
+    echo "91"
     echo "Configurando contraseñas para la base de datos..."
     echo "XXX"
     # Configuración de usuario root y phpmyadmin
@@ -391,7 +391,7 @@ fi
     # -----------------------------------------------------
 
     echo "XXX"
-    echo "94"
+    echo "92"
     echo "Instalando y configurando Phpmyadmin..."
     echo "XXX"
 
@@ -411,7 +411,7 @@ fi
     # -----------------------------------------------------
 
     echo "XXX"
-    echo "96"
+    echo "93"
     echo "Validando y configurando la versión de PHP..."
     echo "XXX"
     # Deshabilitar todas las versiones de PHP en Apache y habilitar la elegida
@@ -425,7 +425,7 @@ fi
     # Crear archivo info.php para verificar la instalación
     # -----------------------------------------------------
     echo "XXX"
-    echo "97"
+    echo "94"
     echo "Creando archivo info.php y configurando permisos..."
     echo "XXX"
     echo "<?php phpinfo(); ?>" > /var/www/html/info.php
@@ -435,7 +435,7 @@ fi
     # Instalación de Composer
     # -----------------------------------------------------
     echo "XXX"
-    echo "98"
+    echo "95"
     echo "Verificando e instalando Composer..."
     echo "XXX"
     if ! command -v composer &> /dev/null; then
@@ -445,6 +445,17 @@ fi
     fi
     sleep 1
     # -----------------------------------------------------
+    # Instalación de NodeJs si no está presente
+    # -----------------------------------------------------
+    echo "XXX"
+    echo "98"
+    echo "Verificando e instalando NodeJs si es necesario..."
+    echo "XXX"
+    if ! command -v node &> /dev/null; then
+        curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash - >/dev/null 2>&1
+        apt install -y nodejs >/dev/null 2>&1
+    fi
+    sleep 1
     # Paso Final: Fin de la instalación
     echo "XXX"
     echo "100"
