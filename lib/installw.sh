@@ -448,7 +448,7 @@ fi
     # Instalación de NodeJs si no está presente
     # -----------------------------------------------------
     echo "XXX"
-    echo "98"
+    echo "96"
     echo "Verificando e instalando NodeJs si es necesario..."
     echo "XXX"
     if ! command -v node &> /dev/null; then
@@ -456,6 +456,76 @@ fi
         apt install -y nodejs >/dev/null 2>&1
     fi
     sleep 1
+    # -----------------------------------------------------
+    # Instalación de software adicional
+    # -----------------------------------------------------
+
+    # Solo si el usuario seleccionó software adicional
+    if [ ! -z "$SOFTWARESUSER" ]; then
+        echo "XXX"
+        echo "97"
+        echo "Instalando software adicional..."
+        echo "XXX"
+        
+        # Iterar sobre las selecciones del usuario
+        for software in $SOFTWARESUSER; do
+            case "$software" in
+                "vscode")
+                    # Instalación de Visual Studio Code
+                    echo "XXX"
+                    echo "98"
+                    echo "Instalando Visual Studio Code..."
+                    echo "XXX"
+                    if ! command -v code &> /dev/null; then
+                        curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg >/dev/null 2>&1
+                        install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg >/dev/null 2>&1
+                        sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list' >/dev/null 2>&1
+                        rm -f packages.microsoft.gpg >/dev/null 2>&1
+                        apt update >/dev/null 2>&1
+                        apt install -y code >/dev/null 2>&1
+                    fi
+                    ;;
+                "brave")
+                    # Instalación de Brave Browser
+                    echo "XXX"
+                    echo "98"
+                    echo "Instalando Brave Browser..."
+                    echo "XXX"
+                    if ! dpkg -s brave-browser >/dev/null 2>&1; then
+                        apt install -y apt-transport-https curl >/dev/null 2>&1
+                        curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg >/dev/null 2>&1
+                        echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main"|sudo tee /etc/apt/sources.list.d/brave-browser-release.list >/dev/null 2>&1
+                        apt update >/dev/null 2>&1
+                        apt install -y brave-browser >/dev/null 2>&1
+                    fi
+                    ;;
+                "chrome")
+                    # Instalación de Google Chrome
+                    echo "XXX"
+                    echo "98"
+                    echo "Instalando Google Chrome..."
+                    echo "XXX"
+                    if ! dpkg -s google-chrome-stable >/dev/null 2>&1; then
+                        wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add - >/dev/null 2>&1
+                        sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list' >/dev/null 2>&1
+                        apt update >/dev/null 2>&1
+                        apt install -y google-chrome-stable >/dev/null 2>&1
+                    fi
+                    ;;
+                "filezilla")
+                    # Instalación de FileZilla
+                    echo "XXX"
+                    echo "98"
+                    echo "Instalando FileZilla..."
+                    echo "XXX"
+                    if ! dpkg -s filezilla >/dev/null 2>&1; then
+                        apt install -y filezilla >/dev/null 2>&1
+                    fi
+                    ;;
+            esac
+        done
+        sleep 1
+    fi
     # Paso Final: Fin de la instalación
     echo "XXX"
     echo "100"
@@ -464,6 +534,5 @@ fi
     sleep 3
     
 ) | whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalador de componentes" --gauge "Iniciando la instalación..." 6 60 0
-
 
 exit 0
