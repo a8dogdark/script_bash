@@ -414,7 +414,7 @@ fi
     echo "97"
     echo "Creando archivo info.php y configurando permisos..."
     echo "XXX"
-    echo "<?php phpinfo(); ?>" > /var/www/html/info.php >/dev/null 2>&1
+    echo "<?php phpinfo(); ?>" > /var/www/html/info.php
     chown www-data:www-data /var/www/html/info.php >/dev/null 2>&1
 
     # -----------------------------------------------------
