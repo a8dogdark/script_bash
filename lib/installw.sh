@@ -243,131 +243,26 @@ fi
     systemctl restart apache2 >/dev/null 2>&1
     sleep 1
     
-    # Paso 5: Verificación e instalación de PHP base
+    # Paso 5: Verificación e instalación de PHP base y todas sus extensiones
     echo "XXX"
     echo "36"
-    echo "Verificando e instalando PHP base..."
+    echo "Verificando e instalando PHP base y extensiones..."
     echo "XXX"
     
     if [[ "$CURRENT_PHP_VERSION" != "$PHPUSER" ]]; then
-        apt install -y "php$PHPUSER" "libapache2-mod-php$PHPUSER" >/dev/null 2>&1
+        apt install -y "php$PHPUSER" "libapache2-mod-php$PHPUSER" "php${PHPUSER}-xml" "php${PHPUSER}-zip" "php${PHPUSER}-mbstring" "php${PHPUSER}-dom" "php${PHPUSER}-curl" "php${PHPUSER}-fileinfo" "php${PHPUSER}-bcmath" "php${PHPUSER}-gmp" "php${PHPUSER}-imagick" "php${PHPUSER}-exif" "php${PHPUSER}-gd" "php${PHPUSER}-iconv" "php${PHPUSER}-mysql" >/dev/null 2>&1
+    else
+        # Si la versión de PHP ya está instalada, solo se verifican las extensiones
+        apt install -y "php${PHPUSER}-xml" "php${PHPUSER}-zip" "php${PHPUSER}-mbstring" "php${PHPUSER}-dom" "php${PHPUSER}-curl" "php${PHPUSER}-fileinfo" "php${PHPUSER}-bcmath" "php${PHPUSER}-gmp" "php${PHPUSER}-imagick" "php${PHPUSER}-exif" "php${PHPUSER}-gd" "php${PHPUSER}-iconv" "php${PHPUSER}-mysql" >/dev/null 2>&1
     fi
     sleep 1
-
-    # -----------------------------------------------------
-    # Instalación de extensiones de PHP por separado
-    # -----------------------------------------------------
-
-    echo "XXX"
-    echo "40"
-    echo "Instalando php${PHPUSER}-xml..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-xml" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-xml" >/dev/null 2>&1
-    fi
-
-    echo "XXX"
-    echo "44"
-    echo "Instalando php${PHPUSER}-zip..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-zip" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-zip" >/dev/null 2>&1
-    fi
-
-    echo "XXX"
-    echo "48"
-    echo "Instalando php${PHPUSER}-mbstring..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-mbstring" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-mbstring" >/dev/null 2>&1
-    fi
-
-    echo "XXX"
-    echo "52"
-    echo "Instalando php${PHPUSER}-dom..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-dom" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-dom" >/dev/null 2>&1
-    fi
-    
-    echo "XXX"
-    echo "56"
-    echo "Instalando php${PHPUSER}-curl..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-curl" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-curl" >/dev/null 2>&1
-    fi
-    
-    echo "XXX"
-    echo "60"
-    echo "Instalando php${PHPUSER}-fileinfo..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-fileinfo" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-fileinfo" >/dev/null 2>&1
-    fi
-
-    echo "XXX"
-    echo "64"
-    echo "Instalando php${PHPUSER}-bcmath..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-bcmath" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-bcmath" >/dev/null 2>&1
-    fi
-
-    echo "XXX"
-    echo "68"
-    echo "Instalando php${PHPUSER}-gmp..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-gmp" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-gmp" >/dev/null 2>&1
-    fi
-    
-    echo "XXX"
-    echo "72"
-    echo "Instalando php${PHPUSER}-imagick..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-imagick" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-imagick" >/dev/null 2>&1
-    fi
-    
-    echo "XXX"
-    echo "76"
-    echo "Instalando php${PHPUSER}-exif..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-exif" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-exif" >/dev/null 2>&1
-    fi
-    
-    echo "XXX"
-    echo "80"
-    echo "Instalando php${PHPUSER}-gd..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-gd" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-gd" >/dev/null 2>&1
-    fi
-
-    echo "XXX"
-    echo "84"
-    echo "Instalando php${PHPUSER}-iconv..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-iconv" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-iconv" >/dev/null 2>&1
-    fi
-
-    echo "XXX"
-    echo "88"
-    echo "Instalando php${PHPUSER}-mysql..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-mysql" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-mysql" >/dev/null 2>&1
-    fi
 
     # -----------------------------------------------------
     # Instalación y configuración de la base de datos
     # -----------------------------------------------------
 
     echo "XXX"
-    echo "90"
+    echo "60"
     echo "Instalando MariaDB/MySQL Server..."
     echo "XXX"
     if ! dpkg -s "$DBSERVER" >/dev/null 2>&1; then
@@ -375,7 +270,7 @@ fi
     fi
 
     echo "XXX"
-    echo "91"
+    echo "65"
     echo "Configurando contraseñas para la base de datos..."
     echo "XXX"
     # Configuración de usuario root y phpmyadmin
@@ -391,7 +286,7 @@ fi
     # -----------------------------------------------------
 
     echo "XXX"
-    echo "92"
+    echo "70"
     echo "Instalando y configurando Phpmyadmin..."
     echo "XXX"
 
@@ -411,7 +306,7 @@ fi
     # -----------------------------------------------------
 
     echo "XXX"
-    echo "93"
+    echo "75"
     echo "Validando y configurando la versión de PHP..."
     echo "XXX"
     # Deshabilitar todas las versiones de PHP en Apache y habilitar la elegida
@@ -425,7 +320,7 @@ fi
     # Crear archivo info.php para verificar la instalación
     # -----------------------------------------------------
     echo "XXX"
-    echo "94"
+    echo "80"
     echo "Creando archivo info.php y configurando permisos..."
     echo "XXX"
     echo "<?php phpinfo(); ?>" > /var/www/html/info.php
@@ -435,7 +330,7 @@ fi
     # Instalación de Composer
     # -----------------------------------------------------
     echo "XXX"
-    echo "95"
+    echo "85"
     echo "Verificando e instalando Composer..."
     echo "XXX"
     if ! command -v composer &> /dev/null; then
@@ -448,7 +343,7 @@ fi
     # Instalación de NodeJs si no está presente
     # -----------------------------------------------------
     echo "XXX"
-    echo "96"
+    echo "90"
     echo "Verificando e instalando NodeJs si es necesario..."
     echo "XXX"
     if ! command -v node &> /dev/null; then
@@ -463,7 +358,7 @@ fi
     # Solo si el usuario seleccionó software adicional
     if [ ! -z "$SOFTWARESUSER" ]; then
         echo "XXX"
-        echo "97"
+        echo "93"
         echo "Instalando software adicional..."
         echo "XXX"
         
@@ -472,11 +367,11 @@ fi
             case "$software" in
                 "vscode")
                     # Instalación de Visual Studio Code
-                    echo "XXX"
-                    echo "98"
-                    echo "Instalando Visual Studio Code..."
-                    echo "XXX"
                     if ! command -v code &> /dev/null; then
+                        echo "XXX"
+                        echo "95"
+                        echo "Instalando Visual Studio Code..."
+                        echo "XXX"
                         curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg >/dev/null 2>&1
                         install -D -o root -g root -m 644 packages.microsoft.gpg /etc/apt/keyrings/packages.microsoft.gpg >/dev/null 2>&1
                         sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/keyrings/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list' >/dev/null 2>&1
@@ -487,11 +382,11 @@ fi
                     ;;
                 "brave")
                     # Instalación de Brave Browser
-                    echo "XXX"
-                    echo "98"
-                    echo "Instalando Brave Browser..."
-                    echo "XXX"
                     if ! dpkg -s brave-browser >/dev/null 2>&1; then
+                        echo "XXX"
+                        echo "96"
+                        echo "Instalando Brave Browser..."
+                        echo "XXX"
                         apt install -y apt-transport-https curl >/dev/null 2>&1
                         curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg >/dev/null 2>&1
                         echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main"|sudo tee /etc/apt/sources.list.d/brave-browser-release.list >/dev/null 2>&1
@@ -501,11 +396,11 @@ fi
                     ;;
                 "chrome")
                     # Instalación de Google Chrome
-                    echo "XXX"
-                    echo "98"
-                    echo "Instalando Google Chrome..."
-                    echo "XXX"
                     if ! dpkg -s google-chrome-stable >/dev/null 2>&1; then
+                        echo "XXX"
+                        echo "97"
+                        echo "Instalando Google Chrome..."
+                        echo "XXX"
                         wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add - >/dev/null 2>&1
                         sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list' >/dev/null 2>&1
                         apt update >/dev/null 2>&1
@@ -514,11 +409,11 @@ fi
                     ;;
                 "filezilla")
                     # Instalación de FileZilla
-                    echo "XXX"
-                    echo "98"
-                    echo "Instalando FileZilla..."
-                    echo "XXX"
                     if ! dpkg -s filezilla >/dev/null 2>&1; then
+                        echo "XXX"
+                        echo "98"
+                        echo "Instalando FileZilla..."
+                        echo "XXX"
                         apt install -y filezilla >/dev/null 2>&1
                     fi
                     ;;
@@ -526,6 +421,7 @@ fi
         done
         sleep 1
     fi
+    
     # Paso Final: Fin de la instalación
     echo "XXX"
     echo "100"
@@ -534,5 +430,12 @@ fi
     sleep 3
     
 ) | whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalador de componentes" --gauge "Iniciando la instalación..." 6 60 0
+
+# ---------------------------------------------------------
+# Mensaje final de éxito
+# ---------------------------------------------------------
+
+# Mensaje de éxito
+whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación completada" --msgbox "La instalación de los componentes LAMP y software adicional ha sido completada.\n\nPara verificar la instalación:\n- Apache: http://localhost\n- Phpinfo: http://localhost/info.php\n- Phpmyadmin: http://localhost/phpmyadmin\n\nContraseña de root de la DB: $PASSROOT\nContraseña de phpmyadmin: $PASSADMIN" 16 70
 
 exit 0
