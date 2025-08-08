@@ -260,20 +260,152 @@ fi
     systemctl restart apache2 >/dev/null 2>&1
     sleep 1
     
-    # Paso 5: Verificación e instalación de PHP base y todas sus extensiones
+    # Paso 5: Verificación e instalación de PHP base y todas sus extensiones (Modificado)
     echo "XXX"
-    echo "40"
-    echo "Verificando e instalando PHP base y extensiones..."
+    echo "34"
+    echo "Iniciando instalación de PHP y sus extensiones..."
     echo "XXX"
+    sleep 1
     
+    # Instalación de PHP base y su módulo de Apache
+    echo "XXX"
+    echo "35"
+    echo "Instalando PHP $PHPUSER y el módulo de Apache..."
+    echo "XXX"
     if [[ "$CURRENT_PHP_VERSION" != "$PHPUSER" ]]; then
-        apt install -y "php$PHPUSER" "libapache2-mod-php$PHPUSER" "php${PHPUSER}-xml" "php${PHPUSER}-zip" "php${PHPUSER}-mbstring" "php${PHPUSER}-dom" "php${PHPUSER}-curl" "php${PHPUSER}-fileinfo" "php${PHPUSER}-bcmath" "php${PHPUSER}-gmp" "php${PHPUSER}-imagick" "php${PHPUSER}-exif" "php${PHPUSER}-gd" "php${PHPUSER}-iconv" "php${PHPUSER}-mysql" >/dev/null 2>&1
-    else
-        # Si la versión de PHP ya está instalada, solo se verifican las extensiones
-        apt install -y "php${PHPUSER}-xml" "php${PHPUSER}-zip" "php${PHPUSER}-mbstring" "php${PHPUSER}-dom" "php${PHPUSER}-curl" "php${PHPUSER}-fileinfo" "php${PHPUSER}-bcmath" "php${PHPUSER}-gmp" "php${PHPUSER}-imagick" "php${PHPUSER}-exif" "php${PHPUSER}-gd" "php${PHPUSER}-iconv" "php${PHPUSER}-mysql" >/dev/null 2>&1
+        if ! dpkg -s "php$PHPUSER" >/dev/null 2>&1; then
+            apt install -y "php$PHPUSER" >/dev/null 2>&1
+        fi
+        if ! dpkg -s "libapache2-mod-php$PHPUSER" >/dev/null 2>&1; then
+            apt install -y "libapache2-mod-php$PHPUSER" >/dev/null 2>&1
+        fi
     fi
     sleep 1
 
+    # Instalación de extensiones una por una
+    echo "XXX"
+    echo "36"
+    echo "Instalando extensión php${PHPUSER}-xml..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-xml" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-xml" >/dev/null 2>&1
+    fi
+    sleep 1
+    
+    echo "XXX"
+    echo "37"
+    echo "Instalando extensión php${PHPUSER}-zip..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-zip" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-zip" >/dev/null 2>&1
+    fi
+    sleep 1
+    
+    echo "XXX"
+    echo "38"
+    echo "Instalando extensión php${PHPUSER}-mbstring..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-mbstring" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-mbstring" >/dev/null 2>&1
+    fi
+    sleep 1
+    
+    echo "XXX"
+    echo "39"
+    echo "Instalando extensión php${PHPUSER}-dom..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-dom" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-dom" >/dev/null 2>&1
+    fi
+    sleep 1
+    
+    echo "XXX"
+    echo "40"
+    echo "Instalando extensión php${PHPUSER}-curl..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-curl" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-curl" >/dev/null 2>&1
+    fi
+    sleep 1
+
+    echo "XXX"
+    echo "41"
+    echo "Instalando extensión php${PHPUSER}-fileinfo..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-fileinfo" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-fileinfo" >/dev/null 2>&1
+    fi
+    sleep 1
+    
+    echo "XXX"
+    echo "42"
+    echo "Instalando extensión php${PHPUSER}-bcmath..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-bcmath" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-bcmath" >/dev/null 2>&1
+    fi
+    sleep 1
+    
+    echo "XXX"
+    echo "43"
+    echo "Instalando extensión php${PHPUSER}-gmp..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-gmp" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-gmp" >/dev/null 2>&1
+    fi
+    sleep 1
+
+    echo "XXX"
+    echo "44"
+    echo "Instalando extensión php${PHPUSER}-imagick..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-imagick" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-imagick" >/dev/null 2>&1
+    fi
+    sleep 1
+    
+    echo "XXX"
+    echo "45"
+    echo "Instalando extensión php${PHPUSER}-exif..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-exif" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-exif" >/dev/null 2>&1
+    fi
+    sleep 1
+
+    echo "XXX"
+    echo "46"
+    echo "Instalando extensión php${PHPUSER}-gd..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-gd" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-gd" >/dev/null 2>&1
+    fi
+    sleep 1
+    
+    echo "XXX"
+    echo "47"
+    echo "Instalando extensión php${PHPUSER}-iconv..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-iconv" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-iconv" >/dev/null 2>&1
+    fi
+    sleep 1
+    
+    echo "XXX"
+    echo "48"
+    echo "Instalando extensión php${PHPUSER}-mysql..."
+    echo "XXX"
+    if ! dpkg -s "php${PHPUSER}-mysql" >/dev/null 2>&1; then
+        apt install -y "php${PHPUSER}-mysql" >/dev/null 2>&1
+    fi
+    sleep 1
+    
+    echo "XXX"
+    echo "49"
+    echo "Instalación de extensiones de PHP completada."
+    echo "XXX"
+    sleep 1
+    
     # -----------------------------------------------------
     # Instalación y configuración de la base de datos
     # -----------------------------------------------------
