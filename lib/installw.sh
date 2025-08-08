@@ -16,7 +16,8 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="2.0"
+VER="2.3" # Versión actualizada
+CREAR_PROYECTO=0
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -73,19 +74,28 @@ else
 fi
 
 # ---------------------------------------------------------
-# Solicitar nombre del proyecto Laravel (con valor por defecto)
+# Preguntar si se desea crear un proyecto Laravel
 # ---------------------------------------------------------
-PROYECTO=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Nombre del Proyecto Laravel" --inputbox "Por favor, introduce el nombre del proyecto Laravel a crear en /var/www/html/:\n(Si lo dejas en blanco, se usará 'crud' por defecto)" 10 70 "" 3>&1 1>&2 2>&3)
+if (whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Crear Proyecto Laravel" --yesno "Este script puede crear un nuevo proyecto de Laravel por ti.\n\n¿Deseas crear un proyecto de Laravel?" 10 70) then
+    CREAR_PROYECTO=1
+    # Solicitar nombre del proyecto Laravel (con valor por defecto)
+    PROYECTO=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Nombre del Proyecto Laravel" --inputbox "Por favor, introduce el nombre del proyecto Laravel a crear en /var/www/html/:\n(Si lo dejas en blanco, se usará 'crud' por defecto)" 10 70 "" 3>&1 1>&2 2>&3)
+    
+    if [ $? -ne 0 ]; then
+        whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
+        exit 1
+    fi
 
-if [ $? -ne 0 ]; then
-    whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
-    exit 1
+    # Asignar valor por defecto si el campo se dejó en blanco
+    if [ -z "$PROYECTO" ]; then
+        PROYECTO="crud"
+    fi
+else
+    # El usuario seleccionó no crear un proyecto
+    whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Proyecto Laravel" --msgbox "De acuerdo. No se creará ningún proyecto de Laravel." 8 40
+    CREAR_PROYECTO=0
 fi
 
-# Asignar valor por defecto si el campo se dejó en blanco
-if [ -z "$PROYECTO" ]; then
-    PROYECTO="crud"
-fi
 
 # ---------------------------------------------------------
 # Solicitar la contraseña de Phpmyadmin
@@ -377,7 +387,8 @@ fi
     # -----------------------------------------------------
     
     # Instalación de Visual Studio Code
-    if [[ " $SOFTWARESUSER " =~ " vscode " ]]; then
+    # Se ha corregido la validación para que reconozca correctamente la opción
+    if [[ " $SOFTWARESUSER " =~ "vscode" ]]; then
         if ! command -v code &> /dev/null; then
             echo "XXX"
             echo "92"
@@ -406,9 +417,8 @@ fi
         fi
     fi
 
-    
     # Instalación de Brave Browser
-    if [[ " $SOFTWARESUSER " =~ " brave " ]]; then
+    if [[ " $SOFTWARESUSER " =~ "brave" ]]; then
         if ! dpkg -s brave-browser >/dev/null 2>&1; then
             echo "XXX"
             echo "95"
@@ -424,7 +434,7 @@ fi
     fi
 
     # Instalación de Google Chrome
-    if [[ " $SOFTWARESUSER " =~ " chrome " ]]; then
+    if [[ " $SOFTWARESUSER " =~ "chrome" ]]; then
         if ! dpkg -s google-chrome-stable >/dev/null 2>&1; then
             echo "XXX"
             echo "97"
@@ -439,7 +449,7 @@ fi
     fi
     
     # Instalación de FileZilla
-    if [[ " $SOFTWARESUSER " =~ " filezilla " ]]; then
+    if [[ " $SOFTWARESUSER " =~ "filezilla" ]]; then
         if ! dpkg -s filezilla >/dev/null 2>&1; then
             echo "XXX"
             echo "99"
@@ -450,17 +460,6 @@ fi
         fi
     fi
     
-    # Creación del proyecto Laravel
-    if [[ ! -z "$PROYECTO" ]]; then
-        echo "XXX"
-        echo "99"
-        echo "Creando el proyecto Laravel '$PROYECTO'..."
-        echo "XXX"
-        cd /var/www/html >/dev/null 2>&1
-        composer create-project laravel/laravel "$PROYECTO" >/dev/null 2>&1
-        chown -R www-data:www-data "/var/www/html/$PROYECTO" >/dev/null 2>&1
-        sleep 1
-    fi
     
     # Paso Final: Fin de la instalación
     echo "XXX"
