@@ -276,7 +276,7 @@ fi
 
     # -----------------------------------------------------
     # Instalación y configuración de la base de datos
-    -----------------------------------------------------
+    # -----------------------------------------------------
 
     echo "XXX"
     echo "50"
@@ -467,8 +467,8 @@ fi
     sleep 2
 
     echo "XXX"
-    echo "95"
-    echo "Creando proyecto de Laravel '$PROYECTO' y configurando Vite..."
+    echo "93"
+    echo "Creando proyecto de Laravel '$PROYECTO'..."
     echo "XXX"
     # Crear el proyecto de Laravel dentro de la carpeta /var/www/laravel
     cd "/var/www/laravel" >/dev/null 2>&1
@@ -481,12 +481,18 @@ fi
     cd "$PROYECTO" >/dev/null 2>&1
     
     # Instalar las dependencias de Node.js (necesario para Vite)
-    echo "Instalando dependencias de Node.js..."
+    echo "XXX"
+    echo "95"
+    echo "Instalando dependencias de Node.js para Vite..."
+    echo "XXX"
     npm install >/dev/null 2>&1
     sleep 1
 
     # Construir los assets para que estén listos
-    echo "Construyendo los assets con Vite..."
+    echo "XXX"
+    echo "97"
+    echo "Compilando los assets con Vite..."
+    echo "XXX"
     npm run build >/dev/null 2>&1
     sleep 1
 
@@ -495,6 +501,10 @@ fi
     
     # Asignar permisos al usuario actual para que pueda editar los archivos del proyecto
     # Se usa $SUDO_USER para obtener el usuario que ejecutó el script con sudo
+    echo "XXX"
+    echo "99"
+    echo "Configurando permisos..."
+    echo "XXX"
     USER_PROYECTO=${SUDO_USER:-$(whoami)}
     chown -R "$USER_PROYECTO":www-data "/var/www/laravel/$PROYECTO" >/dev/null 2>&1
     chmod -R 775 "/var/www/laravel/$PROYECTO" >/dev/null 2>&1
