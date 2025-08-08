@@ -74,26 +74,19 @@ else
 fi
 
 # ---------------------------------------------------------
-# Preguntar si se desea crear un proyecto Laravel
+# Preguntar el nombre del proyecto Laravel (sin la pregunta de confirmación)
 # ---------------------------------------------------------
-if (whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Crear Proyecto Laravel" --yesno "Este script puede crear un nuevo proyecto de Laravel por ti.\n\n¿Deseas crear un proyecto de Laravel?" 10 70) then
-    CREAR_PROYECTO=1
-    # Solicitar nombre del proyecto Laravel (con valor por defecto)
-    PROYECTO=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Nombre del Proyecto Laravel" --inputbox "Por favor, introduce el nombre del proyecto Laravel a crear en /var/www/html/:\n(Si lo dejas en blanco, se usará 'crud' por defecto)" 10 70 "" 3>&1 1>&2 2>&3)
+CREAR_PROYECTO=1
+PROYECTO=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Nombre del Proyecto Laravel" --inputbox "Por favor, introduce el nombre del proyecto Laravel a crear en /var/www/html/:\n(Si lo dejas en blanco, se usará 'crud' por defecto)" 10 70 "" 3>&1 1>&2 2>&3)
     
-    if [ $? -ne 0 ]; then
-        whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
-        exit 1
-    fi
+if [ $? -ne 0 ]; then
+    whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
+    exit 1
+fi
 
-    # Asignar valor por defecto si el campo se dejó en blanco
-    if [ -z "$PROYECTO" ]; then
-        PROYECTO="crud"
-    fi
-else
-    # El usuario seleccionó no crear un proyecto
-    whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Proyecto Laravel" --msgbox "De acuerdo. No se creará ningún proyecto de Laravel." 8 40
-    CREAR_PROYECTO=0
+# Asignar valor por defecto si el campo se dejó en blanco
+if [ -z "$PROYECTO" ]; then
+    PROYECTO="crud"
 fi
 
 
