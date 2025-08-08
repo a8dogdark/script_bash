@@ -16,7 +16,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="2.3" # Versión actualizada
+VER="2.4" # Versión actualizada
 # La variable CREAR_PROYECTO ya no es necesaria con el flujo actual.
 
 # ---------------------------------------------------------
@@ -64,7 +64,7 @@ fi
 # ---------------------------------------------------------
 # Cuadro de bienvenida
 # ---------------------------------------------------------
-if (whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Bienvenido" --yesno "Bienvenido al Instalador de Lamp para Laravel 12. Se instalarán los siguientes paquetes:\n\n- Apache\n- PHP\n- $DBSERVER\n- Phpmyadmin\n- Composer\n- NodeJs\n- Software Adicional (Opcional)\n\n¿Desea continuar con la instalación?" 16 70) then
+if (whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Bienvenido" --yesno "Bienvenido al Instalador de Lamp para Laravel 12. Se instalarán los siguientes paquetes:\n\n- Apache\n- PHP\n- $DBSERVER\n- Phpmyadmin\n- Composer\n- NodeJs\n- Software Adicional (Opcional)\n- Proyecto de Laravel 12\n\n¿Desea continuar con la instalación?" 16 70) then
     # El usuario seleccionó Aceptar, se continúa con la barra de progreso
     echo "" # Se agrega un salto de línea para separar la salida del whiptail
 else
@@ -76,7 +76,7 @@ fi
 # ---------------------------------------------------------
 # Preguntar el nombre del proyecto Laravel (sin la pregunta de confirmación)
 # ---------------------------------------------------------
-PROYECTO=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Nombre del Proyecto Laravel" --inputbox "Por favor, introduce el nombre del proyecto Laravel a crear en /var/www/html/:\n(Si lo dejas en blanco, se usará 'crud' por defecto)" 10 70 "" 3>&1 1>&2 2>&3)
+PROYECTO=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Nombre del Proyecto Laravel" --inputbox "Por favor, introduce el nombre del proyecto Laravel a crear en /var/www/laravel/:\n(Si lo dejas en blanco, se usará 'crud' por defecto)" 10 70 "" 3>&1 1>&2 2>&3)
     
 if [ $? -ne 0 ]; then
     whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
@@ -152,7 +152,7 @@ fi
 (
     # Paso 1: Actualización de repositorios
     echo "XXX"
-    echo "5"
+    echo "3"
     echo "Actualizando lista de repositorios..."
     echo "XXX"
     apt update >/dev/null 2>&1
@@ -160,7 +160,7 @@ fi
 
     # Paso 2: Actualización de sistema
     echo "XXX"
-    echo "10"
+    echo "6"
     echo "Actualizando el sistema..."
     echo "XXX"
     apt upgrade -y >/dev/null 2>&1
@@ -168,7 +168,7 @@ fi
 
     # Paso 3: Validar e integrar el repositorio de Ondrej si la versión de PHP no es la del sistema
     echo "XXX"
-    echo "15"
+    echo "9"
     echo "Validando versión de PHP y agregando PPA de Ondrej si es necesario..."
     echo "XXX"
 
@@ -192,7 +192,7 @@ fi
     # -----------------------------------------------------
 
     echo "XXX"
-    echo "18"
+    echo "12"
     echo "Instalando zip..."
     echo "XXX"
     if ! dpkg -s "zip" >/dev/null 2>&1; then
@@ -201,7 +201,7 @@ fi
     fi
 
     echo "XXX"
-    echo "21"
+    echo "15"
     echo "Instalando gpg..."
     echo "XXX"
     if ! dpkg -s "gpg" >/dev/null 2>&1; then
@@ -210,7 +210,7 @@ fi
     fi
 
     echo "XXX"
-    echo "24"
+    echo "18"
     echo "Instalando curl..."
     echo "XXX"
     if ! dpkg -s "curl" >/dev/null 2>&1; then
@@ -219,7 +219,7 @@ fi
     fi
 
     echo "XXX"
-    echo "27"
+    echo "21"
     echo "Instalando unzip..."
     echo "XXX"
     if ! dpkg -s "unzip" >/dev/null 2>&1; then
@@ -229,7 +229,7 @@ fi
     
     # Nuevo: Instalar apt-transport-https antes de la instalación de VS Code
     echo "XXX"
-    echo "29"
+    echo "24"
     echo "Verificando e instalando apt-transport-https..."
     echo "XXX"
     if ! dpkg -s apt-transport-https >/dev/null 2>&1; then
@@ -237,7 +237,6 @@ fi
         sleep 1
     fi
     
-
     # Paso 4: Verificación e instalación de Apache
     echo "XXX"
     echo "30"
@@ -263,7 +262,7 @@ fi
     
     # Paso 5: Verificación e instalación de PHP base y todas sus extensiones
     echo "XXX"
-    echo "36"
+    echo "40"
     echo "Verificando e instalando PHP base y extensiones..."
     echo "XXX"
     
@@ -277,10 +276,10 @@ fi
 
     # -----------------------------------------------------
     # Instalación y configuración de la base de datos
-    # -----------------------------------------------------
+    -----------------------------------------------------
 
     echo "XXX"
-    echo "60"
+    echo "50"
     echo "Instalando MariaDB/MySQL Server..."
     echo "XXX"
     if ! dpkg -s "$DBSERVER" >/dev/null 2>&1; then
@@ -289,7 +288,7 @@ fi
     sleep 1
 
     echo "XXX"
-    echo "65"
+    echo "55"
     echo "Configurando contraseñas para la base de datos..."
     echo "XXX"
     # Configuración de usuario root y phpmyadmin
@@ -306,7 +305,7 @@ fi
     # -----------------------------------------------------
 
     echo "XXX"
-    echo "70"
+    echo "60"
     echo "Instalando y configurando Phpmyadmin..."
     echo "XXX"
 
@@ -316,7 +315,6 @@ fi
         echo "phpmyadmin phpmyadmin/app-password-confirm password $PASSADMIN" | debconf-set-selections
         echo "phpmyadmin phpmyadmin/mysql/admin-pass password $PASSROOT" | debconf-set-selections
         echo "phpmyadmin phpmyadmin/mysql/app-pass password $PASSADMIN" | debconf-set-selections
-        # Línea corregida
         echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
         apt install -y phpmyadmin >/dev/null 2>&1
         ln -s /etc/phpmyadmin/apache.conf /etc/apache2/conf-available/phpmyadmin.conf >/dev/null 2>&1
@@ -328,7 +326,7 @@ fi
     # -----------------------------------------------------
 
     echo "XXX"
-    echo "75"
+    echo "65"
     echo "Validando y configurando la versión de PHP..."
     echo "XXX"
     # Deshabilitar todas las versiones de PHP en Apache y habilitar la elegida
@@ -343,7 +341,7 @@ fi
     # Crear archivo info.php para verificar la instalación
     # -----------------------------------------------------
     echo "XXX"
-    echo "80"
+    echo "67"
     echo "Creando archivo info.php y configurando permisos..."
     echo "XXX"
     echo "<?php phpinfo(); ?>" > /var/www/html/info.php
@@ -354,7 +352,7 @@ fi
     # Instalación de Composer
     # -----------------------------------------------------
     echo "XXX"
-    echo "85"
+    echo "70"
     echo "Verificando e instalando Composer..."
     echo "XXX"
     if ! command -v composer &> /dev/null; then
@@ -367,7 +365,7 @@ fi
     # Instalación de NodeJs si no está presente
     # -----------------------------------------------------
     echo "XXX"
-    echo "90"
+    echo "75"
     echo "Verificando e instalando NodeJs si es necesario..."
     echo "XXX"
     if ! command -v node &> /dev/null; then
@@ -375,6 +373,7 @@ fi
         apt install -y nodejs >/dev/null 2>&1
     fi
     sleep 1
+    
     # -----------------------------------------------------
     # Instalación de software adicional
     # -----------------------------------------------------
@@ -384,7 +383,7 @@ fi
     if [[ " $SOFTWARESUSER " =~ "vscode" ]]; then
         if ! command -v code &> /dev/null; then
             echo "XXX"
-            echo "92"
+            echo "77"
             echo "Instalando Visual Studio Code: Paso 1 de 3..."
             echo "XXX"
             # Paso 1: Añadir la clave GPG de Microsoft
@@ -392,7 +391,7 @@ fi
             sleep 1
             
             echo "XXX"
-            echo "93"
+            echo "79"
             echo "Instalando Visual Studio Code: Paso 2 de 3..."
             echo "XXX"
             # Paso 2: Añadir el repositorio de VS Code
@@ -400,7 +399,7 @@ fi
             sleep 1
             
             echo "XXX"
-            echo "94"
+            echo "81"
             echo "Instalando Visual Studio Code: Paso 3 de 3..."
             echo "XXX"
             # Paso 3: Actualizar los repositorios e instalar VS Code
@@ -414,7 +413,7 @@ fi
     if [[ " $SOFTWARESUSER " =~ "brave" ]]; then
         if ! dpkg -s brave-browser >/dev/null 2>&1; then
             echo "XXX"
-            echo "95"
+            echo "83"
             echo "Instalando Brave Browser..."
             echo "XXX"
             apt install -y apt-transport-https curl >/dev/null 2>&1
@@ -430,7 +429,7 @@ fi
     if [[ " $SOFTWARESUSER " =~ "chrome" ]]; then
         if ! dpkg -s google-chrome-stable >/dev/null 2>&1; then
             echo "XXX"
-            echo "97"
+            echo "85"
             echo "Instalando Google Chrome..."
             echo "XXX"
             wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add - >/dev/null 2>&1
@@ -445,13 +444,61 @@ fi
     if [[ " $SOFTWARESUSER " =~ "filezilla" ]]; then
         if ! dpkg -s filezilla >/dev/null 2>&1; then
             echo "XXX"
-            echo "99"
+            echo "87"
             echo "Instalando FileZilla..."
             echo "XXX"
             apt install -y filezilla >/dev/null 2>&1
             sleep 1
         fi
     fi
+
+    # ---------------------------------------------------------
+    # Crear proyecto Laravel y configurar permisos
+    # ---------------------------------------------------------
+    echo "XXX"
+    echo "90"
+    echo "Creando carpeta para proyectos Laravel (/var/www/laravel)..."
+    echo "XXX"
+    # Crear el directorio base para los proyectos de Laravel
+    mkdir -p "/var/www/laravel" >/dev/null 2>&1
+    # Asignar permisos para la carpeta de proyectos. El grupo www-data y otros tienen permisos de lectura/ejecución
+    chown -R www-data:www-data "/var/www/laravel" >/dev/null 2>&1
+    chmod -R 755 "/var/www/laravel" >/dev/null 2>&1
+    sleep 2
+
+    echo "XXX"
+    echo "95"
+    echo "Creando proyecto de Laravel '$PROYECTO' y configurando Vite..."
+    echo "XXX"
+    # Crear el proyecto de Laravel dentro de la carpeta /var/www/laravel
+    cd "/var/www/laravel" >/dev/null 2>&1
+    composer create-project laravel/laravel "$PROYECTO" >/dev/null 2>&1
+    
+    # -----------------------------------------------------
+    # Configuración de Vite
+    # -----------------------------------------------------
+    # Entrar en el directorio del nuevo proyecto
+    cd "$PROYECTO" >/dev/null 2>&1
+    
+    # Instalar las dependencias de Node.js (necesario para Vite)
+    echo "Instalando dependencias de Node.js..."
+    npm install >/dev/null 2>&1
+    sleep 1
+
+    # Construir los assets para que estén listos
+    echo "Construyendo los assets con Vite..."
+    npm run build >/dev/null 2>&1
+    sleep 1
+
+    # Volver a la carpeta principal de Laravel
+    cd ".." >/dev/null 2>&1
+    
+    # Asignar permisos al usuario actual para que pueda editar los archivos del proyecto
+    # Se usa $SUDO_USER para obtener el usuario que ejecutó el script con sudo
+    USER_PROYECTO=${SUDO_USER:-$(whoami)}
+    chown -R "$USER_PROYECTO":www-data "/var/www/laravel/$PROYECTO" >/dev/null 2>&1
+    chmod -R 775 "/var/www/laravel/$PROYECTO" >/dev/null 2>&1
+    sleep 2
     
     
     # Paso Final: Fin de la instalación
@@ -468,6 +515,6 @@ fi
 # ---------------------------------------------------------
 
 # Mensaje de éxito
-whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación completada" --msgbox "La instalación de los componentes LAMP y software adicional ha sido completada.\n\nPara verificar la instalación:\n- Apache: http://localhost\n- Phpinfo: http://localhost/info.php\n- Phpmyadmin: http://localhost/phpmyadmin\n\nContraseña de root de la DB: $PASSROOT\nContraseña de phpmyadmin: $PASSADMIN" 16 70
+whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación completada" --msgbox "La instalación de los componentes LAMP y el proyecto de Laravel ha sido completada.\n\nPara verificar la instalación:\n- Apache: http://localhost\n- Phpinfo: http://localhost/info.php\n- Phpmyadmin: http://localhost/phpmyadmin\n\nEl proyecto de Laravel ('$PROYECTO') se ha creado en: /var/www/laravel\n\nContraseña de root de la DB: $PASSROOT\nContraseña de phpmyadmin: $PASSADMIN" 16 70
 
 exit 0
