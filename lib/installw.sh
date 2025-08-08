@@ -17,7 +17,7 @@ PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
 VER="2.3" # Versión actualizada
-CREAR_PROYECTO=0
+# La variable CREAR_PROYECTO ya no es necesaria con el flujo actual.
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -76,7 +76,6 @@ fi
 # ---------------------------------------------------------
 # Preguntar el nombre del proyecto Laravel (sin la pregunta de confirmación)
 # ---------------------------------------------------------
-CREAR_PROYECTO=1
 PROYECTO=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Nombre del Proyecto Laravel" --inputbox "Por favor, introduce el nombre del proyecto Laravel a crear en /var/www/html/:\n(Si lo dejas en blanco, se usará 'crud' por defecto)" 10 70 "" 3>&1 1>&2 2>&3)
     
 if [ $? -ne 0 ]; then
@@ -317,7 +316,7 @@ fi
         echo "phpmyadmin phpmyadmin/app-password-confirm password $PASSADMIN" | debconf-set-selections
         echo "phpmyadmin phpmyadmin/mysql/admin-pass password $PASSROOT" | debconf-set-selections
         echo "phpmyadmin phpmyadmin/mysql/app-pass password $PASSADMIN" | debconf-set-selections
-        echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
+        echo "phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
         apt install -y phpmyadmin >/dev/null 2>&1
         ln -s /etc/phpmyadmin/apache.conf /etc/apache2/conf-available/phpmyadmin.conf >/dev/null 2>&1
         a2enconf phpmyadmin >/dev/null 2>&1
