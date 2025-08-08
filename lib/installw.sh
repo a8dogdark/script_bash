@@ -316,7 +316,8 @@ fi
         echo "phpmyadmin phpmyadmin/app-password-confirm password $PASSADMIN" | debconf-set-selections
         echo "phpmyadmin phpmyadmin/mysql/admin-pass password $PASSROOT" | debconf-set-selections
         echo "phpmyadmin phpmyadmin/mysql/app-pass password $PASSADMIN" | debconf-set-selections
-        echo "phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
+        # Línea corregida
+        echo "phpmyadmin phpmyadmin/reconfigure-webserver multiselect apache2" | debconf-set-selections
         apt install -y phpmyadmin >/dev/null 2>&1
         ln -s /etc/phpmyadmin/apache.conf /etc/apache2/conf-available/phpmyadmin.conf >/dev/null 2>&1
         a2enconf phpmyadmin >/dev/null 2>&1
