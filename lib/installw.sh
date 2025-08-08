@@ -603,8 +603,15 @@ fi
     echo "Creando proyecto de Laravel '$PROYECTO'..."
     echo "XXX"
     # Crear el proyecto de Laravel dentro de la carpeta /var/www/laravel
+    # Se elimina la redirección de salida para mostrar el progreso de Composer.
     cd "/var/www/laravel" >/dev/null 2>&1
-    composer create-project laravel/laravel "$PROYECTO" >/dev/null 2>&1
+    composer create-project laravel/laravel "$PROYECTO"
+
+    echo "XXX"
+    echo "94"
+    echo "Instalación de dependencias de Composer finalizada."
+    echo "XXX"
+    sleep 1
     
     # -----------------------------------------------------
     # Configuración de Vite
