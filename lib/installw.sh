@@ -16,7 +16,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="2.9.2" # Versión corregida para el problema de escritura en el archivo .env
+VER="2.9.4" # Versión final y definitiva, corregida con el enfoque simplificado del usuario
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -510,14 +510,12 @@ fi
     # -----------------------------------------------------
     
     # Instalación de Visual Studio Code
-    # Se ha corregido la validación para que reconozca correctamente la opción
     if [[ " $SOFTWARESUSER " =~ "vscode" ]]; then
         if ! command -v code &> /dev/null; then
             echo "XXX"
             echo "77"
             echo "Instalando Visual Studio Code: Paso 1 de 3..."
             echo "XXX"
-            # Paso 1: Añadir la clave GPG de Microsoft
             curl -sL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /usr/share/keyrings/microsoft-archive-keyring.gpg >/dev/null
             sleep 1
             
@@ -525,7 +523,6 @@ fi
             echo "79"
             echo "Instalando Visual Studio Code: Paso 2 de 3..."
             echo "XXX"
-            # Paso 2: Añadir el repositorio de VS Code
             echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-archive-keyring.gpg] https://packages.microsoft.com/repos/vscode stable main" | tee /etc/apt/sources.list.d/vscode.list >/dev/null
             sleep 1
             
@@ -533,7 +530,6 @@ fi
             echo "81"
             echo "Instalando Visual Studio Code: Paso 3 de 3..."
             echo "XXX"
-            # Paso 3: Actualizar los repositorios e instalar VS Code
             apt update >/dev/null 2>&1
             apt install -y code >/dev/null 2>&1
             sleep 1
@@ -590,9 +586,7 @@ fi
     echo "90"
     echo "Creando carpeta para proyectos Laravel (/var/www/laravel)..."
     echo "XXX"
-    # Crear el directorio base para los proyectos de Laravel
     mkdir -p "/var/www/laravel" >/dev/null 2>&1
-    # Asignar permisos para la carpeta de proyectos. El grupo www-data y otros tienen permisos de lectura/ejecución
     chown -R www-data:www-data "/var/www/laravel" >/dev/null 2>&1
     chmod -R 775 "/var/www/laravel" >/dev/null 2>&1
     sleep 2
@@ -601,7 +595,6 @@ fi
     echo "92"
     echo "Creando proyecto de Laravel '$PROYECTO' (esto puede tardar varios minutos)..."
     echo "XXX"
-    # Se ejecuta el comando de composer como el usuario que invocó 'sudo' y se utiliza --no-interaction
     USER_PROYECTO=${SUDO_USER:-$(whoami)}
     su -c "cd /var/www/laravel && composer create-project --no-interaction laravel/laravel \"$PROYECTO\" >/dev/null 2>&1" - "$USER_PROYECTO"
     
@@ -619,7 +612,6 @@ fi
     echo "95"
     echo "Instalando dependencias de Node.js para Vite..."
     echo "XXX"
-    # Se ejecuta npm install como el usuario que invocó 'sudo'
     su -c "cd /var/www/laravel/$PROYECTO && npm install >/dev/null 2>&1" - "$USER_PROYECTO"
     sleep 1
 
@@ -627,7 +619,6 @@ fi
     echo "96"
     echo "Compilando los assets con Vite..."
     echo "XXX"
-    # Se ejecuta npm run build como el usuario que invocó 'sudo'
     su -c "cd /var/www/laravel/$PROYECTO && npm run build >/dev/null 2>&1" - "$USER_PROYECTO"
     sleep 1
 
@@ -639,7 +630,6 @@ fi
     echo "Configurando dominio local para el proyecto..."
     echo "XXX"
     
-    # Crear el archivo de configuración de virtual host
     VHOST_CONF_FILE="/etc/apache2/sites-available/$PROYECTO.test.conf"
     cat <<EOF > "$VHOST_CONF_FILE"
 <VirtualHost *:80>
@@ -657,12 +647,9 @@ fi
 </VirtualHost>
 EOF
     
-    # Habilitar el sitio y recargar Apache
     a2ensite "$PROYECTO.test.conf" >/dev/null 2>&1
     systemctl reload apache2 >/dev/null 2>&1
 
-    # Agregar la entrada al archivo de hosts
-    # Se usa grep para evitar duplicados
     if ! grep -q "$PROYECTO.test" /etc/hosts; then
         echo "127.0.0.1 $PROYECTO.test" >> /etc/hosts
     fi
@@ -675,25 +662,28 @@ EOF
     echo "98"
     echo "Configurando la base de datos y ejecutando las migraciones..."
     echo "XXX"
-
-    # Configurar el archivo .env generando uno nuevo
-    ENV_FILE="/var/www/laravel/$PROYECTO/.env"
-    USER_PROYECTO=${SUDO_USER:-$(whoami)}
     
-    # Obtener el contenido del archivo .env original para mantener las variables que no se modifican
-    ORIGINAL_ENV_CONTENT=$(su -c "cat $ENV_FILE" - "$USER_PROYECTO")
+    # Obtener el nombre del usuario original
+    USER_PROYECTO=${SUDO_USER:-$(whoami)}
+    PROJECT_PATH="/var/www/laravel/$PROYECTO"
 
-    # Reemplazar solo las líneas de la base de datos
-    NEW_ENV_CONTENT=$(echo "$ORIGINAL_ENV_CONTENT" | sed "s/^DB_DATABASE=.*/DB_DATABASE=$PROYECTO/; s/^DB_USERNAME=.*/DB_USERNAME=root/; s/^DB_PASSWORD=.*/DB_PASSWORD=$PASSROOT/")
+    # Dar permisos de escritura al archivo .env para el usuario root y el grupo www-data
+    chmod 664 "$PROJECT_PATH/.env"
 
-    # Escribir el nuevo contenido en el archivo .env
-    su -c "echo \"$NEW_ENV_CONTENT\" > \"$ENV_FILE\"" - "$USER_PROYECTO"
+    # Usar sed para modificar las líneas del .env de forma directa
+    sed -i "s/^DB_DATABASE=.*/DB_DATABASE=$PROYECTO/" "$PROJECT_PATH/.env"
+    sed -i "s/^DB_USERNAME=.*/DB_USERNAME=root/" "$PROJECT_PATH/.env"
+    sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=$PASSROOT/" "$PROJECT_PATH/.env"
+    sed -i "s|^APP_URL=.*|APP_URL=http://$PROYECTO.test|" "$PROJECT_PATH/.env"
+
+    # Devolver los permisos originales al archivo .env
+    chown "$USER_PROYECTO":www-data "$PROJECT_PATH/.env"
 
     # Crear la base de datos con el nombre del proyecto
     mysql -u root -p"$PASSROOT" -e "CREATE DATABASE IF NOT EXISTS $PROYECTO;" >/dev/null 2>&1
 
     # Ejecutar las migraciones
-    su -c "cd /var/www/laravel/$PROYECTO && php artisan migrate >/dev/null 2>&1" - "$USER_PROYECTO"
+    su -c "cd $PROJECT_PATH && php artisan migrate >/dev/null 2>&1" - "$USER_PROYECTO"
     sleep 2
     
     # -----------------------------------------------------
@@ -703,8 +693,8 @@ EOF
     echo "99"
     echo "Configurando permisos finales para el proyecto..."
     echo "XXX"
-    chown -R "$USER_PROYECTO":www-data "/var/www/laravel/$PROYECTO" >/dev/null 2>&1
-    chmod -R 775 "/var/www/laravel/$PROYECTO" >/dev/null 2>&1
+    chown -R "$USER_PROYECTO":www-data "$PROJECT_PATH" >/dev/null 2>&1
+    chmod -R 775 "$PROJECT_PATH" >/dev/null 2>&1
     sleep 2
     
     
