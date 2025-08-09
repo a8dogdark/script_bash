@@ -16,7 +16,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="2.7" # Versión actualizada para ocultar el output de los comandos de instalación
+VER="2.8" # Versión actualizada para añadir la configuración de dominio local
 # La variable CREAR_PROYECTO ya no es necesaria con el flujo actual.
 
 # ---------------------------------------------------------
@@ -607,7 +607,7 @@ fi
     su -c "cd /var/www/laravel && composer create-project --no-interaction laravel/laravel \"$PROYECTO\" >/dev/null 2>&1" - "$USER_PROYECTO"
     
     echo "XXX"
-    echo "95"
+    echo "93"
     echo "Instalación de dependencias de Composer finalizada."
     echo "XXX"
     sleep 1
@@ -617,7 +617,7 @@ fi
     # -----------------------------------------------------
     
     echo "XXX"
-    echo "96"
+    echo "95"
     echo "Instalando dependencias de Node.js para Vite..."
     echo "XXX"
     # Se ejecuta npm install como el usuario que invocó 'sudo'
@@ -625,12 +625,49 @@ fi
     sleep 1
 
     echo "XXX"
-    echo "98"
+    echo "96"
     echo "Compilando los assets con Vite..."
     echo "XXX"
     # Se ejecuta npm run build como el usuario que invocó 'sudo'
     su -c "cd /var/www/laravel/$PROYECTO && npm run build >/dev/null 2>&1" - "$USER_PROYECTO"
     sleep 1
+
+    # -----------------------------------------------------
+    # Configuración de dominio local
+    # -----------------------------------------------------
+    echo "XXX"
+    echo "98"
+    echo "Configurando dominio local para el proyecto..."
+    echo "XXX"
+    
+    # Crear el archivo de configuración de virtual host
+    VHOST_CONF_FILE="/etc/apache2/sites-available/$PROYECTO.test.conf"
+    cat <<EOF > "$VHOST_CONF_FILE"
+<VirtualHost *:80>
+    ServerName $PROYECTO.test
+    DocumentRoot /var/www/laravel/$PROYECTO/public
+
+    <Directory /var/www/laravel/$PROYECTO/public>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog \${APACHE_LOG_DIR}/$PROYECTO.test-error.log
+    CustomLog \${APACHE_LOG_DIR}/$PROYECTO.test-access.log combined
+</VirtualHost>
+EOF
+    
+    # Habilitar el sitio y recargar Apache
+    a2ensite "$PROYECTO.test.conf" >/dev/null 2>&1
+    systemctl reload apache2 >/dev/null 2>&1
+
+    # Agregar la entrada al archivo de hosts
+    # Se usa grep para evitar duplicados
+    if ! grep -q "$PROYECTO.test" /etc/hosts; then
+        echo "127.0.0.1 $PROYECTO.test" >> /etc/hosts
+    fi
+    sleep 2
     
     # -----------------------------------------------------
     # Configuración de permisos final
@@ -658,6 +695,6 @@ fi
 # ---------------------------------------------------------
 
 # Mensaje de éxito
-whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación completada" --msgbox "La instalación de los componentes LAMP y el proyecto de Laravel ha sido completada.\n\nPara verificar la instalación:\n- Apache: http://localhost\n- Phpinfo: http://localhost/info.php\n- Phpmyadmin: http://localhost/phpmyadmin\n\nEl proyecto de Laravel ('$PROYECTO') se ha creado en: /var/www/laravel\n\nContraseña de root de la DB: $PASSROOT\nContraseña de phpmyadmin: $PASSADMIN" 16 70
+whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación completada" --msgbox "La instalación de los componentes LAMP y el proyecto de Laravel ha sido completada.\n\nPara verificar la instalación:\n- Apache: http://localhost\n- Phpinfo: http://localhost/info.php\n- Phpmyadmin: http://localhost/phpmyadmin\n\nEl proyecto de Laravel ('$PROYECTO') se ha creado en: /var/www/laravel\n\nAhora puedes acceder a tu proyecto en: http://$PROYECTO.test\n\nContraseña de root de la DB: $PASSROOT\nContraseña de phpmyadmin: $PASSADMIN" 18 70
 
 exit 0
