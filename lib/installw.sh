@@ -2,8 +2,8 @@
 
 # =========================================================
 # Script de instalación para Ubuntu/Debian/AnduinOS (64 bits)
-# Versión 3.1.3 - Se corrige un error que causaba un bucle
-# durante la instalación del paquete de idioma de Laravel.
+# Versión 3.1.6 - Corregidos los porcentajes de la barra de
+# progreso para una visualización más precisa.
 # =========================================================
 
 clear
@@ -18,7 +18,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="3.1.3"
+VER="3.1.6"
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -250,7 +250,7 @@ fi
     
     # Paso 4: Verificación e instalación de Apache
     echo "XXX"
-    echo "24"
+    echo "20"
     echo "Verificando e instalando Apache..."
     echo "XXX"
     
@@ -261,7 +261,7 @@ fi
     
     # Nuevo paso: Habilitar mod_rewrite para URLs dinámicas
     echo "XXX"
-    echo "26"
+    echo "22"
     echo "Habilitando mod_rewrite en Apache..."
     echo "XXX"
 
@@ -273,14 +273,14 @@ fi
     
     # Paso 5: Verificación e instalación de PHP base y todas sus extensiones (Modificado)
     echo "XXX"
-    echo "28"
+    echo "24"
     echo "Iniciando instalación de PHP y sus extensiones..."
     echo "XXX"
     sleep 1
     
     # Instalación de PHP base y su módulo de Apache
     echo "XXX"
-    echo "30"
+    echo "26"
     echo "Instalando PHP $PHPUSER y el módulo de Apache..."
     echo "XXX"
     if [[ "$CURRENT_PHP_VERSION" != "$PHPUSER" ]]; then
@@ -295,7 +295,7 @@ fi
 
     # Instalación de extensiones una por una
     echo "XXX"
-    echo "32"
+    echo "28"
     echo "Instalando extensión php${PHPUSER}-xml..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-xml" >/dev/null 2>&1; then
@@ -304,7 +304,7 @@ fi
     sleep 1
     
     echo "XXX"
-    echo "34"
+    echo "30"
     echo "Instalando extensión php${PHPUSER}-zip..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-zip" >/dev/null 2>&1; then
@@ -313,7 +313,7 @@ fi
     sleep 1
     
     echo "XXX"
-    echo "36"
+    echo "32"
     echo "Instalando extensión php${PHPUSER}-mbstring..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-mbstring" >/dev/null 2>&1; then
@@ -322,7 +322,7 @@ fi
     sleep 1
     
     echo "XXX"
-    echo "38"
+    echo "34"
     echo "Instalando extensión php${PHPUSER}-dom..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-dom" >/dev/null 2>&1; then
@@ -331,7 +331,7 @@ fi
     sleep 1
     
     echo "XXX"
-    echo "40"
+    echo "36"
     echo "Instalando extensión php${PHPUSER}-curl..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-curl" >/dev/null 2>&1; then
@@ -340,7 +340,7 @@ fi
     sleep 1
 
     echo "XXX"
-    echo "42"
+    echo "38"
     echo "Instalando extensión php${PHPUSER}-fileinfo..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-fileinfo" >/dev/null 2>&1; then
@@ -349,7 +349,7 @@ fi
     sleep 1
     
     echo "XXX"
-    echo "44"
+    echo "40"
     echo "Instalando extensión php${PHPUSER}-bcmath..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-bcmath" >/dev/null 2>&1; then
@@ -358,7 +358,7 @@ fi
     sleep 1
     
     echo "XXX"
-    echo "46"
+    echo "42"
     echo "Instalando extensión php${PHPUSER}-gmp..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-gmp" >/dev/null 2>&1; then
@@ -367,7 +367,7 @@ fi
     sleep 1
 
     echo "XXX"
-    echo "48"
+    echo "44"
     echo "Instalando extensión php${PHPUSER}-imagick..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-imagick" >/dev/null 2>&1; then
@@ -376,7 +376,7 @@ fi
     sleep 1
     
     echo "XXX"
-    echo "50"
+    echo "46"
     echo "Instalando extensión php${PHPUSER}-exif..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-exif" >/dev/null 2>&1; then
@@ -385,7 +385,7 @@ fi
     sleep 1
 
     echo "XXX"
-    echo "52"
+    echo "48"
     echo "Instalando extensión php${PHPUSER}-gd..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-gd" >/dev/null 2>&1; then
@@ -394,7 +394,7 @@ fi
     sleep 1
     
     echo "XXX"
-    echo "54"
+    echo "50"
     echo "Instalando extensión php${PHPUSER}-iconv..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-iconv" >/dev/null 2>&1; then
@@ -403,7 +403,7 @@ fi
     sleep 1
     
     echo "XXX"
-    echo "56"
+    echo "52"
     echo "Instalando extensión php${PHPUSER}-mysql..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-mysql" >/dev/null 2>&1; then
@@ -412,7 +412,7 @@ fi
     sleep 1
     
     echo "XXX"
-    echo "58"
+    echo "54"
     echo "Instalación de extensiones de PHP completada."
     echo "XXX"
     sleep 1
@@ -422,7 +422,7 @@ fi
     # -----------------------------------------------------
 
     echo "XXX"
-    echo "60"
+    echo "56"
     echo "Instalando MariaDB/MySQL Server..."
     echo "XXX"
     if ! dpkg -s "$DBSERVER" >/dev/null 2>&1; then
@@ -431,7 +431,7 @@ fi
     sleep 1
 
     echo "XXX"
-    echo "62"
+    echo "58"
     echo "Configurando contraseñas para la base de datos..."
     echo "XXX"
     # Configuración de usuario root y phpmyadmin
@@ -448,7 +448,7 @@ fi
     # -----------------------------------------------------
 
     echo "XXX"
-    echo "66"
+    echo "60"
     echo "Instalando y configurando Phpmyadmin..."
     echo "XXX"
 
@@ -469,7 +469,7 @@ fi
     # -----------------------------------------------------
 
     echo "XXX"
-    echo "68"
+    echo "62"
     echo "Validando y configurando la versión de PHP..."
     echo "XXX"
     # Deshabilitar todas las versiones de PHP en Apache y habilitar la elegida
@@ -484,7 +484,7 @@ fi
     # Crear archivo info.php para verificar la instalación
     # -----------------------------------------------------
     echo "XXX"
-    echo "70"
+    echo "64"
     echo "Creando archivo info.php y configurando permisos..."
     echo "XXX"
     echo "<?php phpinfo(); ?>" > /var/www/html/info.php
@@ -495,7 +495,7 @@ fi
     # Instalación de Composer
     # -----------------------------------------------------
     echo "XXX"
-    echo "72"
+    echo "66"
     echo "Verificando e instalando Composer..."
     echo "XXX"
     if ! command -v composer &> /dev/null; then
@@ -508,7 +508,7 @@ fi
     # Instalación de NodeJs si no está presente
     # -----------------------------------------------------
     echo "XXX"
-    echo "74"
+    echo "68"
     echo "Verificando e instalando NodeJs si es necesario..."
     echo "XXX"
     if ! command -v node &> /dev/null; then
@@ -525,14 +525,14 @@ fi
     if [[ " $SOFTWARESUSER " =~ "vscode" ]]; then
         if ! command -v code &> /dev/null; then
             echo "XXX"
-            echo "76"
+            echo "70"
             echo "Instalando Visual Studio Code: Añadiendo repositorio..."
             echo "XXX"
             curl -sL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /usr/share/keyrings/microsoft-archive-keyring.gpg >/dev/null
             sleep 1
             
             echo "XXX"
-            echo "78"
+            echo "71"
             echo "Instalando Visual Studio Code: Actualizando lista de paquetes..."
             echo "XXX"
             echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-archive-keyring.gpg] https://packages.microsoft.com/repos/vscode stable main" | tee /etc/apt/sources.list.d/vscode.list >/dev/null
@@ -540,7 +540,7 @@ fi
             sleep 1
             
             echo "XXX"
-            echo "80"
+            echo "72"
             echo "Instalando Visual Studio Code: Instalando paquete principal..."
             echo "XXX"
             apt install -y code >/dev/null 2>&1
@@ -550,49 +550,49 @@ fi
             USER_PROYECTO=${SUDO_USER:-$(whoami)}
             
             echo "XXX"
-            echo "82"
+            echo "73"
             echo "Instalando extensión de idioma español..."
             echo "XXX"
-            su -c "code --install-extension MS-CEINTL.vscode-language-pack-es" - "$USER_PROYECTO" >/dev/null 2>&1
+            su -c "code --install-extension MS-CEINTL.vscode-language-pack-es --force" - "$USER_PROYECTO" >/dev/null 2>&1
             sleep 1
             
             echo "XXX"
-            echo "83"
+            echo "74"
             echo "Instalando PHP Intelephense..."
             echo "XXX"
-            su -c "code --install-extension bmewburn.vscode-intelephense" - "$USER_PROYECTO" >/dev/null 2>&1
+            su -c "code --install-extension bmewburn.vscode-intelephense --force" - "$USER_PROYECTO" >/dev/null 2>&1
             sleep 1
 
             echo "XXX"
-            echo "84"
+            echo "75"
             echo "Instalando Laravel Blade Snippets..."
             echo "XXX"
-            su -c "code --install-extension onecentlin.laravel-blade-snippets" - "$USER_PROYECTO" >/dev/null 2>&1
+            su -c "code --install-extension onecentlin.laravel-blade-snippets --force" - "$USER_PROYECTO" >/dev/null 2>&1
             sleep 1
 
             echo "XXX"
-            echo "85"
+            echo "76"
             echo "Instalando Laravel Go to View..."
             echo "XXX"
-            su -c "code --install-extension codingyu.laravel-goto-view" - "$USER_PROYECTO" >/dev/null 2>&1
+            su -c "code --install-extension codingyu.laravel-goto-view --force" - "$USER_PROYECTO" >/dev/null 2>&1
             sleep 1
 
             echo "XXX"
-            echo "86"
+            echo "77"
             echo "Instalando Laravel Snippets..."
             echo "XXX"
-            su -c "code --install-extension onecentlin.laravel-snippets" - "$USER_PROYECTO" >/dev/null 2>&1
+            su -c "code --install-extension onecentlin.laravel-snippets --force" - "$USER_PROYECTO" >/dev/null 2>&1
             sleep 1
 
             echo "XXX"
-            echo "87"
+            echo "78"
             echo "Instalando Material Icon Theme..."
             echo "XXX"
-            su -c "code --install-extension pkief.material-icon-theme" - "$USER_PROYECTO" >/dev/null 2>&1
+            su -c "code --install-extension pkief.material-icon-theme --force" - "$USER_PROYECTO" >/dev/null 2>&1
             sleep 1
 
             echo "XXX"
-            echo "88"
+            echo "79"
             echo "Configurando Material Icon Theme como predeterminado..."
             echo "XXX"
             VSCODE_CONFIG_DIR="/home/$USER_PROYECTO/.config/Code/User"
@@ -607,7 +607,7 @@ fi
     if [[ " $SOFTWARESUSER " =~ "brave" ]]; then
         if ! dpkg -s brave-browser >/dev/null 2>&1; then
             echo "XXX"
-            echo "90"
+            echo "82"
             echo "Instalando Brave Browser..."
             echo "XXX"
             apt install -y apt-transport-https curl >/dev/null 2>&1
@@ -623,7 +623,7 @@ fi
     if [[ " $SOFTWARESUSER " =~ "chrome" ]]; then
         if ! dpkg -s google-chrome-stable >/dev/null 2>&1; then
             echo "XXX"
-            echo "92"
+            echo "85"
             echo "Instalando Google Chrome..."
             echo "XXX"
             wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add - >/dev/null 2>&1
@@ -638,7 +638,7 @@ fi
     if [[ " $SOFTWARESUSER " =~ "filezilla" ]]; then
         if ! dpkg -s filezilla >/dev/null 2>&1; then
             echo "XXX"
-            echo "94"
+            echo "88"
             echo "Instalando FileZilla..."
             echo "XXX"
             apt install -y filezilla >/dev/null 2>&1
@@ -650,7 +650,7 @@ fi
     # Crear proyecto Laravel y configurar permisos
     # ---------------------------------------------------------
     echo "XXX"
-    echo "96"
+    echo "90"
     echo "Creando carpeta para proyectos Laravel (/var/www/laravel)..."
     echo "XXX"
     mkdir -p "/var/www/laravel" >/dev/null 2>&1
@@ -659,14 +659,14 @@ fi
     sleep 2
 
     echo "XXX"
-    echo "97"
+    echo "92"
     echo "Creando proyecto de Laravel '$PROYECTO' (esto puede tardar varios minutos)..."
     echo "XXX"
     USER_PROYECTO=${SUDO_USER:-$(whoami)}
     su -c "cd /var/www/laravel && composer create-project --no-interaction laravel/laravel \"$PROYECTO\" >/dev/null 2>&1" - "$USER_PROYECTO"
     
     echo "XXX"
-    echo "98"
+    echo "93"
     echo "Instalación de dependencias de Composer finalizada."
     echo "XXX"
     sleep 1
@@ -676,14 +676,14 @@ fi
     # -----------------------------------------------------
     
     echo "XXX"
-    echo "99"
+    echo "94"
     echo "Instalando dependencias de Node.js para Vite..."
     echo "XXX"
     su -c "cd /var/www/laravel/$PROYECTO && npm install >/dev/null 2>&1" - "$USER_PROYECTO"
     sleep 1
 
     echo "XXX"
-    echo "99"
+    echo "95"
     echo "Compilando los assets con Vite..."
     echo "XXX"
     su -c "cd /var/www/laravel/$PROYECTO && npm run build >/dev/null 2>&1" - "$USER_PROYECTO"
@@ -694,7 +694,7 @@ fi
     # -----------------------------------------------------
     
     echo "XXX"
-    echo "99"
+    echo "96"
     echo "Instalando el paquete de idioma español para Laravel..."
     echo "XXX"
     # Se agrega --no-interaction para evitar que el proceso se cuelgue
@@ -702,7 +702,7 @@ fi
     sleep 1
     
     echo "XXX"
-    echo "99"
+    echo "97"
     echo "Configurando el idioma predeterminado del proyecto a español..."
     echo "XXX"
     # Se utiliza un comando sed más robusto para reemplazar el 'en' por 'es'
@@ -713,7 +713,7 @@ fi
     # Configuración de dominio local
     # -----------------------------------------------------
     echo "XXX"
-    echo "99"
+    echo "98"
     echo "Configurando dominio local para el proyecto..."
     echo "XXX"
     
@@ -780,6 +780,14 @@ EOF
     su -c "cd $PROJECT_PATH && php artisan migrate >/dev/null 2>&1" - "$USER_PROYECTO"
     sleep 2
     
+    # Nuevo paso: Creación de enlace simbólico para el almacenamiento
+    echo "XXX"
+    echo "99"
+    echo "Creando enlace simbólico para el almacenamiento (storage:link)..."
+    echo "XXX"
+    su -c "cd $PROJECT_PATH && php artisan storage:link >/dev/null 2>&1" - "$USER_PROYECTO"
+    sleep 2
+    
     # -----------------------------------------------------
     # Configuración de permisos finales para el proyecto
     # -----------------------------------------------------
@@ -814,6 +822,6 @@ EOF
 # ---------------------------------------------------------
 
 # Mensaje de éxito
-whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación completada" --msgbox "La instalación de los componentes LAMP y el proyecto de Laravel ha sido completada.\n\nPara verificar la instalación:\n- Apache: http://localhost\n- Phpinfo: http://localhost/info.php\n- Phpmyadmin: http://localhost/phpmyadmin\n\nEl proyecto de Laravel ('$PROYECTO') se ha creado en: /var/www/laravel\n\nAhora puedes acceder a tu proyecto en: http://$PROYECTO.test\n\nContraseña de root de la DB: $PASSROOT\nContraseña de phpmyadmin: $PASSADMIN\n\nSe han ejecutado las migraciones de la base de datos con éxito." 18 70
+whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación completada" --msgbox "La instalación de los componentes LAMP y el proyecto de Laravel ha sido completada.\n\nPara verificar la instalación:\n- Apache: http://localhost\n- Phpinfo: http://localhost/info.php\n- Phpmyadmin: http://localhost/phpmyadmin\n\nEl proyecto de Laravel ('$PROYECTO') se ha creado en: /var/www/laravel\n\nAhora puedes acceder a tu proyecto en: http://$PROYECTO.test\n\nContraseña de root de la DB: $PASSROOT\nContraseña de phpmyadmin: $PASSADMIN\n\nSe han ejecutado las migraciones de la base de datos y se ha creado el enlace simbólico de 'storage' con éxito." 19 70
 
 exit 0
