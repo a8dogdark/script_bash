@@ -2,9 +2,8 @@
 
 # =========================================================
 # Script de instalación para Ubuntu/Debian/AnduinOS (64 bits)
-# Versión 3.0.0 - Permisos 777 para solucionar problemas
-# de usuario en entornos locales, con Git y la extensión
-# de idioma español para VS Code.
+# Versión 3.1.2 - Se añade la configuración del idioma español
+# para el proyecto de Laravel.
 # =========================================================
 
 clear
@@ -19,7 +18,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="3.0.0"
+VER="3.1.2"
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -527,34 +526,79 @@ fi
         if ! command -v code &> /dev/null; then
             echo "XXX"
             echo "76"
-            echo "Instalando Visual Studio Code: Paso 1 de 3..."
+            echo "Instalando Visual Studio Code: Añadiendo repositorio..."
             echo "XXX"
             curl -sL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /usr/share/keyrings/microsoft-archive-keyring.gpg >/dev/null
             sleep 1
             
             echo "XXX"
             echo "78"
-            echo "Instalando Visual Studio Code: Paso 2 de 3..."
+            echo "Instalando Visual Studio Code: Actualizando lista de paquetes..."
             echo "XXX"
             echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-archive-keyring.gpg] https://packages.microsoft.com/repos/vscode stable main" | tee /etc/apt/sources.list.d/vscode.list >/dev/null
+            apt update >/dev/null 2>&1
             sleep 1
             
             echo "XXX"
             echo "80"
-            echo "Instalando Visual Studio Code: Paso 3 de 3..."
+            echo "Instalando Visual Studio Code: Instalando paquete principal..."
             echo "XXX"
-            apt update >/dev/null 2>&1
             apt install -y code >/dev/null 2>&1
             sleep 1
             
-            # Instalar la extensión del paquete de idioma español
+            # Instalación de extensiones con progreso individual
+            USER_PROYECTO=${SUDO_USER:-$(whoami)}
+            
             echo "XXX"
             echo "82"
-            echo "Instalando la extensión de idioma español para Visual Studio Code..."
+            echo "Instalando extensión de idioma español..."
             echo "XXX"
-            # Obtener el nombre del usuario original para el que se crearon los archivos
-            USER_PROYECTO=${SUDO_USER:-$(whoami)}
             su -c "code --install-extension MS-CEINTL.vscode-language-pack-es" - "$USER_PROYECTO" >/dev/null 2>&1
+            sleep 1
+            
+            echo "XXX"
+            echo "83"
+            echo "Instalando PHP Intelephense..."
+            echo "XXX"
+            su -c "code --install-extension bmewburn.vscode-intelephense" - "$USER_PROYECTO" >/dev/null 2>&1
+            sleep 1
+
+            echo "XXX"
+            echo "84"
+            echo "Instalando Laravel Blade Snippets..."
+            echo "XXX"
+            su -c "code --install-extension onecentlin.laravel-blade-snippets" - "$USER_PROYECTO" >/dev/null 2>&1
+            sleep 1
+
+            echo "XXX"
+            echo "85"
+            echo "Instalando Laravel Go to View..."
+            echo "XXX"
+            su -c "code --install-extension codingyu.laravel-goto-view" - "$USER_PROYECTO" >/dev/null 2>&1
+            sleep 1
+
+            echo "XXX"
+            echo "86"
+            echo "Instalando Laravel Snippets..."
+            echo "XXX"
+            su -c "code --install-extension onecentlin.laravel-snippets" - "$USER_PROYECTO" >/dev/null 2>&1
+            sleep 1
+
+            echo "XXX"
+            echo "87"
+            echo "Instalando Material Icon Theme..."
+            echo "XXX"
+            su -c "code --install-extension pkief.material-icon-theme" - "$USER_PROYECTO" >/dev/null 2>&1
+            sleep 1
+
+            echo "XXX"
+            echo "88"
+            echo "Configurando Material Icon Theme como predeterminado..."
+            echo "XXX"
+            VSCODE_CONFIG_DIR="/home/$USER_PROYECTO/.config/Code/User"
+            mkdir -p "$VSCODE_CONFIG_DIR" >/dev/null 2>&1
+            echo '{"workbench.iconTheme": "material-icon-theme"}' > "$VSCODE_CONFIG_DIR/settings.json"
+            chown -R "$USER_PROYECTO":"$USER_PROYECTO" "$VSCODE_CONFIG_DIR" >/dev/null 2>&1
             sleep 1
         fi
     fi
@@ -563,7 +607,7 @@ fi
     if [[ " $SOFTWARESUSER " =~ "brave" ]]; then
         if ! dpkg -s brave-browser >/dev/null 2>&1; then
             echo "XXX"
-            echo "84"
+            echo "90"
             echo "Instalando Brave Browser..."
             echo "XXX"
             apt install -y apt-transport-https curl >/dev/null 2>&1
@@ -579,7 +623,7 @@ fi
     if [[ " $SOFTWARESUSER " =~ "chrome" ]]; then
         if ! dpkg -s google-chrome-stable >/dev/null 2>&1; then
             echo "XXX"
-            echo "86"
+            echo "92"
             echo "Instalando Google Chrome..."
             echo "XXX"
             wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add - >/dev/null 2>&1
@@ -594,7 +638,7 @@ fi
     if [[ " $SOFTWARESUSER " =~ "filezilla" ]]; then
         if ! dpkg -s filezilla >/dev/null 2>&1; then
             echo "XXX"
-            echo "88"
+            echo "94"
             echo "Instalando FileZilla..."
             echo "XXX"
             apt install -y filezilla >/dev/null 2>&1
@@ -606,7 +650,7 @@ fi
     # Crear proyecto Laravel y configurar permisos
     # ---------------------------------------------------------
     echo "XXX"
-    echo "90"
+    echo "96"
     echo "Creando carpeta para proyectos Laravel (/var/www/laravel)..."
     echo "XXX"
     mkdir -p "/var/www/laravel" >/dev/null 2>&1
@@ -615,14 +659,14 @@ fi
     sleep 2
 
     echo "XXX"
-    echo "92"
+    echo "97"
     echo "Creando proyecto de Laravel '$PROYECTO' (esto puede tardar varios minutos)..."
     echo "XXX"
     USER_PROYECTO=${SUDO_USER:-$(whoami)}
     su -c "cd /var/www/laravel && composer create-project --no-interaction laravel/laravel \"$PROYECTO\" >/dev/null 2>&1" - "$USER_PROYECTO"
     
     echo "XXX"
-    echo "94"
+    echo "98"
     echo "Instalación de dependencias de Composer finalizada."
     echo "XXX"
     sleep 1
@@ -632,24 +676,42 @@ fi
     # -----------------------------------------------------
     
     echo "XXX"
-    echo "95"
+    echo "99"
     echo "Instalando dependencias de Node.js para Vite..."
     echo "XXX"
     su -c "cd /var/www/laravel/$PROYECTO && npm install >/dev/null 2>&1" - "$USER_PROYECTO"
     sleep 1
 
     echo "XXX"
-    echo "96"
+    echo "99"
     echo "Compilando los assets con Vite..."
     echo "XXX"
     su -c "cd /var/www/laravel/$PROYECTO && npm run build >/dev/null 2>&1" - "$USER_PROYECTO"
+    sleep 1
+    
+    # -----------------------------------------------------
+    # Configuración de idioma español
+    # -----------------------------------------------------
+    
+    echo "XXX"
+    echo "99"
+    echo "Instalando el paquete de idioma español para Laravel..."
+    echo "XXX"
+    su -c "cd /var/www/laravel/$PROYECTO && composer require laravel-lang/lang --dev >/dev/null 2>&1" - "$USER_PROYECTO"
+    sleep 1
+    
+    echo "XXX"
+    echo "99"
+    echo "Configurando el idioma predeterminado del proyecto a español..."
+    echo "XXX"
+    sed -i "s|'locale' => 'en'|'locale' => 'es'|" "/var/www/laravel/$PROYECTO/config/app.php"
     sleep 1
 
     # -----------------------------------------------------
     # Configuración de dominio local
     # -----------------------------------------------------
     echo "XXX"
-    echo "97"
+    echo "99"
     echo "Configurando dominio local para el proyecto..."
     echo "XXX"
     
@@ -682,7 +744,7 @@ EOF
     # Configurar base de datos y correr migraciones
     # -----------------------------------------------------
     echo "XXX"
-    echo "98"
+    echo "99"
     echo "Configurando la base de datos y ejecutando las migraciones..."
     echo "XXX"
     
