@@ -2,8 +2,8 @@
 
 # =========================================================
 # Script de instalación para Ubuntu/Debian/AnduinOS (64 bits)
-# Versión 3.1.6 - Corregidos los porcentajes de la barra de
-# progreso para una visualización más precisa.
+# Versión 3.1.7 - Corregido el problema de instalación de
+# las extensiones de Visual Studio Code.
 # =========================================================
 
 clear
@@ -18,7 +18,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="3.1.6"
+VER="3.1.7"
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -553,42 +553,42 @@ fi
             echo "73"
             echo "Instalando extensión de idioma español..."
             echo "XXX"
-            su -c "code --install-extension MS-CEINTL.vscode-language-pack-es --force" - "$USER_PROYECTO" >/dev/null 2>&1
+            su -c "code --install-extension MS-CEINTL.vscode-language-pack-es" - "$USER_PROYECTO" >/dev/null 2>&1
             sleep 1
             
             echo "XXX"
             echo "74"
             echo "Instalando PHP Intelephense..."
             echo "XXX"
-            su -c "code --install-extension bmewburn.vscode-intelephense --force" - "$USER_PROYECTO" >/dev/null 2>&1
+            su -c "code --install-extension bmewburn.vscode-intelephense" - "$USER_PROYECTO" >/dev/null 2>&1
             sleep 1
 
             echo "XXX"
             echo "75"
             echo "Instalando Laravel Blade Snippets..."
             echo "XXX"
-            su -c "code --install-extension onecentlin.laravel-blade-snippets --force" - "$USER_PROYECTO" >/dev/null 2>&1
+            su -c "code --install-extension onecentlin.laravel-blade-snippets" - "$USER_PROYECTO" >/dev/null 2>&1
             sleep 1
 
             echo "XXX"
             echo "76"
             echo "Instalando Laravel Go to View..."
             echo "XXX"
-            su -c "code --install-extension codingyu.laravel-goto-view --force" - "$USER_PROYECTO" >/dev/null 2>&1
+            su -c "code --install-extension codingyu.laravel-goto-view" - "$USER_PROYECTO" >/dev/null 2>&1
             sleep 1
 
             echo "XXX"
             echo "77"
             echo "Instalando Laravel Snippets..."
             echo "XXX"
-            su -c "code --install-extension onecentlin.laravel-snippets --force" - "$USER_PROYECTO" >/dev/null 2>&1
+            su -c "code --install-extension onecentlin.laravel-snippets" - "$USER_PROYECTO" >/dev/null 2>&1
             sleep 1
 
             echo "XXX"
             echo "78"
             echo "Instalando Material Icon Theme..."
             echo "XXX"
-            su -c "code --install-extension pkief.material-icon-theme --force" - "$USER_PROYECTO" >/dev/null 2>&1
+            su -c "code --install-extension pkief.material-icon-theme" - "$USER_PROYECTO" >/dev/null 2>&1
             sleep 1
 
             echo "XXX"
