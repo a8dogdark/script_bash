@@ -16,7 +16,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="2.9.6" # Versión final y definitiva, con corrección de la línea DB_CONNECTION
+VER="2.9.7" # Versión final y definitiva, con corrección de permisos de usuario
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -694,14 +694,30 @@ EOF
     sleep 2
     
     # -----------------------------------------------------
-    # Configuración de permisos final
+    # Configuración de permisos final para el proyecto
     # -----------------------------------------------------
     echo "XXX"
     echo "99"
     echo "Configurando permisos finales para el proyecto..."
     echo "XXX"
+    # Obtener el nombre del usuario original para el que se crearon los archivos
+    USER_PROYECTO=${SUDO_USER:-$(whoami)}
+    PROJECT_PATH="/var/www/laravel/$PROYECTO"
+    
+    # Establecer la propiedad de la carpeta y sus contenidos a tu usuario y al grupo www-data
     chown -R "$USER_PROYECTO":www-data "$PROJECT_PATH" >/dev/null 2>&1
+    
+    # Establecer permisos de escritura para el propietario y el grupo, y de lectura para otros
     chmod -R 775 "$PROJECT_PATH" >/dev/null 2>&1
+    
+    # Establecer el setgid bit para que los nuevos archivos hereden el grupo www-data
+    chmod g+s "$PROJECT_PATH" >/dev/null 2>&1
+    
+    # Dar permisos de escritura específicos a las carpetas de Laravel
+    chown -R www-data:www-data "$PROJECT_PATH/storage" >/dev/null 2>&1
+    chown -R www-data:www-data "$PROJECT_PATH/bootstrap/cache" >/dev/null 2>&1
+    chmod -R 775 "$PROJECT_PATH/storage" >/dev/null 2>&1
+    chmod -R 775 "$PROJECT_PATH/bootstrap/cache" >/dev/null 2>&1
     sleep 2
     
     
