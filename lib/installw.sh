@@ -2,8 +2,8 @@
 
 # =========================================================
 # Script de instalación para Ubuntu/Debian/AnduinOS (64 bits)
-# Versión 3.1.7 - Corregido el problema de instalación de
-# las extensiones de Visual Studio Code.
+# Versión 3.1.10 - Corregida la secuencia de la barra de
+# progreso para evitar porcentajes repetidos.
 # =========================================================
 
 clear
@@ -18,7 +18,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="3.1.7"
+VER="3.1.10"
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -201,7 +201,6 @@ fi
         sleep 1
     fi
     
-    # Nuevo paso: Instalación de Git
     echo "XXX"
     echo "10"
     echo "Instalando Git..."
@@ -238,7 +237,6 @@ fi
         sleep 1
     fi
     
-    # Nuevo: Instalar apt-transport-https antes de la instalación de VS Code
     echo "XXX"
     echo "18"
     echo "Verificando e instalando apt-transport-https..."
@@ -259,7 +257,6 @@ fi
     fi
     sleep 1
     
-    # Nuevo paso: Habilitar mod_rewrite para URLs dinámicas
     echo "XXX"
     echo "22"
     echo "Habilitando mod_rewrite en Apache..."
@@ -549,56 +546,56 @@ fi
             # Instalación de extensiones con progreso individual
             USER_PROYECTO=${SUDO_USER:-$(whoami)}
             
+            # Utilizar `su -c` para ejecutar el comando como el usuario correcto
             echo "XXX"
             echo "73"
             echo "Instalando extensión de idioma español..."
             echo "XXX"
-            su -c "code --install-extension MS-CEINTL.vscode-language-pack-es" - "$USER_PROYECTO" >/dev/null 2>&1
+            su -c "/usr/bin/code --install-extension MS-CEINTL.vscode-language-pack-es" - "$USER_PROYECTO" >/dev/null 2>&1
             sleep 1
             
             echo "XXX"
             echo "74"
             echo "Instalando PHP Intelephense..."
             echo "XXX"
-            su -c "code --install-extension bmewburn.vscode-intelephense" - "$USER_PROYECTO" >/dev/null 2>&1
+            su -c "/usr/bin/code --install-extension bmewburn.vscode-intelephense" - "$USER_PROYECTO" >/dev/null 2>&1
             sleep 1
 
             echo "XXX"
             echo "75"
             echo "Instalando Laravel Blade Snippets..."
             echo "XXX"
-            su -c "code --install-extension onecentlin.laravel-blade-snippets" - "$USER_PROYECTO" >/dev/null 2>&1
+            su -c "/usr/bin/code --install-extension onecentlin.laravel-blade-snippets" - "$USER_PROYECTO" >/dev/null 2>&1
             sleep 1
 
             echo "XXX"
             echo "76"
             echo "Instalando Laravel Go to View..."
             echo "XXX"
-            su -c "code --install-extension codingyu.laravel-goto-view" - "$USER_PROYECTO" >/dev/null 2>&1
+            su -c "/usr/bin/code --install-extension codingyu.laravel-goto-view" - "$USER_PROYECTO" >/dev/null 2>&1
             sleep 1
 
             echo "XXX"
             echo "77"
             echo "Instalando Laravel Snippets..."
             echo "XXX"
-            su -c "code --install-extension onecentlin.laravel-snippets" - "$USER_PROYECTO" >/dev/null 2>&1
+            su -c "/usr/bin/code --install-extension onecentlin.laravel-snippets" - "$USER_PROYECTO" >/dev/null 2>&1
             sleep 1
 
             echo "XXX"
             echo "78"
             echo "Instalando Material Icon Theme..."
             echo "XXX"
-            su -c "code --install-extension pkief.material-icon-theme" - "$USER_PROYECTO" >/dev/null 2>&1
+            su -c "/usr/bin/code --install-extension pkief.material-icon-theme" - "$USER_PROYECTO" >/dev/null 2>&1
             sleep 1
 
             echo "XXX"
             echo "79"
             echo "Configurando Material Icon Theme como predeterminado..."
             echo "XXX"
-            VSCODE_CONFIG_DIR="/home/$USER_PROYECTO/.config/Code/User"
-            mkdir -p "$VSCODE_CONFIG_DIR" >/dev/null 2>&1
-            echo '{"workbench.iconTheme": "material-icon-theme"}' > "$VSCODE_CONFIG_DIR/settings.json"
-            chown -R "$USER_PROYECTO":"$USER_PROYECTO" "$VSCODE_CONFIG_DIR" >/dev/null 2>&1
+            # Crear y modificar el archivo de configuración directamente como el usuario
+            su -c "mkdir -p \"/home/$USER_PROYECTO/.config/Code/User\" && echo '{\"workbench.iconTheme\": \"material-icon-theme\"}' > \"/home/$USER_PROYECTO/.config/Code/User/settings.json\"" - "$USER_PROYECTO" >/dev/null 2>&1
+            
             sleep 1
         fi
     fi
@@ -607,7 +604,7 @@ fi
     if [[ " $SOFTWARESUSER " =~ "brave" ]]; then
         if ! dpkg -s brave-browser >/dev/null 2>&1; then
             echo "XXX"
-            echo "82"
+            echo "80"
             echo "Instalando Brave Browser..."
             echo "XXX"
             apt install -y apt-transport-https curl >/dev/null 2>&1
@@ -623,7 +620,7 @@ fi
     if [[ " $SOFTWARESUSER " =~ "chrome" ]]; then
         if ! dpkg -s google-chrome-stable >/dev/null 2>&1; then
             echo "XXX"
-            echo "85"
+            echo "82"
             echo "Instalando Google Chrome..."
             echo "XXX"
             wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add - >/dev/null 2>&1
@@ -638,7 +635,7 @@ fi
     if [[ " $SOFTWARESUSER " =~ "filezilla" ]]; then
         if ! dpkg -s filezilla >/dev/null 2>&1; then
             echo "XXX"
-            echo "88"
+            echo "84"
             echo "Instalando FileZilla..."
             echo "XXX"
             apt install -y filezilla >/dev/null 2>&1
@@ -650,7 +647,7 @@ fi
     # Crear proyecto Laravel y configurar permisos
     # ---------------------------------------------------------
     echo "XXX"
-    echo "90"
+    echo "86"
     echo "Creando carpeta para proyectos Laravel (/var/www/laravel)..."
     echo "XXX"
     mkdir -p "/var/www/laravel" >/dev/null 2>&1
@@ -659,14 +656,14 @@ fi
     sleep 2
 
     echo "XXX"
-    echo "92"
+    echo "88"
     echo "Creando proyecto de Laravel '$PROYECTO' (esto puede tardar varios minutos)..."
     echo "XXX"
     USER_PROYECTO=${SUDO_USER:-$(whoami)}
     su -c "cd /var/www/laravel && composer create-project --no-interaction laravel/laravel \"$PROYECTO\" >/dev/null 2>&1" - "$USER_PROYECTO"
     
     echo "XXX"
-    echo "93"
+    echo "90"
     echo "Instalación de dependencias de Composer finalizada."
     echo "XXX"
     sleep 1
@@ -676,14 +673,14 @@ fi
     # -----------------------------------------------------
     
     echo "XXX"
-    echo "94"
+    echo "92"
     echo "Instalando dependencias de Node.js para Vite..."
     echo "XXX"
     su -c "cd /var/www/laravel/$PROYECTO && npm install >/dev/null 2>&1" - "$USER_PROYECTO"
     sleep 1
 
     echo "XXX"
-    echo "95"
+    echo "94"
     echo "Compilando los assets con Vite..."
     echo "XXX"
     su -c "cd /var/www/laravel/$PROYECTO && npm run build >/dev/null 2>&1" - "$USER_PROYECTO"
@@ -694,18 +691,16 @@ fi
     # -----------------------------------------------------
     
     echo "XXX"
-    echo "96"
+    echo "95"
     echo "Instalando el paquete de idioma español para Laravel..."
     echo "XXX"
-    # Se agrega --no-interaction para evitar que el proceso se cuelgue
     su -c "cd /var/www/laravel/$PROYECTO && composer require laravel-lang/lang --dev --no-interaction >/dev/null 2>&1" - "$USER_PROYECTO"
     sleep 1
     
     echo "XXX"
-    echo "97"
+    echo "96"
     echo "Configurando el idioma predeterminado del proyecto a español..."
     echo "XXX"
-    # Se utiliza un comando sed más robusto para reemplazar el 'en' por 'es'
     sed -i "s/\('locale' =>\s*\) 'en'/\1 'es'/" "/var/www/laravel/$PROYECTO/config/app.php"
     sleep 1
 
@@ -713,7 +708,7 @@ fi
     # Configuración de dominio local
     # -----------------------------------------------------
     echo "XXX"
-    echo "98"
+    echo "97"
     echo "Configurando dominio local para el proyecto..."
     echo "XXX"
     
@@ -746,41 +741,32 @@ EOF
     # Configurar base de datos y correr migraciones
     # -----------------------------------------------------
     echo "XXX"
-    echo "99"
+    echo "98"
     echo "Configurando la base de datos y ejecutando las migraciones..."
     echo "XXX"
     
-    # Obtener el nombre del usuario original
     USER_PROYECTO=${SUDO_USER:-$(whoami)}
     PROJECT_PATH="/var/www/laravel/$PROYECTO"
 
-    # Dar permisos de escritura al archivo .env para el usuario root y el grupo www-data
     chmod 664 "$PROJECT_PATH/.env"
 
-    # Modificar la conexión de base de datos que no está comentada
     sed -i "s/^DB_CONNECTION=sqlite/DB_CONNECTION=mysql/" "$PROJECT_PATH/.env"
 
-    # Usar sed para modificar las líneas del .env que sí están comentadas
     sed -i "s/^#\s*DB_HOST=.*/DB_HOST=127.0.0.1/" "$PROJECT_PATH/.env"
     sed -i "s/^#\s*DB_PORT=.*/DB_PORT=3306/" "$PROJECT_PATH/.env"
     sed -i "s/^#\s*DB_DATABASE=.*/DB_DATABASE=$PROYECTO/" "$PROJECT_PATH/.env"
     sed -i "s/^#\s*DB_USERNAME=.*/DB_USERNAME=root/" "$PROJECT_PATH/.env"
     sed -i "s/^#\s*DB_PASSWORD=.*/DB_PASSWORD=$PASSROOT/" "$PROJECT_PATH/.env"
     
-    # La URL de la aplicación que ya funcionaba
     sed -i "s|^APP_URL=.*|APP_URL=http://$PROYECTO.test|" "$PROJECT_PATH/.env"
 
-    # Devolver los permisos originales al archivo .env
     chown "$USER_PROYECTO":www-data "$PROJECT_PATH/.env"
 
-    # Crear la base de datos con el nombre del proyecto
     mysql -u root -p"$PASSROOT" -e "CREATE DATABASE IF NOT EXISTS $PROYECTO;" >/dev/null 2>&1
 
-    # Ejecutar las migraciones
     su -c "cd $PROJECT_PATH && php artisan migrate >/dev/null 2>&1" - "$USER_PROYECTO"
     sleep 2
     
-    # Nuevo paso: Creación de enlace simbólico para el almacenamiento
     echo "XXX"
     echo "99"
     echo "Creando enlace simbólico para el almacenamiento (storage:link)..."
@@ -792,17 +778,12 @@ EOF
     # Configuración de permisos finales para el proyecto
     # -----------------------------------------------------
     echo "XXX"
-    echo "99"
+    echo "100"
     echo "Configurando permisos finales para el proyecto..."
     echo "XXX"
-    # Obtener el nombre del usuario original para el que se crearon los archivos
     USER_PROYECTO=${SUDO_USER:-$(whoami)}
     PROJECT_PATH="/var/www/laravel/$PROYECTO"
     
-    # Advertencia de seguridad: Usar permisos 777.
-    # Esto es una solución temporal para entornos de desarrollo local.
-    # NUNCA se debe usar en un servidor de producción.
-    # Esto permite a CUALQUIER usuario leer, escribir y ejecutar archivos.
     chown -R "$USER_PROYECTO":www-data "$PROJECT_PATH" >/dev/null 2>&1
     chmod -R 777 "$PROJECT_PATH" >/dev/null 2>&1
     sleep 2
