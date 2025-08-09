@@ -16,8 +16,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="2.9.1" # Versión corregida para el problema del archivo .env
-# La variable CREAR_PROYECTO ya no es necesaria con el flujo actual.
+VER="2.9.2" # Versión corregida para el problema de escritura en el archivo .env
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -74,7 +73,7 @@ else
 fi
 
 # ---------------------------------------------------------
-# Preguntar el nombre del proyecto Laravel (sin la pregunta de confirmación)
+# Preguntar el nombre del proyecto Laravel
 # ---------------------------------------------------------
 PROYECTO=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Nombre del Proyecto Laravel" --inputbox "Por favor, introduce el nombre del proyecto Laravel a crear en /var/www/laravel/:\n(Si lo dejas en blanco, se usará 'crud' por defecto)" 10 70 "" 3>&1 1>&2 2>&3)
     
@@ -677,14 +676,19 @@ EOF
     echo "Configurando la base de datos y ejecutando las migraciones..."
     echo "XXX"
 
-    # Configurar el archivo .env usando su -c para manejar permisos correctamente
+    # Configurar el archivo .env generando uno nuevo
     ENV_FILE="/var/www/laravel/$PROYECTO/.env"
     USER_PROYECTO=${SUDO_USER:-$(whoami)}
     
-    su -c "sed -i 's/^DB_DATABASE=.*/DB_DATABASE=$PROYECTO/' \"$ENV_FILE\"" - "$USER_PROYECTO"
-    su -c "sed -i 's/^DB_USERNAME=.*/DB_USERNAME=root/' \"$ENV_FILE\"" - "$USER_PROYECTO"
-    su -c "sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=$PASSROOT/' \"$ENV_FILE\"" - "$USER_PROYECTO"
-    
+    # Obtener el contenido del archivo .env original para mantener las variables que no se modifican
+    ORIGINAL_ENV_CONTENT=$(su -c "cat $ENV_FILE" - "$USER_PROYECTO")
+
+    # Reemplazar solo las líneas de la base de datos
+    NEW_ENV_CONTENT=$(echo "$ORIGINAL_ENV_CONTENT" | sed "s/^DB_DATABASE=.*/DB_DATABASE=$PROYECTO/; s/^DB_USERNAME=.*/DB_USERNAME=root/; s/^DB_PASSWORD=.*/DB_PASSWORD=$PASSROOT/")
+
+    # Escribir el nuevo contenido en el archivo .env
+    su -c "echo \"$NEW_ENV_CONTENT\" > \"$ENV_FILE\"" - "$USER_PROYECTO"
+
     # Crear la base de datos con el nombre del proyecto
     mysql -u root -p"$PASSROOT" -e "CREATE DATABASE IF NOT EXISTS $PROYECTO;" >/dev/null 2>&1
 
