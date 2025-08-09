@@ -2,6 +2,9 @@
 
 # =========================================================
 # Script de instalación para Ubuntu/Debian/AnduinOS (64 bits)
+# Versión 3.0.0 - Permisos 777 para solucionar problemas
+# de usuario en entornos locales, con Git y la extensión
+# de idioma español para VS Code.
 # =========================================================
 
 clear
@@ -16,7 +19,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="2.9.7" # Versión final y definitiva, con corrección de permisos de usuario
+VER="3.0.0"
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -63,7 +66,7 @@ fi
 # ---------------------------------------------------------
 # Cuadro de bienvenida
 # ---------------------------------------------------------
-if (whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Bienvenido" --yesno "Bienvenido al Instalador de Lamp para Laravel 12. Se instalarán los siguientes paquetes:\n\n- Apache\n- PHP\n- $DBSERVER\n- Phpmyadmin\n- Composer\n- NodeJs\n- Software Adicional (Opcional)\n- Proyecto de Laravel 12\n\n¿Desea continuar con la instalación?" 16 70) then
+if (whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Bienvenido" --yesno "Bienvenido al Instalador de Lamp para Laravel 12. Se instalarán los siguientes paquetes:\n\n- Apache\n- PHP\n- $DBSERVER\n- Phpmyadmin\n- Composer\n- NodeJs\n- Git\n- Software Adicional (Opcional)\n- Proyecto de Laravel 12\n\n¿Desea continuar con la instalación?" 16 70) then
     # El usuario seleccionó Aceptar, se continúa con la barra de progreso
     echo "" # Se agrega un salto de línea para separar la salida del whiptail
 else
@@ -151,7 +154,7 @@ fi
 (
     # Paso 1: Actualización de repositorios
     echo "XXX"
-    echo "3"
+    echo "2"
     echo "Actualizando lista de repositorios..."
     echo "XXX"
     apt update >/dev/null 2>&1
@@ -159,7 +162,7 @@ fi
 
     # Paso 2: Actualización de sistema
     echo "XXX"
-    echo "6"
+    echo "4"
     echo "Actualizando el sistema..."
     echo "XXX"
     apt upgrade -y >/dev/null 2>&1
@@ -167,7 +170,7 @@ fi
 
     # Paso 3: Validar e integrar el repositorio de Ondrej si la versión de PHP no es la del sistema
     echo "XXX"
-    echo "9"
+    echo "6"
     echo "Validando versión de PHP y agregando PPA de Ondrej si es necesario..."
     echo "XXX"
 
@@ -191,16 +194,26 @@ fi
     # -----------------------------------------------------
 
     echo "XXX"
-    echo "12"
+    echo "8"
     echo "Instalando zip..."
     echo "XXX"
     if ! dpkg -s "zip" >/dev/null 2>&1; then
         apt install -y "zip" >/dev/null 2>&1
         sleep 1
     fi
+    
+    # Nuevo paso: Instalación de Git
+    echo "XXX"
+    echo "10"
+    echo "Instalando Git..."
+    echo "XXX"
+    if ! command -v git &> /dev/null; then
+        apt install -y git >/dev/null 2>&1
+        sleep 1
+    fi
 
     echo "XXX"
-    echo "15"
+    echo "12"
     echo "Instalando gpg..."
     echo "XXX"
     if ! dpkg -s "gpg" >/dev/null 2>&1; then
@@ -209,7 +222,7 @@ fi
     fi
 
     echo "XXX"
-    echo "18"
+    echo "14"
     echo "Instalando curl..."
     echo "XXX"
     if ! dpkg -s "curl" >/dev/null 2>&1; then
@@ -218,7 +231,7 @@ fi
     fi
 
     echo "XXX"
-    echo "21"
+    echo "16"
     echo "Instalando unzip..."
     echo "XXX"
     if ! dpkg -s "unzip" >/dev/null 2>&1; then
@@ -228,7 +241,7 @@ fi
     
     # Nuevo: Instalar apt-transport-https antes de la instalación de VS Code
     echo "XXX"
-    echo "24"
+    echo "18"
     echo "Verificando e instalando apt-transport-https..."
     echo "XXX"
     if ! dpkg -s apt-transport-https >/dev/null 2>&1; then
@@ -238,7 +251,7 @@ fi
     
     # Paso 4: Verificación e instalación de Apache
     echo "XXX"
-    echo "30"
+    echo "24"
     echo "Verificando e instalando Apache..."
     echo "XXX"
     
@@ -249,7 +262,7 @@ fi
     
     # Nuevo paso: Habilitar mod_rewrite para URLs dinámicas
     echo "XXX"
-    echo "33"
+    echo "26"
     echo "Habilitando mod_rewrite en Apache..."
     echo "XXX"
 
@@ -261,14 +274,14 @@ fi
     
     # Paso 5: Verificación e instalación de PHP base y todas sus extensiones (Modificado)
     echo "XXX"
-    echo "34"
+    echo "28"
     echo "Iniciando instalación de PHP y sus extensiones..."
     echo "XXX"
     sleep 1
     
     # Instalación de PHP base y su módulo de Apache
     echo "XXX"
-    echo "35"
+    echo "30"
     echo "Instalando PHP $PHPUSER y el módulo de Apache..."
     echo "XXX"
     if [[ "$CURRENT_PHP_VERSION" != "$PHPUSER" ]]; then
@@ -283,7 +296,7 @@ fi
 
     # Instalación de extensiones una por una
     echo "XXX"
-    echo "36"
+    echo "32"
     echo "Instalando extensión php${PHPUSER}-xml..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-xml" >/dev/null 2>&1; then
@@ -292,7 +305,7 @@ fi
     sleep 1
     
     echo "XXX"
-    echo "37"
+    echo "34"
     echo "Instalando extensión php${PHPUSER}-zip..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-zip" >/dev/null 2>&1; then
@@ -301,7 +314,7 @@ fi
     sleep 1
     
     echo "XXX"
-    echo "38"
+    echo "36"
     echo "Instalando extensión php${PHPUSER}-mbstring..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-mbstring" >/dev/null 2>&1; then
@@ -310,7 +323,7 @@ fi
     sleep 1
     
     echo "XXX"
-    echo "39"
+    echo "38"
     echo "Instalando extensión php${PHPUSER}-dom..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-dom" >/dev/null 2>&1; then
@@ -328,7 +341,7 @@ fi
     sleep 1
 
     echo "XXX"
-    echo "41"
+    echo "42"
     echo "Instalando extensión php${PHPUSER}-fileinfo..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-fileinfo" >/dev/null 2>&1; then
@@ -337,7 +350,7 @@ fi
     sleep 1
     
     echo "XXX"
-    echo "42"
+    echo "44"
     echo "Instalando extensión php${PHPUSER}-bcmath..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-bcmath" >/dev/null 2>&1; then
@@ -346,7 +359,7 @@ fi
     sleep 1
     
     echo "XXX"
-    echo "43"
+    echo "46"
     echo "Instalando extensión php${PHPUSER}-gmp..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-gmp" >/dev/null 2>&1; then
@@ -355,7 +368,7 @@ fi
     sleep 1
 
     echo "XXX"
-    echo "44"
+    echo "48"
     echo "Instalando extensión php${PHPUSER}-imagick..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-imagick" >/dev/null 2>&1; then
@@ -364,7 +377,7 @@ fi
     sleep 1
     
     echo "XXX"
-    echo "45"
+    echo "50"
     echo "Instalando extensión php${PHPUSER}-exif..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-exif" >/dev/null 2>&1; then
@@ -373,7 +386,7 @@ fi
     sleep 1
 
     echo "XXX"
-    echo "46"
+    echo "52"
     echo "Instalando extensión php${PHPUSER}-gd..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-gd" >/dev/null 2>&1; then
@@ -382,7 +395,7 @@ fi
     sleep 1
     
     echo "XXX"
-    echo "47"
+    echo "54"
     echo "Instalando extensión php${PHPUSER}-iconv..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-iconv" >/dev/null 2>&1; then
@@ -391,7 +404,7 @@ fi
     sleep 1
     
     echo "XXX"
-    echo "48"
+    echo "56"
     echo "Instalando extensión php${PHPUSER}-mysql..."
     echo "XXX"
     if ! dpkg -s "php${PHPUSER}-mysql" >/dev/null 2>&1; then
@@ -400,7 +413,7 @@ fi
     sleep 1
     
     echo "XXX"
-    echo "49"
+    echo "58"
     echo "Instalación de extensiones de PHP completada."
     echo "XXX"
     sleep 1
@@ -410,7 +423,7 @@ fi
     # -----------------------------------------------------
 
     echo "XXX"
-    echo "50"
+    echo "60"
     echo "Instalando MariaDB/MySQL Server..."
     echo "XXX"
     if ! dpkg -s "$DBSERVER" >/dev/null 2>&1; then
@@ -419,7 +432,7 @@ fi
     sleep 1
 
     echo "XXX"
-    echo "55"
+    echo "62"
     echo "Configurando contraseñas para la base de datos..."
     echo "XXX"
     # Configuración de usuario root y phpmyadmin
@@ -436,7 +449,7 @@ fi
     # -----------------------------------------------------
 
     echo "XXX"
-    echo "60"
+    echo "66"
     echo "Instalando y configurando Phpmyadmin..."
     echo "XXX"
 
@@ -457,7 +470,7 @@ fi
     # -----------------------------------------------------
 
     echo "XXX"
-    echo "65"
+    echo "68"
     echo "Validando y configurando la versión de PHP..."
     echo "XXX"
     # Deshabilitar todas las versiones de PHP en Apache y habilitar la elegida
@@ -472,7 +485,7 @@ fi
     # Crear archivo info.php para verificar la instalación
     # -----------------------------------------------------
     echo "XXX"
-    echo "67"
+    echo "70"
     echo "Creando archivo info.php y configurando permisos..."
     echo "XXX"
     echo "<?php phpinfo(); ?>" > /var/www/html/info.php
@@ -483,7 +496,7 @@ fi
     # Instalación de Composer
     # -----------------------------------------------------
     echo "XXX"
-    echo "70"
+    echo "72"
     echo "Verificando e instalando Composer..."
     echo "XXX"
     if ! command -v composer &> /dev/null; then
@@ -496,7 +509,7 @@ fi
     # Instalación de NodeJs si no está presente
     # -----------------------------------------------------
     echo "XXX"
-    echo "75"
+    echo "74"
     echo "Verificando e instalando NodeJs si es necesario..."
     echo "XXX"
     if ! command -v node &> /dev/null; then
@@ -513,25 +526,35 @@ fi
     if [[ " $SOFTWARESUSER " =~ "vscode" ]]; then
         if ! command -v code &> /dev/null; then
             echo "XXX"
-            echo "77"
+            echo "76"
             echo "Instalando Visual Studio Code: Paso 1 de 3..."
             echo "XXX"
             curl -sL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor | tee /usr/share/keyrings/microsoft-archive-keyring.gpg >/dev/null
             sleep 1
             
             echo "XXX"
-            echo "79"
+            echo "78"
             echo "Instalando Visual Studio Code: Paso 2 de 3..."
             echo "XXX"
             echo "deb [arch=amd64 signed-by=/usr/share/keyrings/microsoft-archive-keyring.gpg] https://packages.microsoft.com/repos/vscode stable main" | tee /etc/apt/sources.list.d/vscode.list >/dev/null
             sleep 1
             
             echo "XXX"
-            echo "81"
+            echo "80"
             echo "Instalando Visual Studio Code: Paso 3 de 3..."
             echo "XXX"
             apt update >/dev/null 2>&1
             apt install -y code >/dev/null 2>&1
+            sleep 1
+            
+            # Instalar la extensión del paquete de idioma español
+            echo "XXX"
+            echo "82"
+            echo "Instalando la extensión de idioma español para Visual Studio Code..."
+            echo "XXX"
+            # Obtener el nombre del usuario original para el que se crearon los archivos
+            USER_PROYECTO=${SUDO_USER:-$(whoami)}
+            su -c "code --install-extension MS-CEINTL.vscode-language-pack-es" - "$USER_PROYECTO" >/dev/null 2>&1
             sleep 1
         fi
     fi
@@ -540,7 +563,7 @@ fi
     if [[ " $SOFTWARESUSER " =~ "brave" ]]; then
         if ! dpkg -s brave-browser >/dev/null 2>&1; then
             echo "XXX"
-            echo "83"
+            echo "84"
             echo "Instalando Brave Browser..."
             echo "XXX"
             apt install -y apt-transport-https curl >/dev/null 2>&1
@@ -556,7 +579,7 @@ fi
     if [[ " $SOFTWARESUSER " =~ "chrome" ]]; then
         if ! dpkg -s google-chrome-stable >/dev/null 2>&1; then
             echo "XXX"
-            echo "85"
+            echo "86"
             echo "Instalando Google Chrome..."
             echo "XXX"
             wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | sudo apt-key add - >/dev/null 2>&1
@@ -571,7 +594,7 @@ fi
     if [[ " $SOFTWARESUSER " =~ "filezilla" ]]; then
         if ! dpkg -s filezilla >/dev/null 2>&1; then
             echo "XXX"
-            echo "87"
+            echo "88"
             echo "Instalando FileZilla..."
             echo "XXX"
             apt install -y filezilla >/dev/null 2>&1
@@ -599,7 +622,7 @@ fi
     su -c "cd /var/www/laravel && composer create-project --no-interaction laravel/laravel \"$PROYECTO\" >/dev/null 2>&1" - "$USER_PROYECTO"
     
     echo "XXX"
-    echo "93"
+    echo "94"
     echo "Instalación de dependencias de Composer finalizada."
     echo "XXX"
     sleep 1
@@ -694,7 +717,7 @@ EOF
     sleep 2
     
     # -----------------------------------------------------
-    # Configuración de permisos final para el proyecto
+    # Configuración de permisos finales para el proyecto
     # -----------------------------------------------------
     echo "XXX"
     echo "99"
@@ -704,20 +727,12 @@ EOF
     USER_PROYECTO=${SUDO_USER:-$(whoami)}
     PROJECT_PATH="/var/www/laravel/$PROYECTO"
     
-    # Establecer la propiedad de la carpeta y sus contenidos a tu usuario y al grupo www-data
+    # Advertencia de seguridad: Usar permisos 777.
+    # Esto es una solución temporal para entornos de desarrollo local.
+    # NUNCA se debe usar en un servidor de producción.
+    # Esto permite a CUALQUIER usuario leer, escribir y ejecutar archivos.
     chown -R "$USER_PROYECTO":www-data "$PROJECT_PATH" >/dev/null 2>&1
-    
-    # Establecer permisos de escritura para el propietario y el grupo, y de lectura para otros
-    chmod -R 775 "$PROJECT_PATH" >/dev/null 2>&1
-    
-    # Establecer el setgid bit para que los nuevos archivos hereden el grupo www-data
-    chmod g+s "$PROJECT_PATH" >/dev/null 2>&1
-    
-    # Dar permisos de escritura específicos a las carpetas de Laravel
-    chown -R www-data:www-data "$PROJECT_PATH/storage" >/dev/null 2>&1
-    chown -R www-data:www-data "$PROJECT_PATH/bootstrap/cache" >/dev/null 2>&1
-    chmod -R 775 "$PROJECT_PATH/storage" >/dev/null 2>&1
-    chmod -R 775 "$PROJECT_PATH/bootstrap/cache" >/dev/null 2>&1
+    chmod -R 777 "$PROJECT_PATH" >/dev/null 2>&1
     sleep 2
     
     
