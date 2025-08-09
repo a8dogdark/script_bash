@@ -16,7 +16,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="2.8" # Versión actualizada para añadir la configuración de dominio local
+VER="2.9" # Versión actualizada para añadir la migración de la base de datos
 # La variable CREAR_PROYECTO ya no es necesaria con el flujo actual.
 
 # ---------------------------------------------------------
@@ -636,7 +636,7 @@ fi
     # Configuración de dominio local
     # -----------------------------------------------------
     echo "XXX"
-    echo "98"
+    echo "97"
     echo "Configurando dominio local para el proyecto..."
     echo "XXX"
     
@@ -670,6 +670,29 @@ EOF
     sleep 2
     
     # -----------------------------------------------------
+    # Configurar base de datos y correr migraciones
+    # -----------------------------------------------------
+    echo "XXX"
+    echo "98"
+    echo "Configurando la base de datos y ejecutando las migraciones..."
+    echo "XXX"
+
+    # Configurar el archivo .env
+    ENV_FILE="/var/www/laravel/$PROYECTO/.env"
+    
+    # Se utiliza sed para modificar las variables de la base de datos
+    sed -i "s/^DB_DATABASE=.*/DB_DATABASE=$PROYECTO/" "$ENV_FILE"
+    sed -i "s/^DB_USERNAME=.*/DB_USERNAME=root/" "$ENV_FILE"
+    sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=$PASSROOT/" "$ENV_FILE"
+    
+    # Crear la base de datos con el nombre del proyecto
+    mysql -u root -p"$PASSROOT" -e "CREATE DATABASE IF NOT EXISTS $PROYECTO;" >/dev/null 2>&1
+
+    # Ejecutar las migraciones
+    su -c "cd /var/www/laravel/$PROYECTO && php artisan migrate >/dev/null 2>&1" - "$USER_PROYECTO"
+    sleep 2
+    
+    # -----------------------------------------------------
     # Configuración de permisos final
     # -----------------------------------------------------
     echo "XXX"
@@ -695,6 +718,6 @@ EOF
 # ---------------------------------------------------------
 
 # Mensaje de éxito
-whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación completada" --msgbox "La instalación de los componentes LAMP y el proyecto de Laravel ha sido completada.\n\nPara verificar la instalación:\n- Apache: http://localhost\n- Phpinfo: http://localhost/info.php\n- Phpmyadmin: http://localhost/phpmyadmin\n\nEl proyecto de Laravel ('$PROYECTO') se ha creado en: /var/www/laravel\n\nAhora puedes acceder a tu proyecto en: http://$PROYECTO.test\n\nContraseña de root de la DB: $PASSROOT\nContraseña de phpmyadmin: $PASSADMIN" 18 70
+whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación completada" --msgbox "La instalación de los componentes LAMP y el proyecto de Laravel ha sido completada.\n\nPara verificar la instalación:\n- Apache: http://localhost\n- Phpinfo: http://localhost/info.php\n- Phpmyadmin: http://localhost/phpmyadmin\n\nEl proyecto de Laravel ('$PROYECTO') se ha creado en: /var/www/laravel\n\nAhora puedes acceder a tu proyecto en: http://$PROYECTO.test\n\nContraseña de root de la DB: $PASSROOT\nContraseña de phpmyadmin: $PASSADMIN\n\nSe han ejecutado las migraciones de la base de datos con éxito." 18 70
 
 exit 0
