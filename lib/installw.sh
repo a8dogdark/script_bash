@@ -19,7 +19,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="3.1.13"
+VER="2.0"
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
