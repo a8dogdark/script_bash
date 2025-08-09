@@ -16,7 +16,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="2.6" # Versión actualizada para evitar la solicitud de confirmación de Composer
+VER="2.7" # Versión actualizada para ocultar el output de los comandos de instalación
 # La variable CREAR_PROYECTO ya no es necesaria con el flujo actual.
 
 # ---------------------------------------------------------
@@ -604,7 +604,7 @@ fi
     echo "XXX"
     # Se ejecuta el comando de composer como el usuario que invocó 'sudo' y se utiliza --no-interaction
     USER_PROYECTO=${SUDO_USER:-$(whoami)}
-    su -c "cd /var/www/laravel && composer create-project --no-interaction laravel/laravel \"$PROYECTO\"" - "$USER_PROYECTO"
+    su -c "cd /var/www/laravel && composer create-project --no-interaction laravel/laravel \"$PROYECTO\" >/dev/null 2>&1" - "$USER_PROYECTO"
     
     echo "XXX"
     echo "95"
@@ -621,7 +621,7 @@ fi
     echo "Instalando dependencias de Node.js para Vite..."
     echo "XXX"
     # Se ejecuta npm install como el usuario que invocó 'sudo'
-    su -c "cd /var/www/laravel/$PROYECTO && npm install" - "$USER_PROYECTO"
+    su -c "cd /var/www/laravel/$PROYECTO && npm install >/dev/null 2>&1" - "$USER_PROYECTO"
     sleep 1
 
     echo "XXX"
@@ -629,7 +629,7 @@ fi
     echo "Compilando los assets con Vite..."
     echo "XXX"
     # Se ejecuta npm run build como el usuario que invocó 'sudo'
-    su -c "cd /var/www/laravel/$PROYECTO && npm run build" - "$USER_PROYECTO"
+    su -c "cd /var/www/laravel/$PROYECTO && npm run build >/dev/null 2>&1" - "$USER_PROYECTO"
     sleep 1
     
     # -----------------------------------------------------
