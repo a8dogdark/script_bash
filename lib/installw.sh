@@ -16,7 +16,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="2.9" # Versión actualizada para añadir la migración de la base de datos
+VER="2.9.1" # Versión corregida para el problema del archivo .env
 # La variable CREAR_PROYECTO ya no es necesaria con el flujo actual.
 
 # ---------------------------------------------------------
@@ -677,13 +677,13 @@ EOF
     echo "Configurando la base de datos y ejecutando las migraciones..."
     echo "XXX"
 
-    # Configurar el archivo .env
+    # Configurar el archivo .env usando su -c para manejar permisos correctamente
     ENV_FILE="/var/www/laravel/$PROYECTO/.env"
+    USER_PROYECTO=${SUDO_USER:-$(whoami)}
     
-    # Se utiliza sed para modificar las variables de la base de datos
-    sed -i "s/^DB_DATABASE=.*/DB_DATABASE=$PROYECTO/" "$ENV_FILE"
-    sed -i "s/^DB_USERNAME=.*/DB_USERNAME=root/" "$ENV_FILE"
-    sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=$PASSROOT/" "$ENV_FILE"
+    su -c "sed -i 's/^DB_DATABASE=.*/DB_DATABASE=$PROYECTO/' \"$ENV_FILE\"" - "$USER_PROYECTO"
+    su -c "sed -i 's/^DB_USERNAME=.*/DB_USERNAME=root/' \"$ENV_FILE\"" - "$USER_PROYECTO"
+    su -c "sed -i 's/^DB_PASSWORD=.*/DB_PASSWORD=$PASSROOT/' \"$ENV_FILE\"" - "$USER_PROYECTO"
     
     # Crear la base de datos con el nombre del proyecto
     mysql -u root -p"$PASSROOT" -e "CREATE DATABASE IF NOT EXISTS $PROYECTO;" >/dev/null 2>&1
