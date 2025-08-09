@@ -2,8 +2,8 @@
 
 # =========================================================
 # Script de instalación para Ubuntu/Debian/AnduinOS (64 bits)
-# Versión 3.1.2 - Se añade la configuración del idioma español
-# para el proyecto de Laravel.
+# Versión 3.1.3 - Se corrige un error que causaba un bucle
+# durante la instalación del paquete de idioma de Laravel.
 # =========================================================
 
 clear
@@ -18,7 +18,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="3.1.2"
+VER="3.1.3"
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -697,14 +697,16 @@ fi
     echo "99"
     echo "Instalando el paquete de idioma español para Laravel..."
     echo "XXX"
-    su -c "cd /var/www/laravel/$PROYECTO && composer require laravel-lang/lang --dev >/dev/null 2>&1" - "$USER_PROYECTO"
+    # Se agrega --no-interaction para evitar que el proceso se cuelgue
+    su -c "cd /var/www/laravel/$PROYECTO && composer require laravel-lang/lang --dev --no-interaction >/dev/null 2>&1" - "$USER_PROYECTO"
     sleep 1
     
     echo "XXX"
     echo "99"
     echo "Configurando el idioma predeterminado del proyecto a español..."
     echo "XXX"
-    sed -i "s|'locale' => 'en'|'locale' => 'es'|" "/var/www/laravel/$PROYECTO/config/app.php"
+    # Se utiliza un comando sed más robusto para reemplazar el 'en' por 'es'
+    sed -i "s/\('locale' =>\s*\) 'en'/\1 'es'/" "/var/www/laravel/$PROYECTO/config/app.php"
     sleep 1
 
     # -----------------------------------------------------
