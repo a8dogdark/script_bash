@@ -2,8 +2,9 @@
 
 # =========================================================
 # Script de instalación para Ubuntu/Debian/AnduinOS (64 bits)
-# Versión 3.1.10 - Corregida la secuencia de la barra de
-# progreso para evitar porcentajes repetidos.
+# Versión 3.1.11 - Corregida la instalación de las
+# extensiones de Visual Studio Code para que se apliquen
+# correctamente al usuario utilizando 'sudo -u'.
 # =========================================================
 
 clear
@@ -18,7 +19,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="3.1.10"
+VER="3.1.11"
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -546,55 +547,55 @@ fi
             # Instalación de extensiones con progreso individual
             USER_PROYECTO=${SUDO_USER:-$(whoami)}
             
-            # Utilizar `su -c` para ejecutar el comando como el usuario correcto
+            # Utilizar `sudo -u` para ejecutar el comando como el usuario correcto
             echo "XXX"
             echo "73"
             echo "Instalando extensión de idioma español..."
             echo "XXX"
-            su -c "/usr/bin/code --install-extension MS-CEINTL.vscode-language-pack-es" - "$USER_PROYECTO" >/dev/null 2>&1
+            sudo -u "$USER_PROYECTO" /usr/bin/code --install-extension MS-CEINTL.vscode-language-pack-es >/dev/null 2>&1
             sleep 1
             
             echo "XXX"
             echo "74"
             echo "Instalando PHP Intelephense..."
             echo "XXX"
-            su -c "/usr/bin/code --install-extension bmewburn.vscode-intelephense" - "$USER_PROYECTO" >/dev/null 2>&1
+            sudo -u "$USER_PROYECTO" /usr/bin/code --install-extension bmewburn.vscode-intelephense >/dev/null 2>&1
             sleep 1
 
             echo "XXX"
             echo "75"
             echo "Instalando Laravel Blade Snippets..."
             echo "XXX"
-            su -c "/usr/bin/code --install-extension onecentlin.laravel-blade-snippets" - "$USER_PROYECTO" >/dev/null 2>&1
+            sudo -u "$USER_PROYECTO" /usr/bin/code --install-extension onecentlin.laravel-blade-snippets >/dev/null 2>&1
             sleep 1
 
             echo "XXX"
             echo "76"
             echo "Instalando Laravel Go to View..."
             echo "XXX"
-            su -c "/usr/bin/code --install-extension codingyu.laravel-goto-view" - "$USER_PROYECTO" >/dev/null 2>&1
+            sudo -u "$USER_PROYECTO" /usr/bin/code --install-extension codingyu.laravel-goto-view >/dev/null 2>&1
             sleep 1
 
             echo "XXX"
             echo "77"
             echo "Instalando Laravel Snippets..."
             echo "XXX"
-            su -c "/usr/bin/code --install-extension onecentlin.laravel-snippets" - "$USER_PROYECTO" >/dev/null 2>&1
+            sudo -u "$USER_PROYECTO" /usr/bin/code --install-extension onecentlin.laravel-snippets >/dev/null 2>&1
             sleep 1
 
             echo "XXX"
             echo "78"
             echo "Instalando Material Icon Theme..."
             echo "XXX"
-            su -c "/usr/bin/code --install-extension pkief.material-icon-theme" - "$USER_PROYECTO" >/dev/null 2>&1
+            sudo -u "$USER_PROYECTO" /usr/bin/code --install-extension pkief.material-icon-theme >/dev/null 2>&1
             sleep 1
 
             echo "XXX"
             echo "79"
             echo "Configurando Material Icon Theme como predeterminado..."
             echo "XXX"
-            # Crear y modificar el archivo de configuración directamente como el usuario
-            su -c "mkdir -p \"/home/$USER_PROYECTO/.config/Code/User\" && echo '{\"workbench.iconTheme\": \"material-icon-theme\"}' > \"/home/$USER_PROYECTO/.config/Code/User/settings.json\"" - "$USER_PROYECTO" >/dev/null 2>&1
+            sudo -u "$USER_PROYECTO" mkdir -p "/home/$USER_PROYECTO/.config/Code/User" >/dev/null 2>&1
+            sudo -u "$USER_PROYECTO" echo '{"workbench.iconTheme": "material-icon-theme"}' > "/home/$USER_PROYECTO/.config/Code/User/settings.json" >/dev/null 2>&1
             
             sleep 1
         fi
@@ -660,7 +661,7 @@ fi
     echo "Creando proyecto de Laravel '$PROYECTO' (esto puede tardar varios minutos)..."
     echo "XXX"
     USER_PROYECTO=${SUDO_USER:-$(whoami)}
-    su -c "cd /var/www/laravel && composer create-project --no-interaction laravel/laravel \"$PROYECTO\" >/dev/null 2>&1" - "$USER_PROYECTO"
+    sudo -u "$USER_PROYECTO" composer create-project --no-interaction laravel/laravel "/var/www/laravel/$PROYECTO" >/dev/null 2>&1
     
     echo "XXX"
     echo "90"
@@ -676,14 +677,14 @@ fi
     echo "92"
     echo "Instalando dependencias de Node.js para Vite..."
     echo "XXX"
-    su -c "cd /var/www/laravel/$PROYECTO && npm install >/dev/null 2>&1" - "$USER_PROYECTO"
+    sudo -u "$USER_PROYECTO" npm --prefix "/var/www/laravel/$PROYECTO" install >/dev/null 2>&1
     sleep 1
 
     echo "XXX"
     echo "94"
     echo "Compilando los assets con Vite..."
     echo "XXX"
-    su -c "cd /var/www/laravel/$PROYECTO && npm run build >/dev/null 2>&1" - "$USER_PROYECTO"
+    sudo -u "$USER_PROYECTO" npm --prefix "/var/www/laravel/$PROYECTO" run build >/dev/null 2>&1
     sleep 1
     
     # -----------------------------------------------------
@@ -694,7 +695,7 @@ fi
     echo "95"
     echo "Instalando el paquete de idioma español para Laravel..."
     echo "XXX"
-    su -c "cd /var/www/laravel/$PROYECTO && composer require laravel-lang/lang --dev --no-interaction >/dev/null 2>&1" - "$USER_PROYECTO"
+    sudo -u "$USER_PROYECTO" composer --working-dir="/var/www/laravel/$PROYECTO" require laravel-lang/lang --dev --no-interaction >/dev/null 2>&1
     sleep 1
     
     echo "XXX"
@@ -764,14 +765,14 @@ EOF
 
     mysql -u root -p"$PASSROOT" -e "CREATE DATABASE IF NOT EXISTS $PROYECTO;" >/dev/null 2>&1
 
-    su -c "cd $PROJECT_PATH && php artisan migrate >/dev/null 2>&1" - "$USER_PROYECTO"
+    sudo -u "$USER_PROYECTO" php "/var/www/laravel/$PROYECTO/artisan" migrate >/dev/null 2>&1
     sleep 2
     
     echo "XXX"
     echo "99"
     echo "Creando enlace simbólico para el almacenamiento (storage:link)..."
     echo "XXX"
-    su -c "cd $PROJECT_PATH && php artisan storage:link >/dev/null 2>&1" - "$USER_PROYECTO"
+    sudo -u "$USER_PROYECTO" php "/var/www/laravel/$PROYECTO/artisan" storage:link >/dev/null 2>&1
     sleep 2
     
     # -----------------------------------------------------
