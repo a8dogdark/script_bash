@@ -16,7 +16,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="2.5" # Versión actualizada para corregir el problema de permisos con Composer
+VER="2.6" # Versión actualizada para evitar la solicitud de confirmación de Composer
 # La variable CREAR_PROYECTO ya no es necesaria con el flujo actual.
 
 # ---------------------------------------------------------
@@ -602,9 +602,9 @@ fi
     echo "92"
     echo "Creando proyecto de Laravel '$PROYECTO' (esto puede tardar varios minutos)..."
     echo "XXX"
-    # Se ejecuta el comando de composer como el usuario que invocó 'sudo'
+    # Se ejecuta el comando de composer como el usuario que invocó 'sudo' y se utiliza --no-interaction
     USER_PROYECTO=${SUDO_USER:-$(whoami)}
-    su -c "cd /var/www/laravel && composer create-project laravel/laravel \"$PROYECTO\"" - "$USER_PROYECTO"
+    su -c "cd /var/www/laravel && composer create-project --no-interaction laravel/laravel \"$PROYECTO\"" - "$USER_PROYECTO"
     
     echo "XXX"
     echo "95"
