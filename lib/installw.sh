@@ -16,7 +16,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="2.9.5" # Versión final y definitiva, con corrección para líneas comentadas en .env
+VER="2.9.6" # Versión final y definitiva, con corrección de la línea DB_CONNECTION
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -670,14 +670,17 @@ EOF
     # Dar permisos de escritura al archivo .env para el usuario root y el grupo www-data
     chmod 664 "$PROJECT_PATH/.env"
 
-    # Usar sed para modificar las líneas del .env de forma directa, ignorando el #
-    # Se añade \s* para manejar espacios opcionales después del #
-    sed -i "s/^#\s*DB_CONNECTION=.*/DB_CONNECTION=mysql/" "$PROJECT_PATH/.env"
+    # Modificar la conexión de base de datos que no está comentada
+    sed -i "s/^DB_CONNECTION=sqlite/DB_CONNECTION=mysql/" "$PROJECT_PATH/.env"
+
+    # Usar sed para modificar las líneas del .env que sí están comentadas
+    sed -i "s/^#\s*DB_HOST=.*/DB_HOST=127.0.0.1/" "$PROJECT_PATH/.env"
+    sed -i "s/^#\s*DB_PORT=.*/DB_PORT=3306/" "$PROJECT_PATH/.env"
     sed -i "s/^#\s*DB_DATABASE=.*/DB_DATABASE=$PROYECTO/" "$PROJECT_PATH/.env"
     sed -i "s/^#\s*DB_USERNAME=.*/DB_USERNAME=root/" "$PROJECT_PATH/.env"
     sed -i "s/^#\s*DB_PASSWORD=.*/DB_PASSWORD=$PASSROOT/" "$PROJECT_PATH/.env"
     
-    # Ahora sí, la URL que ya funcionaba
+    # La URL de la aplicación que ya funcionaba
     sed -i "s|^APP_URL=.*|APP_URL=http://$PROYECTO.test|" "$PROJECT_PATH/.env"
 
     # Devolver los permisos originales al archivo .env
