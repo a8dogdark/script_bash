@@ -16,7 +16,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="2.4" # Versión actualizada
+VER="2.5" # Versión actualizada para corregir el problema de permisos con Composer
 # La variable CREAR_PROYECTO ya no es necesaria con el flujo actual.
 
 # ---------------------------------------------------------
@@ -595,20 +595,19 @@ fi
     mkdir -p "/var/www/laravel" >/dev/null 2>&1
     # Asignar permisos para la carpeta de proyectos. El grupo www-data y otros tienen permisos de lectura/ejecución
     chown -R www-data:www-data "/var/www/laravel" >/dev/null 2>&1
-    chmod -R 755 "/var/www/laravel" >/dev/null 2>&1
+    chmod -R 775 "/var/www/laravel" >/dev/null 2>&1
     sleep 2
 
     echo "XXX"
-    echo "93"
-    echo "Creando proyecto de Laravel '$PROYECTO'..."
+    echo "92"
+    echo "Creando proyecto de Laravel '$PROYECTO' (esto puede tardar varios minutos)..."
     echo "XXX"
-    # Crear el proyecto de Laravel dentro de la carpeta /var/www/laravel
-    # Se elimina la redirección de salida para mostrar el progreso de Composer.
-    cd "/var/www/laravel" >/dev/null 2>&1
-    composer create-project laravel/laravel "$PROYECTO"
-
+    # Se ejecuta el comando de composer como el usuario que invocó 'sudo'
+    USER_PROYECTO=${SUDO_USER:-$(whoami)}
+    su -c "cd /var/www/laravel && composer create-project laravel/laravel \"$PROYECTO\"" - "$USER_PROYECTO"
+    
     echo "XXX"
-    echo "94"
+    echo "95"
     echo "Instalación de dependencias de Composer finalizada."
     echo "XXX"
     sleep 1
@@ -616,35 +615,30 @@ fi
     # -----------------------------------------------------
     # Configuración de Vite
     # -----------------------------------------------------
-    # Entrar en el directorio del nuevo proyecto
-    cd "$PROYECTO" >/dev/null 2>&1
     
-    # Instalar las dependencias de Node.js (necesario para Vite)
     echo "XXX"
-    echo "95"
+    echo "96"
     echo "Instalando dependencias de Node.js para Vite..."
     echo "XXX"
-    npm install >/dev/null 2>&1
+    # Se ejecuta npm install como el usuario que invocó 'sudo'
+    su -c "cd /var/www/laravel/$PROYECTO && npm install" - "$USER_PROYECTO"
     sleep 1
 
-    # Construir los assets para que estén listos
     echo "XXX"
-    echo "97"
+    echo "98"
     echo "Compilando los assets con Vite..."
     echo "XXX"
-    npm run build >/dev/null 2>&1
+    # Se ejecuta npm run build como el usuario que invocó 'sudo'
+    su -c "cd /var/www/laravel/$PROYECTO && npm run build" - "$USER_PROYECTO"
     sleep 1
-
-    # Volver a la carpeta principal de Laravel
-    cd ".." >/dev/null 2>&1
     
-    # Asignar permisos al usuario actual para que pueda editar los archivos del proyecto
-    # Se usa $SUDO_USER para obtener el usuario que ejecutó el script con sudo
+    # -----------------------------------------------------
+    # Configuración de permisos final
+    # -----------------------------------------------------
     echo "XXX"
     echo "99"
-    echo "Configurando permisos..."
+    echo "Configurando permisos finales para el proyecto..."
     echo "XXX"
-    USER_PROYECTO=${SUDO_USER:-$(whoami)}
     chown -R "$USER_PROYECTO":www-data "/var/www/laravel/$PROYECTO" >/dev/null 2>&1
     chmod -R 775 "/var/www/laravel/$PROYECTO" >/dev/null 2>&1
     sleep 2
