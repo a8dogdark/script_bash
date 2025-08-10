@@ -16,7 +16,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="3.6" # Versión actualizada con instalación granular de PHP
+VER="3.7" # Versión actualizada con el cuadro de diálogo final
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -376,7 +376,7 @@ fi
     mysql -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
     if [ "$USER_CHOICE" == "2" ]; then
         mysql -u root -p"$PASSROOT" -e "CREATE USER '$NEWUSER'@'localhost' IDENTIFIED BY '$NEWUSERPASS';" >/dev/null 2>&1
-        mysql -u root -p"$PASSROOT" -e "GRANT ALL PRIVILEGES ON *.* TO '$NEWUSER'@'localhost' WITH GRANT OPTION;" >/dev/null 2>&1 # Se dan todos los privilegios al nuevo usuario
+        mysql -u root -p"$PASSROOT" -e "GRANT ALL PRIVILEGES ON *.* TO '$NEWUSER'@'localhost' WITH GRANT OPTION;" >/dev/null 2>&1
         mysql -u root -p"$PASSROOT" -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
         DB_USERNAME="$NEWUSER"
         DB_PASSWORD="$NEWUSERPASS"
@@ -614,5 +614,8 @@ fi
     sleep 3
     
 ) | whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalador de componentes" --gauge "Iniciando la instalación..." 6 60 0
+
+# Cuadro de diálogo final con los datos de acceso
+whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación Completa" --msgbox "¡La instalación se ha completado exitosamente!\n\nDatos de acceso:\n\n- URL del Proyecto: http://$PROYECTO.test\n- URL de phpMyAdmin: http://localhost/phpmyadmin\n\nCredenciales de la Base de Datos:\n- Usuario: $DB_USERNAME\n- Contraseña: $DB_PASSWORD\n\nCredenciales de phpMyAdmin:\n- Usuario: pma\n- Contraseña: $PASSADMIN\n\nPresione OK para salir del instalador." 18 80
 
 exit 0
