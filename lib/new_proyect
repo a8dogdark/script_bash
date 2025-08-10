@@ -1,0 +1,341 @@
+#!/bin/bash
+
+# =========================================================
+# Script Creador de Proyectos Laravel
+# Versión 1.5 - Agregado: Validación y sugerencia de nombre
+# de usuario de base de datos único.
+# =========================================================
+
+clear
+
+# ---------------------------------------------------------
+# Declaración de variables
+# ---------------------------------------------------------
+DBSERVER=""
+DISTRO=""
+PASSROOT=""
+DBUSER=""
+DBPASS=""
+PROYECTO=""
+VER="1.5"
+
+# ---------------------------------------------------------
+# Validar si se ejecuta como root
+# ---------------------------------------------------------
+if [[ "$EUID" -ne 0 ]]; then
+    echo "Error: Este script debe ser ejecutado como usuario root." 1>&2
+    exit 1
+fi
+
+# ---------------------------------------------------------
+# Validar si el sistema es de 64 bits
+# ---------------------------------------------------------
+if [[ "$(uname -m)" != "x86_64" ]]; then
+    echo "Error: Este script es solo para sistemas de 64 bits (x86_64)." 1>&2
+    exit 1
+fi
+
+# Validar que sea Ubuntu, Debian o AnduinOS, y definir DISTRO
+if grep -qi 'AnduinOS' /etc/os-release; then
+    DISTRO="AnduinOS"
+elif grep -qi 'Ubuntu' /etc/os-release; then
+    DISTRO="Ubuntu"
+elif grep -qi 'Debian' /etc/os-release; then
+    DISTRO="Debian"
+else
+    echo "Este script solo puede ejecutarse en Ubuntu, Debian o AnduinOS."
+    exit 1
+fi
+
+# ---------------------------------------------------------
+# Instalar whiptail si no está presente
+# ---------------------------------------------------------
+if ! command -v whiptail &> /dev/null; then
+    apt install -y whiptail >/dev/null 2>&1
+    sleep 1
+fi
+
+# ---------------------------------------------------------
+# Cuadro de bienvenida
+# ---------------------------------------------------------
+if (whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Bienvenido" --yesno "Bienvenido al Creador de Proyectos Laravel.\n\nEste script creará un nuevo proyecto Laravel asumiendo que ya tienes instalado:\n- Apache\n- PHP\n- MySQL/MariaDB\n- Composer\n- NodeJs\n\n¿Desea continuar?" 15 70) then
+    # El usuario seleccionó Aceptar, se continúa
+    echo ""
+else
+    # El usuario seleccionó Cancelar, se sale del script
+    whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Cancelado" --msgbox "Has cancelado la creación del proyecto." 8 40
+    exit 1
+fi
+
+# ---------------------------------------------------------
+# Preguntar el nombre del proyecto Laravel y validar
+# ---------------------------------------------------------
+# Encontrar el próximo nombre de proyecto disponible por defecto
+default_name="crud"
+i=0
+unique_name="$default_name"
+while [ -d "/var/www/laravel/$unique_name" ]; do
+    i=$((i+1))
+    unique_name="${default_name}${i}"
+done
+
+# Bucle para preguntar y validar el nombre del proyecto
+while true; do
+    PROYECTO=$(whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Nombre del Proyecto Laravel" --inputbox "Por favor, introduce el nombre del proyecto a crear en /var/www/laravel/:\n(Si lo dejas en blanco, se usará '$unique_name' por defecto)" 10 70 "$unique_name" 3>&1 1>&2 2>&3)
+        
+    if [ $? -ne 0 ]; then
+        whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Cancelado" --msgbox "Has cancelado la creación del proyecto." 8 40
+        exit 1
+    fi
+
+    # Asignar el valor por defecto si el campo se deja en blanco
+    if [ -z "$PROYECTO" ]; then
+        PROYECTO="$unique_name"
+    fi
+
+    # Validar si el directorio ya existe
+    if [ -d "/var/www/laravel/$PROYECTO" ]; then
+        whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Error" --msgbox "La carpeta '/var/www/laravel/$PROYECTO' ya existe. Por favor, elige otro nombre." 10 70
+    else
+        break
+    fi
+done
+
+# ---------------------------------------------------------
+# Preguntar si se quiere crear un nuevo usuario de base de datos
+# ---------------------------------------------------------
+if (whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Usuario de la Base de Datos" --yesno "Se recomienda crear un usuario de base de datos dedicado para cada proyecto por razones de seguridad.\n\n¿Desea crear un nuevo usuario y contraseña para la base de datos?" 12 70) then
+    USE_NEW_USER="yes"
+    DBUSER=$(whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Nombre de Usuario de la Base de Datos" --inputbox "Por favor, introduce el nombre del nuevo usuario de la base de datos:\n(Si lo dejas en blanco, se usará el nombre del proyecto)" 10 70 "$PROYECTO" 3>&1 1>&2 2>&3)
+    if [ $? -ne 0 ]; then
+        whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Cancelado" --msgbox "Has cancelado la creación del proyecto." 8 40
+        exit 1
+    fi
+
+    DBPASS=$(whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Contraseña del Nuevo Usuario" --passwordbox "Por favor, introduce la contraseña para el nuevo usuario de la base de datos:\n(Si la dejas en blanco, se usará '12345' por defecto)" 10 70 "" 3>&1 1>&2 2>&3)
+    if [ $? -ne 0 ]; then
+        whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Cancelado" --msgbox "Has cancelado la creación del proyecto." 8 40
+        exit 1
+    fi
+    if [ -z "$DBPASS" ]; then
+        DBPASS="12345"
+    fi
+
+    while true; do
+        PASSROOT=$(whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Contraseña de Root para la Base de Datos" --passwordbox "Por favor, introduce la contraseña del usuario 'root' de la base de datos para poder crear el nuevo usuario:\n(Si la dejas en blanco, se usará '12345' por defecto)" 10 70 "" 3>&1 1>&2 2>&3)
+        if [ $? -ne 0 ]; then
+            whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Cancelado" --msgbox "Has cancelado la creación del proyecto." 8 40
+            exit 1
+        fi
+        if [ -z "$PASSROOT" ]; then
+            PASSROOT="12345"
+        fi
+
+        # Validar la contraseña de root
+        if mysql -u root -p"$PASSROOT" -e "exit" >/dev/null 2>&1; then
+            break
+        else
+            whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Error de Autenticación" --msgbox "La contraseña de root es incorrecta. Por favor, inténtalo de nuevo." 10 70
+        fi
+    done
+
+else
+    USE_NEW_USER="no"
+    
+    # Encontrar el próximo nombre de usuario disponible por defecto (basado en 'root')
+    default_user="root"
+    i=0
+    unique_user="$default_user"
+    while mysql -u "$unique_user" -e "exit" >/dev/null 2>&1; do
+        i=$((i+1))
+        unique_user="${default_user}${i}"
+    done
+
+    while true; do
+        DBUSER=$(whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Usuario de la Base de Datos" --inputbox "Por favor, introduce el nombre del usuario de la base de datos que ya existe:\n(Si lo dejas en blanco, se usará el nombre sugerido '$unique_user')" 10 70 "$unique_user" 3>&1 1>&2 2>&3)
+        if [ $? -ne 0 ]; then
+            whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Cancelado" --msgbox "Has cancelado la creación del proyecto." 8 40
+            exit 1
+        fi
+        if [ -z "$DBUSER" ]; then
+            DBUSER="$unique_user"
+        fi
+        
+        DBPASS=$(whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Contraseña del Usuario" --passwordbox "Por favor, introduce la contraseña para el usuario '$DBUSER':\n(Si la dejas en blanco, se usará '12345' por defecto)" 10 70 "" 3>&1 1>&2 2>&3)
+        if [ $? -ne 0 ]; then
+            whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Cancelado" --msgbox "Has cancelado la creación del proyecto." 8 40
+            exit 1
+        fi
+        if [ -z "$DBPASS" ]; then
+            DBPASS="12345"
+        fi
+
+        # Validar la contraseña del usuario
+        if mysql -u "$DBUSER" -p"$DBPASS" -e "exit" >/dev/null 2>&1; then
+            break
+        else
+            whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Error de Autenticación" --msgbox "La contraseña para el usuario '$DBUSER' es incorrecta o el usuario no existe. Por favor, inténtalo de nuevo." 10 70
+        fi
+    done
+    PASSROOT="$DBPASS"
+fi
+
+
+# ---------------------------------------------------------
+# Barra de progreso para la creación del proyecto
+# ---------------------------------------------------------
+(
+    # Paso 1: Crear carpeta para proyectos Laravel
+    echo "XXX"
+    echo "5"
+    echo "Creando carpeta para proyectos Laravel (/var/www/laravel)..."
+    echo "XXX"
+    mkdir -p "/var/www/laravel" >/dev/null 2>&1
+    chown -R www-data:www-data "/var/www/laravel" >/dev/null 2>&1
+    chmod -R 775 "/var/www/laravel" >/dev/null 2>&1
+    sleep 2
+
+    # Paso 2: Crear proyecto de Laravel
+    echo "XXX"
+    echo "15"
+    echo "Creando proyecto de Laravel '$PROYECTO' (esto puede tardar varios minutos)..."
+    echo "XXX"
+    USER_PROYECTO=${SUDO_USER:-$(whoami)}
+    sudo -u "$USER_PROYECTO" composer create-project --no-interaction laravel/laravel "/var/www/laravel/$PROYECTO" >/dev/null 2>&1
+    sleep 1
+
+    # Paso 3: Instalar dependencias de Node.js
+    echo "XXX"
+    echo "25"
+    echo "Instalando dependencias de Node.js para Vite..."
+    echo "XXX"
+    sudo -u "$USER_PROYECTO" npm --prefix "/var/www/laravel/$PROYECTO" install >/dev/null 2>&1
+    sleep 1
+
+    # Paso 4: Compilar los assets con Vite
+    echo "XXX"
+    echo "35"
+    echo "Compilando los assets con Vite..."
+    echo "XXX"
+    sudo -u "$USER_PROYECTO" npm --prefix "/var/www/laravel/$PROYECTO" run build >/dev/null 2>&1
+    sleep 1
+    
+    # Paso 5: Instalar paquete de idioma español
+    echo "XXX"
+    echo "45"
+    echo "Instalando el paquete de idioma español para Laravel..."
+    echo "XXX"
+    sudo -u "$USER_PROYECTO" composer --working-dir="/var/www/laravel/$PROYECTO" require laravel-lang/lang --dev --no-interaction >/dev/null 2>&1
+    sleep 1
+    
+    # Paso 6: Configurar el idioma predeterminado del proyecto a español
+    echo "XXX"
+    echo "55"
+    echo "Configurando el idioma predeterminado del proyecto a español..."
+    echo "XXX"
+    sed -i "s/\('locale' =>\s*\) 'en'/\1 'es'/" "/var/www/laravel/$PROYECTO/config/app.php"
+    sleep 1
+
+    # Paso 7: Configurar dominio local
+    echo "XXX"
+    echo "65"
+    echo "Configurando dominio local para el proyecto..."
+    echo "XXX"
+    
+    VHOST_CONF_FILE="/etc/apache2/sites-available/$PROYECTO.test.conf"
+    cat <<EOF > "$VHOST_CONF_FILE"
+<VirtualHost *:80>
+    ServerName $PROYECTO.test
+    DocumentRoot /var/www/laravel/$PROYECTO/public
+
+    <Directory /var/www/laravel/$PROYECTO/public>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+
+    ErrorLog \${APACHE_LOG_DIR}/$PROYECTO.test-error.log
+    CustomLog \${APACHE_LOG_DIR}/$PROYECTO.test-access.log combined
+</VirtualHost>
+EOF
+    
+    a2ensite "$PROYECTO.test.conf" >/dev/null 2>&1
+    systemctl reload apache2 >/dev/null 2>&1
+
+    if ! grep -q "$PROYECTO.test" /etc/hosts; then
+        echo "127.0.0.1 $PROYECTO.test" >> /etc/hosts
+    fi
+    sleep 2
+    
+    # Paso 8: Configurar base de datos y correr migraciones
+    echo "XXX"
+    echo "75"
+    echo "Configurando la base de datos y ejecutando las migraciones..."
+    echo "XXX"
+    
+    USER_PROYECTO=${SUDO_USER:-$(whoami)}
+    PROJECT_PATH="/var/www/laravel/$PROYECTO"
+
+    chmod 664 "$PROJECT_PATH/.env"
+
+    sed -i "s/^DB_CONNECTION=sqlite/DB_CONNECTION=mysql/" "$PROJECT_PATH/.env"
+
+    sed -i "s/^#\s*DB_HOST=.*/DB_HOST=127.0.0.1/" "$PROJECT_PATH/.env"
+    sed -i "s/^#\s*DB_PORT=.*/DB_PORT=3306/" "$PROJECT_PATH/.env"
+    sed -i "s/^#\s*DB_DATABASE=.*/DB_DATABASE=$PROYECTO/" "$PROJECT_PATH/.env"
+    sed -i "s/^#\s*DB_USERNAME=.*/DB_USERNAME=$DBUSER/" "$PROJECT_PATH/.env"
+    sed -i "s/^#\s*DB_PASSWORD=.*/DB_PASSWORD=$DBPASS/" "$PROJECT_PATH/.env"
+    
+    sed -i "s|^APP_URL=.*|APP_URL=http://$PROYECTO.test|" "$PROJECT_PATH/.env"
+
+    chown "$USER_PROYECTO":www-data "$PROJECT_PATH/.env"
+
+    mysql -u root -p"$PASSROOT" -e "CREATE DATABASE IF NOT EXISTS $PROYECTO;" >/dev/null 2>&1
+    
+    if [ "$USE_NEW_USER" == "yes" ]; then
+        mysql -u root -p"$PASSROOT" -e "CREATE USER IF NOT EXISTS '$DBUSER'@'localhost' IDENTIFIED BY '$DBPASS';" >/dev/null 2>&1
+        mysql -u root -p"$PASSROOT" -e "GRANT ALL PRIVILEGES ON $PROYECTO.* TO '$DBUSER'@'localhost';" >/dev/null 2>&1
+        mysql -u root -p"$PASSROOT" -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
+    fi
+
+    sudo -u "$USER_PROYECTO" php "/var/www/laravel/$PROYECTO/artisan" migrate >/dev/null 2>&1
+    sleep 2
+    
+    # Paso 9: Crear enlace simbólico para el almacenamiento
+    echo "XXX"
+    echo "85"
+    echo "Creando enlace simbólico para el almacenamiento (storage:link)..."
+    echo "XXX"
+    sudo -u "$USER_PROYECTO" php "/var/www/laravel/$PROYECTO/artisan" storage:link >/dev/null 2>&1
+    sleep 2
+    
+    # Paso 10: Configurar permisos finales para el proyecto
+    echo "XXX"
+    echo "95"
+    echo "Configurando permisos finales para el proyecto..."
+    echo "XXX"
+    USER_PROYECTO=${SUDO_USER:-$(whoami)}
+    PROJECT_PATH="/var/www/laravel/$PROYECTO"
+    
+    chown -R "$USER_PROYECTO":www-data "$PROJECT_PATH" >/dev/null 2>&1
+    chmod -R 777 "$PROJECT_PATH" >/dev/null 2>&1
+    sleep 2
+    
+    
+    # Paso Final: Fin de la instalación
+    echo "XXX"
+    echo "100"
+    echo "Fin del Proceso de Creación de Proyecto"
+    echo "XXX"
+    sleep 3
+    
+) | whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Creando proyecto..." --gauge "Iniciando la creación del proyecto..." 6 60 0
+
+# ---------------------------------------------------------
+# Mensaje final de éxito
+# ---------------------------------------------------------
+
+# Mensaje de éxito
+whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Creación completada" --msgbox "El proyecto de Laravel '$PROYECTO' ha sido creado y configurado con éxito.\n\nEl proyecto se encuentra en: /var/www/laravel\n\nAhora puedes acceder a tu proyecto en: http://$PROYECTO.test\n\nUsuario de la DB: $DBUSER\nContraseña de la DB: $DBPASS\n\nSe han ejecutado las migraciones de la base de datos y se ha creado el enlace simbólico de 'storage' con éxito." 19 70
+
+exit 0
