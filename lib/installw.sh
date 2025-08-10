@@ -438,7 +438,6 @@ fi
         mysql -u root -p"$PASSROOT" -e "GRANT ALL PRIVILEGES ON $NEWUSER.* TO '$NEWUSER'@'localhost';" >/dev/null 2>&1
         mysql -u root -p"$PASSROOT" -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
         
-        # Guardar las credenciales del nuevo usuario para la configuración de Laravel
         DB_USERNAME="$NEWUSER"
         DB_PASSWORD="$NEWUSERPASS"
         DB_DATABASE="$NEWUSER"
@@ -464,7 +463,6 @@ fi
     echo "XXX"
 
     if ! dpkg -s phpmyadmin >/dev/null 2>&1; then
-        # Configuración no interactiva para phpmyadmin
         echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
         echo "phpmyadmin phpmyadmin/app-password-confirm password $PASSADMIN" | debconf-set-selections
         echo "phpmyadmin phpmyadmin/mysql/admin-pass password $PASSROOT" | debconf-set-selections
@@ -490,13 +488,11 @@ fi
     # -----------------------------------------------------
 
     echo "XXX"
-    echo "99"
+    echo "98"
     echo "Validando y configurando la versión de PHP..."
     echo "XXX"
-    # Deshabilitar todas las versiones de PHP en Apache y habilitar la elegida
     a2dismod php* >/dev/null 2>&1
     a2enmod "php$PHPUSER" >/dev/null 2>&1
-    # Asegurar que la versión del CLI sea la correcta
     update-alternatives --set php "/usr/bin/php$PHPUSER" >/dev/null 2>&1
     systemctl restart apache2 >/dev/null 2>&1
 
@@ -505,27 +501,26 @@ fi
     # -----------------------------------------------------
     
     echo "XXX"
-    echo "100"
-    echo "Creando el proyecto de Laravel..."
+    echo "98"
+    echo "Instalando dependencias para Laravel..."
     echo "XXX"
 
-    # Instalar Node.js y npm si no están presentes
     if ! command -v node >/dev/null 2>&1; then
         curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - >/dev/null 2>&1
         apt install -y nodejs >/dev/null 2>&1
     fi
 
-    # Instalar Composer
     if ! command -v composer >/dev/null 2>&1; then
         curl -sS https://getcomposer.org/installer | php >/dev/null 2>&1
         mv composer.phar /usr/local/bin/composer >/dev/null 2>&1
     fi
 
-    # Crear la carpeta de proyectos
-    mkdir -p /var/www/laravel >/dev/null 2>&1
-    cd /var/www/laravel >/dev/null 2>&1
-
-    # Crear el proyecto de Laravel
+    echo "XXX"
+    echo "99"
+    echo "Creando el proyecto de Laravel ($PROYECTO)..."
+    echo "XXX"
+    mkdir -p "/var/www/laravel" >/dev/null 2>&1
+    cd "/var/www/laravel" >/dev/null 2>&1
     composer create-project laravel/laravel "$PROYECTO" >/dev/null 2>&1
 
     # -----------------------------------------------------
@@ -533,11 +528,10 @@ fi
     # -----------------------------------------------------
     
     echo "XXX"
-    echo "100"
+    echo "99"
     echo "Configurando el Virtual Host de Apache..."
     echo "XXX"
     
-    # Crear archivo de configuración para el Virtual Host
     echo "<VirtualHost *:80>
         ServerName $PROYECTO.test
         ServerAdmin webmaster@localhost
@@ -549,7 +543,6 @@ fi
         CustomLog ${APACHE_LOG_DIR}/access.log combined
     </VirtualHost>" > "/etc/apache2/sites-available/$PROYECTO.conf"
     
-    # Habilitar el Virtual Host y reiniciar Apache
     a2ensite "$PROYECTO.conf" >/dev/null 2>&1
     systemctl restart apache2 >/dev/null 2>&1
 
@@ -557,7 +550,7 @@ fi
     # Actualizar archivo hosts para dominio .test
     # -----------------------------------------------------
     echo "XXX"
-    echo "100"
+    echo "99"
     echo "Configurando el archivo hosts..."
     echo "XXX"
     echo "127.0.0.1 $PROYECTO.test" >> /etc/hosts
@@ -566,20 +559,14 @@ fi
     # Configurar archivo .env para la conexión a la base de datos
     # -----------------------------------------------------
     echo "XXX"
-    echo "100"
+    echo "99"
     echo "Configurando la conexión a la base de datos en .env..."
     echo "XXX"
     
-    # Asignar variables de entorno si se eligió la opción de nuevo usuario
-    if [ "$USER_CHOICE" == "2" ]; then
-        sed -i "s/DB_DATABASE=laravel/DB_DATABASE=$DB_DATABASE/" "/var/www/laravel/$PROYECTO/.env"
-        sed -i "s/DB_USERNAME=root/DB_USERNAME=$DB_USERNAME/" "/var/www/laravel/$PROYECTO/.env"
-        sed -i "s/DB_PASSWORD=/DB_PASSWORD=$DB_PASSWORD/" "/var/www/laravel/$PROYECTO/.env"
-    else
-        sed -i "s/DB_DATABASE=laravel/DB_DATABASE=$DB_DATABASE/" "/var/www/laravel/$PROYECTO/.env"
-        sed -i "s/DB_USERNAME=root/DB_USERNAME=$DB_USERNAME/" "/var/www/laravel/$PROYECTO/.env"
-        sed -i "s/DB_PASSWORD=/DB_PASSWORD=$DB_PASSWORD/" "/var/www/laravel/$PROYECTO/.env"
-    fi
+    # Asignar variables de entorno para la base de datos
+    sed -i "s/DB_DATABASE=laravel/DB_DATABASE=$DB_DATABASE/" "/var/www/laravel/$PROYECTO/.env"
+    sed -i "s/DB_USERNAME=root/DB_USERNAME=$DB_USERNAME/" "/var/www/laravel/$PROYECTO/.env"
+    sed -i "s/DB_PASSWORD=/DB_PASSWORD=$DB_PASSWORD/" "/var/www/laravel/$PROYECTO/.env"
     
     # -----------------------------------------------------
     # Asignar permisos correctos
