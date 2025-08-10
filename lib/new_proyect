@@ -2,8 +2,8 @@
 
 # =========================================================
 # Script Creador de Proyectos Laravel
-# Versión 2.2 - Corregido: Ahora el usuario 'root' se muestra como una opción
-# seleccionable en el menú de la base de datos.
+# Versión 2.3 - Corregido: Solucionado el problema con la escritura
+# de la contraseña de la base de datos en el archivo .env.
 # =========================================================
 
 clear
@@ -17,7 +17,7 @@ PASSROOT=""
 DBUSER=""
 DBPASS=""
 PROYECTO=""
-VER="2.2"
+VER="2.3"
 ROOT_DB_CONNECTED=false
 
 # ---------------------------------------------------------
@@ -52,6 +52,7 @@ fi
 # Instalar whiptail si no está presente
 # ---------------------------------------------------------
 if ! command -v whiptail &> /dev/null; then
+    apt update >/dev/null 2>&1
     apt install -y whiptail >/dev/null 2>&1
     sleep 1
 fi
@@ -304,22 +305,25 @@ EOF
     USER_PROYECTO=${SUDO_USER:-$(whoami)}
     PROJECT_PATH="/var/www/laravel/$PROYECTO"
 
-    chmod 664 "$PROJECT_PATH/.env"
-
-    sed -i "s/^DB_CONNECTION=sqlite/DB_CONNECTION=mysql/" "$PROJECT_PATH/.env"
-
-    sed -i "s/^#\s*DB_HOST=.*/DB_HOST=127.0.0.1/" "$PROJECT_PATH/.env"
-    sed -i "s/^#\s*DB_PORT=.*/DB_PORT=3306/" "$PROJECT_PATH/.env"
-    sed -i "s/^#\s*DB_DATABASE=.*/DB_DATABASE=$PROYECTO/" "$PROJECT_PATH/.env"
-    sed -i "s/^#\s*DB_USERNAME=.*/DB_USERNAME=$DBUSER/" "$PROJECT_PATH/.env"
+    # Eliminar las líneas de la base de datos existentes
+    sed -i '/^DB_CONNECTION=/d' "$PROJECT_PATH/.env"
+    sed -i '/^DB_HOST=/d' "$PROJECT_PATH/.env"
+    sed -i '/^DB_PORT=/d' "$PROJECT_PATH/.env"
+    sed -i '/^DB_DATABASE=/d' "$PROJECT_PATH/.env"
+    sed -i '/^DB_USERNAME=/d' "$PROJECT_PATH/.env"
+    sed -i '/^DB_PASSWORD=/d' "$PROJECT_PATH/.env"
     
-    # Agregar la contraseña solo si está definida
-    if [ ! -z "$DBPASS" ]; then
-        sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=$DBPASS/" "$PROJECT_PATH/.env"
-    else
-        sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=/" "$PROJECT_PATH/.env"
-    fi
+    # Agregar las nuevas líneas de la base de datos
+    {
+        echo "DB_CONNECTION=mysql"
+        echo "DB_HOST=127.0.0.1"
+        echo "DB_PORT=3306"
+        echo "DB_DATABASE=$PROYECTO"
+        echo "DB_USERNAME=$DBUSER"
+        echo "DB_PASSWORD=\"$DBPASS\""
+    } >> "$PROJECT_PATH/.env"
     
+    # Configurar la URL de la aplicación
     sed -i "s|^APP_URL=.*|APP_URL=http://$PROYECTO.test|" "$PROJECT_PATH/.env"
 
     chown "$USER_PROYECTO":www-data "$PROJECT_PATH/.env"
