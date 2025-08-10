@@ -16,7 +16,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="2.7" # Se incrementa la versión para reflejar los cambios
+VER="2.9" # Versión actualizada para corregir el bug de instalación de software
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -210,9 +210,67 @@ fi
     apt install -y zip gpg curl unzip >/dev/null 2>&1
     sleep 1
 
-    # Paso 4: Verificación e instalación de Apache
+    # -----------------------------------------------------
+    # Instalación de software adicional
+    # -----------------------------------------------------
     echo "XXX"
     echo "25"
+    echo "Instalando software adicional..."
+    echo "XXX"
+    for software in $SOFTWARESUSER; do
+        case "$software" in
+            "vscode")
+                if ! dpkg -s code >/dev/null 2>&1; then
+                    echo "XXX"
+                    echo "27"
+                    echo "Instalando Visual Studio Code..."
+                    echo "XXX"
+                    wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+                    install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/
+                    sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
+                    rm -f packages.microsoft.gpg
+                    apt update >/dev/null 2>&1
+                    apt install -y code >/dev/null 2>&1
+                fi
+                ;;
+            "brave")
+                if ! dpkg -s brave-browser >/dev/null 2>&1; then
+                    echo "XXX"
+                    echo "30"
+                    echo "Instalando Brave Browser..."
+                    echo "XXX"
+                    curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
+                    echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" > /etc/apt/sources.list.d/brave-browser-release.list
+                    apt update >/dev/null 2>&1
+                    apt install -y brave-browser >/dev/null 2>&1
+                fi
+                ;;
+            "chrome")
+                if ! dpkg -s google-chrome-stable >/dev/null 2>&1; then
+                    echo "XXX"
+                    echo "33"
+                    echo "Instalando Google Chrome..."
+                    echo "XXX"
+                    wget -O /tmp/google-chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+                    apt install -y /tmp/google-chrome.deb >/dev/null 2>&1
+                    rm /tmp/google-chrome.deb
+                fi
+                ;;
+            "filezilla")
+                if ! dpkg -s filezilla >/dev/null 2>&1; then
+                    echo "XXX"
+                    echo "35"
+                    echo "Instalando FileZilla..."
+                    echo "XXX"
+                    apt install -y filezilla >/dev/null 2>&1
+                fi
+                ;;
+        esac
+    done
+    
+    # Paso 4: Verificación e instalación de Apache
+    echo "XXX"
+    echo "40"
     echo "Verificando e instalando Apache..."
     echo "XXX"
     if ! dpkg -s apache2 >/dev/null 2>&1; then
@@ -222,7 +280,7 @@ fi
     
     # Nuevo paso: Habilitar mod_rewrite para URLs dinámicas
     echo "XXX"
-    echo "30"
+    echo "45"
     echo "Habilitando mod_rewrite en Apache..."
     echo "XXX"
     if ! a2enmod rewrite >/dev/null 2>&1; then
@@ -233,7 +291,7 @@ fi
     
     # Paso 5: Verificación e instalación de PHP y extensiones
     echo "XXX"
-    echo "45"
+    echo "50"
     echo "Verificando e instalando PHP y sus extensiones..."
     echo "XXX"
     if [[ "$CURRENT_PHP_VERSION" != "$PHPUSER" ]]; then
