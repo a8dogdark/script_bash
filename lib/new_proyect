@@ -2,8 +2,8 @@
 
 # =========================================================
 # Script Creador de Proyectos Laravel
-# Versión 2.1 - Ahora verifica la conexión de root antes de pedir la contraseña.
-# El usuario puede elegir entre usuarios existentes o crear uno nuevo.
+# Versión 2.2 - Corregido: Ahora el usuario 'root' se muestra como una opción
+# seleccionable en el menú de la base de datos.
 # =========================================================
 
 clear
@@ -17,7 +17,7 @@ PASSROOT=""
 DBUSER=""
 DBPASS=""
 PROYECTO=""
-VER="2.1"
+VER="2.2"
 ROOT_DB_CONNECTED=false
 
 # ---------------------------------------------------------
@@ -133,7 +133,7 @@ fi
 # ---------------------------------------------------------
 # Seleccionar o crear un nuevo usuario de base de datos
 # ---------------------------------------------------------
-# Obtener la lista de usuarios de la base de datos
+# Obtener la lista de usuarios de la base de datos, incluyendo 'root'
 DB_USERS=$(mysql -u root -p"$PASSROOT" -Bse "SELECT User FROM mysql.user WHERE User NOT IN ('mysql.infoschema', 'mysql.sys', 'mysql.session', 'mysql.user', 'debian-sys-maint');" | tr '\n' ' ')
 DB_USERS_ARRAY=($DB_USERS)
 
@@ -153,28 +153,28 @@ if [ $? -ne 0 ]; then
 fi
 
 if [ "$DB_SELECTION" == "Crear nuevo usuario" ]; then
-    # Encontrar el próximo nombre de usuario 'root' disponible
-    default_user="root"
+    # Encontrar el próximo nombre de usuario 'user' disponible
+    default_user="user"
     i=0
-    unique_root_user=""
-    while [ -z "$unique_root_user" ]; do
+    unique_user=""
+    while [ -z "$unique_user" ]; do
         i=$((i+1))
         temp_user="${default_user}${i}"
         if ! mysql -u root -p"$PASSROOT" -e "SELECT User FROM mysql.user WHERE User = '$temp_user';" | grep -q "$temp_user"; then
-            unique_root_user="$temp_user"
+            unique_user="$temp_user"
         fi
     done
 
     # Si se elige crear nuevo usuario, preguntar por el nombre y la contraseña
     while true; do
-        DBUSER=$(whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Nombre del Nuevo Usuario de la Base de Datos" --inputbox "Introduce el nombre del nuevo usuario para la base de datos.\n\n(Por defecto se usará '$unique_root_user')" 10 70 "$unique_root_user" 3>&1 1>&2 2>&3)
+        DBUSER=$(whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Nombre del Nuevo Usuario de la Base de Datos" --inputbox "Introduce el nombre del nuevo usuario para la base de datos.\n\n(Por defecto se usará '$unique_user')" 10 70 "$unique_user" 3>&1 1>&2 2>&3)
         if [ $? -ne 0 ]; then
             whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Cancelado" --msgbox "Has cancelado la creación del proyecto." 8 40
             exit 1
         fi
         
         if [ -z "$DBUSER" ]; then
-            DBUSER="$unique_root_user"
+            DBUSER="$unique_user"
         fi
 
         if mysql -u root -p"$PASSROOT" -e "SELECT User FROM mysql.user WHERE User = '$DBUSER';" | grep -q "$DBUSER"; then
@@ -195,9 +195,16 @@ if [ "$DB_SELECTION" == "Crear nuevo usuario" ]; then
     fi
     
 else
-    # Si se elige un usuario existente, usarlo sin pedir contraseña
+    # Si se elige un usuario existente, usarlo
     DBUSER="$DB_SELECTION"
-    DBPASS=""
+    
+    # Si el usuario es 'root', usamos la contraseña ya validada
+    if [ "$DBUSER" == "root" ]; then
+        DBPASS="$PASSROOT"
+    else
+        # Para otros usuarios existentes, asumimos que no tienen contraseña
+        DBPASS=""
+    fi
     whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Usuario Existente Seleccionado" --msgbox "Has seleccionado el usuario '$DBUSER'. Se utilizará este usuario para el nuevo proyecto." 10 70
 fi
 
@@ -306,9 +313,9 @@ EOF
     sed -i "s/^#\s*DB_DATABASE=.*/DB_DATABASE=$PROYECTO/" "$PROJECT_PATH/.env"
     sed -i "s/^#\s*DB_USERNAME=.*/DB_USERNAME=$DBUSER/" "$PROJECT_PATH/.env"
     
-    # Solo agregar la contraseña si se definió una nueva
+    # Agregar la contraseña solo si está definida
     if [ ! -z "$DBPASS" ]; then
-        sed -i "s/^#\s*DB_PASSWORD=.*/DB_PASSWORD=$DBPASS/" "$PROJECT_PATH/.env"
+        sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=$DBPASS/" "$PROJECT_PATH/.env"
     else
         sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=/" "$PROJECT_PATH/.env"
     fi
@@ -319,8 +326,8 @@ EOF
 
     mysql -u root -p"$PASSROOT" -e "CREATE DATABASE IF NOT EXISTS $PROYECTO;" >/dev/null 2>&1
     
-    if [ ! -z "$DBPASS" ]; then
-        # Solo crear el usuario si no existe
+    if [ "$DBUSER" != "root" ] && [ ! -z "$DBPASS" ]; then
+        # Crear el usuario si no es 'root' y si se definió una nueva contraseña
         mysql -u root -p"$PASSROOT" -e "CREATE USER IF NOT EXISTS '$DBUSER'@'localhost' IDENTIFIED BY '$DBPASS';" >/dev/null 2>&1
     fi
     mysql -u root -p"$PASSROOT" -e "GRANT ALL PRIVILEGES ON $PROYECTO.* TO '$DBUSER'@'localhost';" >/dev/null 2>&1
@@ -364,7 +371,9 @@ EOF
 # ---------------------------------------------------------
 
 # Mensaje de éxito
-if [ -z "$DBPASS" ]; then
+if [ "$DBUSER" == "root" ]; then
+    DB_DETAILS="Usuario de la DB: $DBUSER\nContraseña de la DB: (se utilizó la de root)\n"
+elif [ -z "$DBPASS" ]; then
     DB_DETAILS="Usuario de la DB: $DBUSER\nContraseña de la DB: (Existente - no se modificó)\n"
 else
     DB_DETAILS="Usuario de la DB: $DBUSER\nContraseña de la DB: $DBPASS\n"
