@@ -65,10 +65,8 @@ fi
 # Cuadro de bienvenida
 # ---------------------------------------------------------
 if (whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Bienvenido" --yesno "Bienvenido al Instalador de Lamp para Laravel 12. Se instalarán los siguientes paquetes:\n\n- Apache\n- PHP\n- $DBSERVER\n- Phpmyadmin\n- Composer\n- NodeJs\n- Programas de Creación de proyecto\n\n¿Desea continuar con la instalación?" 16 70) then
-    # El usuario seleccionó Aceptar, se continúa con la barra de progreso
-    echo "" # Se agrega un salto de línea para separar la salida del whiptail
+    echo ""
 else
-    # El usuario seleccionó Cancelar, se muestra un mensaje y se sale del script
     whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
     exit 1
 fi
@@ -83,7 +81,6 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Asignar valor por defecto si el campo se dejó en blanco
 if [ -z "$PROYECTO" ]; then
     PROYECTO="crud"
 fi
@@ -98,17 +95,13 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Asignar valor por defecto si el campo se dejó en blanco
 if [ -z "$PASSADMIN" ]; then
     PASSADMIN="12345"
 fi
 
-# --- COMIENZO DE LA SECCIÓN MODIFICADA Y CORREGIDA ---
 # ---------------------------------------------------------
 # Solicitar la contraseña de Root de la base de datos o crear otro usuario
 # ---------------------------------------------------------
-
-# Variable para almacenar la selección del usuario
 USER_CHOICE=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Seleccionar Usuario de Base de Datos" --radiolist "Seleccione el tipo de usuario de base de datos a configurar:" 15 70 2 \
 "1" "Crear el usuario root" ON \
 "2" "Crear otro usuario" OFF 3>&1 1>&2 2>&3)
@@ -118,52 +111,28 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Evaluar la selección del usuario
 if [ "$USER_CHOICE" == "1" ]; then
-    # El usuario seleccionó crear el usuario root
-    
-    # Solicitar la contraseña de Root de la base de datos
     PASSROOT=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Contraseña de Root para la Base de Datos" --passwordbox "Por favor, introduce la contraseña para el usuario 'root' de la base de datos:\n(Si la dejas en blanco, se usará '12345' por defecto)" 10 70 "" 3>&1 1>&2 2>&3)
-
     if [ $? -ne 0 ]; then
         whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
         exit 1
     fi
-    
-    # Asignar valor por defecto si el campo se dejó en blanco
     if [ -z "$PASSROOT" ]; then
         PASSROOT="12345"
     fi
-    
-    # La lógica de creación del usuario root se aplicará más adelante
-    # en la sección de configuración de la base de datos.
-
 elif [ "$USER_CHOICE" == "2" ]; then
-    # El usuario seleccionó crear otro usuario
-
-    # Solicitar el nombre del nuevo usuario
     NEWUSER=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Nombre del Nuevo Usuario" --inputbox "Por favor, introduce el nombre del nuevo usuario de la base de datos:" 10 70 "" 3>&1 1>&2 2>&3)
-
     if [ $? -ne 0 ]; then
         whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
         exit 1
     fi
-
-    # Solicitar la contraseña del nuevo usuario
     NEWUSERPASS=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Contraseña del Nuevo Usuario" --passwordbox "Por favor, introduce la contraseña para el nuevo usuario de la base de datos:" 10 70 "" 3>&1 1>&2 2>&3)
-
     if [ $? -ne 0 ]; then
         whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
         exit 1
     fi
-
-    # Almacenamos el nombre de usuario y la contraseña del nuevo usuario en variables
-    # que se usarán más tarde en el script para crear el usuario y los privilegios.
-    # El resto del script usará PASSROOT para la configuración de phpmyadmin,
-    # que es una funcionalidad separada.
     PASSROOT="12345"
 fi
-# --- FIN DE LA SECCIÓN MODIFICADA Y CORREGIDA ---
 
 # ---------------------------------------------------------
 # Selección de versión de PHP
@@ -215,15 +184,13 @@ fi
     # Paso 3: Validar e integrar el repositorio de Ondrej si la versión de PHP no es la del sistema
     echo "XXX"
     echo "15"
-    echo "Validando versión de PHP y agregando PPA de Ondrej si es necesario..."
+    echo "Agregando PPA de Ondrej si es necesario..."
     echo "XXX"
-
     if command -v php &>/dev/null; then
         CURRENT_PHP_VERSION=$(php -r "echo PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;")
     else
         CURRENT_PHP_VERSION="none"
     fi
-    
     if [[ "$CURRENT_PHP_VERSION" != "$PHPUSER" ]]; then
         if ! grep -q "^deb .*ondrej/php" /etc/apt/sources.list.d/* 2>/dev/null; then
             apt install -y software-properties-common >/dev/null 2>&1
@@ -236,45 +203,18 @@ fi
     # -----------------------------------------------------
     # Instalación de paquetes de utilidades
     # -----------------------------------------------------
-
     echo "XXX"
-    echo "19"
-    echo "Instalando zip..."
+    echo "20"
+    echo "Instalando zip, gpg, curl y unzip..."
     echo "XXX"
-    if ! dpkg -s "zip" >/dev/null 2>&1; then
-        apt install -y "zip" >/dev/null 2>&1
-    fi
-
-    echo "XXX"
-    echo "23"
-    echo "Instalando gpg..."
-    echo "XXX"
-    if ! dpkg -s "gpg" >/dev/null 2>&1; then
-        apt install -y "gpg" >/dev/null 2>&1
-    fi
-
-    echo "XXX"
-    echo "27"
-    echo "Instalando curl..."
-    echo "XXX"
-    if ! dpkg -s "curl" >/dev/null 2>&1; then
-        apt install -y "curl" >/dev/null 2>&1
-    fi
-
-    echo "XXX"
-    echo "31"
-    echo "Instalando unzip..."
-    echo "XXX"
-    if ! dpkg -s "unzip" >/dev/null 2>&1; then
-        apt install -y "unzip" >/dev/null 2>&1
-    fi
+    apt install -y zip gpg curl unzip >/dev/null 2>&1
+    sleep 1
 
     # Paso 4: Verificación e instalación de Apache
     echo "XXX"
-    echo "35"
+    echo "25"
     echo "Verificando e instalando Apache..."
     echo "XXX"
-    
     if ! dpkg -s apache2 >/dev/null 2>&1; then
         apt install -y apache2 >/dev/null 2>&1
     fi
@@ -282,162 +222,43 @@ fi
     
     # Nuevo paso: Habilitar mod_rewrite para URLs dinámicas
     echo "XXX"
-    echo "39"
+    echo "30"
     echo "Habilitando mod_rewrite en Apache..."
     echo "XXX"
-
     if ! a2enmod rewrite >/dev/null 2>&1; then
         echo "Error al habilitar mod_rewrite." 1>&2
     fi
     systemctl restart apache2 >/dev/null 2>&1
     sleep 1
     
-    # Paso 5: Verificación e instalación de PHP base
+    # Paso 5: Verificación e instalación de PHP y extensiones
     echo "XXX"
-    echo "43"
-    echo "Verificando e instalando PHP base..."
+    echo "40"
+    echo "Verificando e instalando PHP y sus extensiones..."
     echo "XXX"
-    
     if [[ "$CURRENT_PHP_VERSION" != "$PHPUSER" ]]; then
-        apt install -y "php$PHPUSER" "libapache2-mod-php$PHPUSER" >/dev/null 2>&1
+        apt install -y "php$PHPUSER" "libapache2-mod-php$PHPUSER" "php${PHPUSER}-xml" "php${PHPUSER}-zip" "php${PHPUSER}-mbstring" "php${PHPUSER}-dom" "php${PHPUSER}-curl" "php${PHPUSER}-fileinfo" "php${PHPUSER}-bcmath" "php${PHPUSER}-gmp" "php${PHPUSER}-imagick" "php${PHPUSER}-exif" "php${PHPUSER}-gd" "php${PHPUSER}-iconv" "php${PHPUSER}-mysql" >/dev/null 2>&1
     fi
     sleep 1
 
     # -----------------------------------------------------
-    # Instalación de extensiones de PHP por separado
-    # -----------------------------------------------------
-
-    echo "XXX"
-    echo "47"
-    echo "Instalando php${PHPUSER}-xml..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-xml" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-xml" >/dev/null 2>&1
-    fi
-
-    echo "XXX"
-    echo "51"
-    echo "Instalando php${PHPUSER}-zip..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-zip" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-zip" >/dev/null 2>&1
-    fi
-
-    echo "XXX"
-    echo "55"
-    echo "Instalando php${PHPUSER}-mbstring..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-mbstring" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-mbstring" >/dev/null 2>&1
-    fi
-
-    echo "XXX"
-    echo "59"
-    echo "Instalando php${PHPUSER}-dom..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-dom" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-dom" >/dev/null 2>&1
-    fi
-    
-    echo "XXX"
-    echo "63"
-    echo "Instalando php${PHPUSER}-curl..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-curl" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-curl" >/dev/null 2>&1
-    fi
-    
-    echo "XXX"
-    echo "67"
-    echo "Instalando php${PHPUSER}-fileinfo..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-fileinfo" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-fileinfo" >/dev/null 2>&1
-    fi
-
-    echo "XXX"
-    echo "71"
-    echo "Instalando php${PHPUSER}-bcmath..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-bcmath" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-bcmath" >/dev/null 2>&1
-    fi
-
-    echo "XXX"
-    echo "75"
-    echo "Instalando php${PHPUSER}-gmp..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-gmp" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-gmp" >/dev/null 2>&1
-    fi
-    
-    echo "XXX"
-    echo "79"
-    echo "Instalando php${PHPUSER}-imagick..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-imagick" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-imagick" >/dev/null 2>&1
-    fi
-    
-    echo "XXX"
-    echo "83"
-    echo "Instalando php${PHPUSER}-exif..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-exif" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-exif" >/dev/null 2>&1
-    fi
-    
-    echo "XXX"
-    echo "87"
-    echo "Instalando php${PHPUSER}-gd..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-gd" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-gd" >/dev/null 2>&1
-    fi
-
-    echo "XXX"
-    echo "91"
-    echo "Instalando php${PHPUSER}-iconv..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-iconv" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-iconv" >/dev/null 2>&1
-    fi
-
-    echo "XXX"
-    echo "92"
-    echo "Instalando php${PHPUSER}-mysql..."
-    echo "XXX"
-    if ! dpkg -s "php${PHPUSER}-mysql" >/dev/null 2>&1; then
-        apt install -y "php${PHPUSER}-mysql" >/dev/null 2>&1
-    fi
-
-    # -----------------------------------------------------
     # Instalación y configuración de la base de datos
     # -----------------------------------------------------
-
     echo "XXX"
-    echo "93"
-    echo "Instalando MariaDB/MySQL Server..."
+    echo "50"
+    echo "Instalando y configurando la base de datos..."
     echo "XXX"
     if ! dpkg -s "$DBSERVER" >/dev/null 2>&1; then
         apt install -y "$DBSERVER" >/dev/null 2>&1
     fi
 
-    echo "XXX"
-    echo "94"
-    echo "Configurando contraseñas y usuarios de la base de datos..."
-    echo "XXX"
-    # Configuración de usuario root
     mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$PASSROOT';" >/dev/null 2>&1
     mysql -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
-
-    # Configuración del nuevo usuario si se seleccionó la opción 2
     if [ "$USER_CHOICE" == "2" ]; then
         mysql -u root -p"$PASSROOT" -e "CREATE USER '$NEWUSER'@'localhost' IDENTIFIED BY '$NEWUSERPASS';" >/dev/null 2>&1
         mysql -u root -p"$PASSROOT" -e "CREATE DATABASE $NEWUSER;" >/dev/null 2>&1
         mysql -u root -p"$PASSROOT" -e "GRANT ALL PRIVILEGES ON $NEWUSER.* TO '$NEWUSER'@'localhost';" >/dev/null 2>&1
         mysql -u root -p"$PASSROOT" -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
-        
         DB_USERNAME="$NEWUSER"
         DB_PASSWORD="$NEWUSERPASS"
         DB_DATABASE="$NEWUSER"
@@ -447,7 +268,6 @@ fi
         DB_DATABASE="$PROYECTO"
     fi
     
-    # Configuración de usuario phpmyadmin
     mysql -u root -p"$PASSROOT" -e "CREATE USER 'phpmyadmin'@'localhost' IDENTIFIED BY '$PASSADMIN';" >/dev/null 2>&1
     mysql -u root -p"$PASSROOT" -e "GRANT ALL PRIVILEGES ON *.* TO 'phpmyadmin'@'localhost' WITH GRANT OPTION;" >/dev/null 2>&1
     mysql -u root -p"$PASSROOT" -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
@@ -456,12 +276,10 @@ fi
     # -----------------------------------------------------
     # Instalación y configuración de phpmyadmin
     # -----------------------------------------------------
-
     echo "XXX"
-    echo "96"
+    echo "60"
     echo "Instalando y configurando Phpmyadmin..."
     echo "XXX"
-
     if ! dpkg -s phpmyadmin >/dev/null 2>&1; then
         echo "phpmyadmin phpmyadmin/dbconfig-install boolean true" | debconf-set-selections
         echo "phpmyadmin phpmyadmin/app-password-confirm password $PASSADMIN" | debconf-set-selections
@@ -477,7 +295,7 @@ fi
     # Crear archivo info.php para verificar la instalación
     # -----------------------------------------------------
     echo "XXX"
-    echo "97"
+    echo "70"
     echo "Creando archivo info.php y configurando permisos..."
     echo "XXX"
     echo "<?php phpinfo(); ?>" > /var/www/html/info.php
@@ -486,10 +304,9 @@ fi
     # -----------------------------------------------------
     # Validación y configuración de la versión de PHP
     # -----------------------------------------------------
-
     echo "XXX"
-    echo "98"
-    echo "Validando y configurando la versión de PHP..."
+    echo "75"
+    echo "Configurando la versión de PHP en Apache..."
     echo "XXX"
     a2dismod php* >/dev/null 2>&1
     a2enmod "php$PHPUSER" >/dev/null 2>&1
@@ -499,39 +316,35 @@ fi
     # -----------------------------------------------------
     # Creación del proyecto de Laravel
     # -----------------------------------------------------
-    
     echo "XXX"
-    echo "98"
-    echo "Instalando dependencias para Laravel..."
+    echo "80"
+    echo "Instalando Node y Composer..."
     echo "XXX"
-
     if ! command -v node >/dev/null 2>&1; then
         curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - >/dev/null 2>&1
         apt install -y nodejs >/dev/null 2>&1
     fi
-
     if ! command -v composer >/dev/null 2>&1; then
         curl -sS https://getcomposer.org/installer | php >/dev/null 2>&1
         mv composer.phar /usr/local/bin/composer >/dev/null 2>&1
     fi
 
     echo "XXX"
-    echo "99"
+    echo "85"
     echo "Creando el proyecto de Laravel ($PROYECTO)..."
     echo "XXX"
     mkdir -p "/var/www/laravel" >/dev/null 2>&1
     cd "/var/www/laravel" >/dev/null 2>&1
-    composer create-project laravel/laravel "$PROYECTO" >/dev/null 2>&1
+    # Solución: Usar la bandera --no-interaction para evitar que el script se detenga.
+    composer create-project laravel/laravel "$PROYECTO" --no-interaction >/dev/null 2>&1
 
     # -----------------------------------------------------
-    # Configuración de Virtual Host de Apache
+    # Configuración de Virtual Host de Apache, hosts y .env
     # -----------------------------------------------------
-    
     echo "XXX"
-    echo "99"
-    echo "Configurando el Virtual Host de Apache..."
+    echo "90"
+    echo "Configurando el Virtual Host, el archivo hosts y la conexión a la base de datos..."
     echo "XXX"
-    
     echo "<VirtualHost *:80>
         ServerName $PROYECTO.test
         ServerAdmin webmaster@localhost
@@ -539,31 +352,12 @@ fi
         <Directory /var/www/laravel/$PROYECTO>
             AllowOverride All
         </Directory>
-        ErrorLog ${APACHE_LOG_DIR}/error.log
-        CustomLog ${APACHE_LOG_DIR}/access.log combined
+        ErrorLog \${APACHE_LOG_DIR}/error.log
+        CustomLog \${APACHE_LOG_DIR}/access.log combined
     </VirtualHost>" > "/etc/apache2/sites-available/$PROYECTO.conf"
-    
     a2ensite "$PROYECTO.conf" >/dev/null 2>&1
     systemctl restart apache2 >/dev/null 2>&1
-
-    # -----------------------------------------------------
-    # Actualizar archivo hosts para dominio .test
-    # -----------------------------------------------------
-    echo "XXX"
-    echo "99"
-    echo "Configurando el archivo hosts..."
-    echo "XXX"
     echo "127.0.0.1 $PROYECTO.test" >> /etc/hosts
-
-    # -----------------------------------------------------
-    # Configurar archivo .env para la conexión a la base de datos
-    # -----------------------------------------------------
-    echo "XXX"
-    echo "99"
-    echo "Configurando la conexión a la base de datos en .env..."
-    echo "XXX"
-    
-    # Asignar variables de entorno para la base de datos
     sed -i "s/DB_DATABASE=laravel/DB_DATABASE=$DB_DATABASE/" "/var/www/laravel/$PROYECTO/.env"
     sed -i "s/DB_USERNAME=root/DB_USERNAME=$DB_USERNAME/" "/var/www/laravel/$PROYECTO/.env"
     sed -i "s/DB_PASSWORD=/DB_PASSWORD=$DB_PASSWORD/" "/var/www/laravel/$PROYECTO/.env"
@@ -572,7 +366,7 @@ fi
     # Asignar permisos correctos
     # -----------------------------------------------------
     echo "XXX"
-    echo "100"
+    echo "95"
     echo "Asignando permisos..."
     echo "XXX"
     chown -R www-data:www-data "/var/www/laravel/$PROYECTO"
