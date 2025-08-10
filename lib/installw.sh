@@ -16,7 +16,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="3.1" # Versión actualizada con correcciones importantes
+VER="3.2" # Versión actualizada con OBS Studio
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -150,11 +150,12 @@ fi
 # ---------------------------------------------------------
 # Selección de software adicional
 # ---------------------------------------------------------
-SOFTWARESUSER=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Software Adicional" --checklist "Seleccione el software adicional que desea instalar:" 15 60 4 \
+SOFTWARESUSER=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Software Adicional" --checklist "Seleccione el software adicional que desea instalar:" 15 60 5 \
 "vscode" "Visual Studio Code" OFF \
 "brave" "Brave Browser" OFF \
 "chrome" "Google Chrome" OFF \
-"filezilla" "FileZilla" OFF 3>&1 1>&2 2>&3)
+"filezilla" "FileZilla" OFF \
+"obs" "OBS Studio" OFF 3>&1 1>&2 2>&3)
 
 if [ $? -ne 0 ]; then
     whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
@@ -269,6 +270,17 @@ fi
             echo "Instalando FileZilla..."
             echo "XXX"
             apt install -y filezilla >/dev/null 2>&1
+        fi
+    fi
+
+    # Instalación de OBS Studio
+    if [[ " $SOFTWARESUSER " =~ "obs" ]]; then
+        if ! dpkg -s obs-studio >/dev/null 2>&1; then
+            echo "XXX"
+            echo "38"
+            echo "Instalando OBS Studio..."
+            echo "XXX"
+            apt install -y obs-studio >/dev/null 2>&1
         fi
     fi
     
