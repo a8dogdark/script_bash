@@ -103,7 +103,7 @@ if [ -z "$PASSADMIN" ]; then
     PASSADMIN="12345"
 fi
 
-# --- COMIENZO DE LA SECCIÓN MODIFICADA ---
+# --- COMIENZO DE LA SECCIÓN MODIFICADA Y CORREGIDA ---
 # ---------------------------------------------------------
 # Solicitar la contraseña de Root de la base de datos o crear otro usuario
 # ---------------------------------------------------------
@@ -121,9 +121,8 @@ fi
 # Evaluar la selección del usuario
 if [ "$USER_CHOICE" == "1" ]; then
     # El usuario seleccionó crear el usuario root
-    whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Opción seleccionada: Usuario root" --msgbox "Se configurará la contraseña para el usuario 'root'." 8 60
     
-    # Solicitar la contraseña de Root de la base de datos (se usa la misma lógica original)
+    # Solicitar la contraseña de Root de la base de datos
     PASSROOT=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Contraseña de Root para la Base de Datos" --passwordbox "Por favor, introduce la contraseña para el usuario 'root' de la base de datos:\n(Si la dejas en blanco, se usará '12345' por defecto)" 10 70 "" 3>&1 1>&2 2>&3)
 
     if [ $? -ne 0 ]; then
@@ -135,11 +134,12 @@ if [ "$USER_CHOICE" == "1" ]; then
     if [ -z "$PASSROOT" ]; then
         PASSROOT="12345"
     fi
-    # El resto del script continuará usando la variable PASSROOT para la configuración.
+    
+    # La lógica de creación del usuario root se aplicará más adelante
+    # en la sección de configuración de la base de datos.
 
 elif [ "$USER_CHOICE" == "2" ]; then
     # El usuario seleccionó crear otro usuario
-    whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Opción seleccionada: Otro usuario" --msgbox "Se solicitarán las credenciales para un nuevo usuario." 8 60
 
     # Solicitar el nombre del nuevo usuario
     NEWUSER=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Nombre del Nuevo Usuario" --inputbox "Por favor, introduce el nombre del nuevo usuario de la base de datos:" 10 70 "" 3>&1 1>&2 2>&3)
@@ -157,15 +157,13 @@ elif [ "$USER_CHOICE" == "2" ]; then
         exit 1
     fi
 
-    # NOTA IMPORTANTE:
-    # La lógica de instalación posterior en el script está diseñada para el usuario 'root'.
-    # Para usar el nuevo usuario ($NEWUSER y $NEWUSERPASS), necesitarías adaptar esas líneas.
-    
-    # Para mantener el script funcionando con el resto del código que utiliza PASSROOT,
-    # asignaremos el valor por defecto a PASSROOT.
+    # Almacenamos el nombre de usuario y la contraseña del nuevo usuario en variables
+    # que se usarán más tarde en el script para crear el usuario y los privilegios.
+    # El resto del script usará PASSROOT para la configuración de phpmyadmin,
+    # que es una funcionalidad separada.
     PASSROOT="12345"
 fi
-# --- FIN DE LA SECCIÓN MODIFICADA ---
+# --- FIN DE LA SECCIÓN MODIFICADA Y CORREGIDA ---
 
 # ---------------------------------------------------------
 # Selección de versión de PHP
@@ -427,11 +425,30 @@ fi
 
     echo "XXX"
     echo "94"
-    echo "Configurando contraseñas para la base de datos..."
+    echo "Configurando contraseñas y usuarios de la base de datos..."
     echo "XXX"
-    # Configuración de usuario root y phpmyadmin
+    # Configuración de usuario root
     mysql -e "ALTER USER 'root'@'localhost' IDENTIFIED WITH mysql_native_password BY '$PASSROOT';" >/dev/null 2>&1
     mysql -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
+
+    # Configuración del nuevo usuario si se seleccionó la opción 2
+    if [ "$USER_CHOICE" == "2" ]; then
+        mysql -u root -p"$PASSROOT" -e "CREATE USER '$NEWUSER'@'localhost' IDENTIFIED BY '$NEWUSERPASS';" >/dev/null 2>&1
+        mysql -u root -p"$PASSROOT" -e "CREATE DATABASE $NEWUSER;" >/dev/null 2>&1
+        mysql -u root -p"$PASSROOT" -e "GRANT ALL PRIVILEGES ON $NEWUSER.* TO '$NEWUSER'@'localhost';" >/dev/null 2>&1
+        mysql -u root -p"$PASSROOT" -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
+        
+        # Guardar las credenciales del nuevo usuario para la configuración de Laravel
+        DB_USERNAME="$NEWUSER"
+        DB_PASSWORD="$NEWUSERPASS"
+        DB_DATABASE="$NEWUSER"
+    else
+        DB_USERNAME="root"
+        DB_PASSWORD="$PASSROOT"
+        DB_DATABASE="$PROYECTO"
+    fi
+    
+    # Configuración de usuario phpmyadmin
     mysql -u root -p"$PASSROOT" -e "CREATE USER 'phpmyadmin'@'localhost' IDENTIFIED BY '$PASSADMIN';" >/dev/null 2>&1
     mysql -u root -p"$PASSROOT" -e "GRANT ALL PRIVILEGES ON *.* TO 'phpmyadmin'@'localhost' WITH GRANT OPTION;" >/dev/null 2>&1
     mysql -u root -p"$PASSROOT" -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
@@ -482,7 +499,99 @@ fi
     # Asegurar que la versión del CLI sea la correcta
     update-alternatives --set php "/usr/bin/php$PHPUSER" >/dev/null 2>&1
     systemctl restart apache2 >/dev/null 2>&1
+
+    # -----------------------------------------------------
+    # Creación del proyecto de Laravel
+    # -----------------------------------------------------
     
+    echo "XXX"
+    echo "100"
+    echo "Creando el proyecto de Laravel..."
+    echo "XXX"
+
+    # Instalar Node.js y npm si no están presentes
+    if ! command -v node >/dev/null 2>&1; then
+        curl -fsSL https://deb.nodesource.com/setup_lts.x | bash - >/dev/null 2>&1
+        apt install -y nodejs >/dev/null 2>&1
+    fi
+
+    # Instalar Composer
+    if ! command -v composer >/dev/null 2>&1; then
+        curl -sS https://getcomposer.org/installer | php >/dev/null 2>&1
+        mv composer.phar /usr/local/bin/composer >/dev/null 2>&1
+    fi
+
+    # Crear la carpeta de proyectos
+    mkdir -p /var/www/laravel >/dev/null 2>&1
+    cd /var/www/laravel >/dev/null 2>&1
+
+    # Crear el proyecto de Laravel
+    composer create-project laravel/laravel "$PROYECTO" >/dev/null 2>&1
+
+    # -----------------------------------------------------
+    # Configuración de Virtual Host de Apache
+    # -----------------------------------------------------
+    
+    echo "XXX"
+    echo "100"
+    echo "Configurando el Virtual Host de Apache..."
+    echo "XXX"
+    
+    # Crear archivo de configuración para el Virtual Host
+    echo "<VirtualHost *:80>
+        ServerName $PROYECTO.test
+        ServerAdmin webmaster@localhost
+        DocumentRoot /var/www/laravel/$PROYECTO/public
+        <Directory /var/www/laravel/$PROYECTO>
+            AllowOverride All
+        </Directory>
+        ErrorLog ${APACHE_LOG_DIR}/error.log
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
+    </VirtualHost>" > "/etc/apache2/sites-available/$PROYECTO.conf"
+    
+    # Habilitar el Virtual Host y reiniciar Apache
+    a2ensite "$PROYECTO.conf" >/dev/null 2>&1
+    systemctl restart apache2 >/dev/null 2>&1
+
+    # -----------------------------------------------------
+    # Actualizar archivo hosts para dominio .test
+    # -----------------------------------------------------
+    echo "XXX"
+    echo "100"
+    echo "Configurando el archivo hosts..."
+    echo "XXX"
+    echo "127.0.0.1 $PROYECTO.test" >> /etc/hosts
+
+    # -----------------------------------------------------
+    # Configurar archivo .env para la conexión a la base de datos
+    # -----------------------------------------------------
+    echo "XXX"
+    echo "100"
+    echo "Configurando la conexión a la base de datos en .env..."
+    echo "XXX"
+    
+    # Asignar variables de entorno si se eligió la opción de nuevo usuario
+    if [ "$USER_CHOICE" == "2" ]; then
+        sed -i "s/DB_DATABASE=laravel/DB_DATABASE=$DB_DATABASE/" "/var/www/laravel/$PROYECTO/.env"
+        sed -i "s/DB_USERNAME=root/DB_USERNAME=$DB_USERNAME/" "/var/www/laravel/$PROYECTO/.env"
+        sed -i "s/DB_PASSWORD=/DB_PASSWORD=$DB_PASSWORD/" "/var/www/laravel/$PROYECTO/.env"
+    else
+        sed -i "s/DB_DATABASE=laravel/DB_DATABASE=$DB_DATABASE/" "/var/www/laravel/$PROYECTO/.env"
+        sed -i "s/DB_USERNAME=root/DB_USERNAME=$DB_USERNAME/" "/var/www/laravel/$PROYECTO/.env"
+        sed -i "s/DB_PASSWORD=/DB_PASSWORD=$DB_PASSWORD/" "/var/www/laravel/$PROYECTO/.env"
+    fi
+    
+    # -----------------------------------------------------
+    # Asignar permisos correctos
+    # -----------------------------------------------------
+    echo "XXX"
+    echo "100"
+    echo "Asignando permisos..."
+    echo "XXX"
+    chown -R www-data:www-data "/var/www/laravel/$PROYECTO"
+    chmod -R 775 "/var/www/laravel/$PROYECTO/storage"
+    chmod -R 775 "/var/www/laravel/$PROYECTO/bootstrap/cache"
+
     # Paso Final: Fin de la instalación
     echo "XXX"
     echo "100"
