@@ -16,7 +16,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="2.0"
+VER="2.1" # Se incrementa la versión para reflejar los cambios
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -344,6 +344,8 @@ fi
     echo "90"
     echo "Configurando el Virtual Host, el archivo hosts y la conexión a la base de datos..."
     echo "XXX"
+    ENV_FILE="/var/www/laravel/$PROYECTO/.env"
+    
     # Crear la configuración de Apache para el Virtual Host
     echo "<VirtualHost *:80>
         ServerName $PROYECTO.test
@@ -360,15 +362,20 @@ fi
     systemctl restart apache2 >/dev/null 2>&1
     echo "127.0.0.1 $PROYECTO.test" >> /etc/hosts
     
-    # === CORRECCIÓN APLICADA: MODIFICACIÓN DEL ARCHIVO .ENV ===
-    # Asegurar que DB_CONNECTION sea mysql
-    sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mysql|" "/var/www/laravel/$PROYECTO/.env"
-    # Actualizar las variables de la base de datos
-    sed -i "s|^DB_DATABASE=.*|DB_DATABASE=$DB_DATABASE|" "/var/www/laravel/$PROYECTO/.env"
-    sed -i "s|^DB_USERNAME=.*|DB_USERNAME=$DB_USERNAME|" "/var/www/laravel/$PROYECTO/.env"
-    sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=$DB_PASSWORD|" "/var/www/laravel/$PROYECTO/.env"
-    # Actualizar APP_URL
-    sed -i "s|^APP_URL=.*|APP_URL=http://$PROYECTO.test|" "/var/www/laravel/$PROYECTO/.env"
+    # === CORRECCIÓN APLICADA: MODIFICACIÓN ROBUSTA DEL ARCHIVO .ENV ===
+    sed -i "s|^APP_URL=.*|APP_URL=http://$PROYECTO.test|" "$ENV_FILE"
+    sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mysql|" "$ENV_FILE"
+    sed -i "s|^# DB_HOST=.*|DB_HOST=127.0.0.1|" "$ENV_FILE"
+    sed -i "s|^DB_HOST=.*|DB_HOST=127.0.0.1|" "$ENV_FILE"
+    sed -i "s|^# DB_PORT=.*|DB_PORT=3306|" "$ENV_FILE"
+    sed -i "s|^DB_PORT=.*|DB_PORT=3306|" "$ENV_FILE"
+    sed -i "s|^# DB_DATABASE=.*|DB_DATABASE=$DB_DATABASE|" "$ENV_FILE"
+    sed -i "s|^DB_DATABASE=.*|DB_DATABASE=$DB_DATABASE|" "$ENV_FILE"
+    sed -i "s|^# DB_USERNAME=.*|DB_USERNAME=$DB_USERNAME|" "$ENV_FILE"
+    sed -i "s|^DB_USERNAME=.*|DB_USERNAME=$DB_USERNAME|" "$ENV_FILE"
+    sed -i "s|^# DB_PASSWORD=.*|DB_PASSWORD=$DB_PASSWORD|" "$ENV_FILE"
+    sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=$DB_PASSWORD|" "$ENV_FILE"
+
 
     # -----------------------------------------------------
     # Asignar permisos correctos
@@ -378,8 +385,10 @@ fi
     echo "Asignando permisos..."
     echo "XXX"
     chown -R www-data:www-data "/var/www/laravel/$PROYECTO"
-    chmod -R 775 "/var/www/laravel/$PROYECTO/storage"
-    chmod -R 775 "/var/www/laravel/$PROYECTO/bootstrap/cache"
+    
+    # === CORRECCIÓN APLICADA: PERMISOS 777 SOLICITADOS ===
+    chmod -R 777 "/var/www/laravel/$PROYECTO"
+
 
     # Paso Final: Fin de la instalación
     echo "XXX"
