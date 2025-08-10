@@ -335,7 +335,6 @@ fi
     echo "XXX"
     mkdir -p "/var/www/laravel" >/dev/null 2>&1
     cd "/var/www/laravel" >/dev/null 2>&1
-    # Solución: Usar la bandera --no-interaction para evitar que el script se detenga.
     composer create-project laravel/laravel "$PROYECTO" --no-interaction >/dev/null 2>&1
 
     # -----------------------------------------------------
@@ -345,6 +344,7 @@ fi
     echo "90"
     echo "Configurando el Virtual Host, el archivo hosts y la conexión a la base de datos..."
     echo "XXX"
+    # Crear la configuración de Apache para el Virtual Host
     echo "<VirtualHost *:80>
         ServerName $PROYECTO.test
         ServerAdmin webmaster@localhost
@@ -355,13 +355,23 @@ fi
         ErrorLog \${APACHE_LOG_DIR}/error.log
         CustomLog \${APACHE_LOG_DIR}/access.log combined
     </VirtualHost>" > "/etc/apache2/sites-available/$PROYECTO.conf"
+    
     a2ensite "$PROYECTO.conf" >/dev/null 2>&1
     systemctl restart apache2 >/dev/null 2>&1
     echo "127.0.0.1 $PROYECTO.test" >> /etc/hosts
-    sed -i "s/DB_DATABASE=laravel/DB_DATABASE=$DB_DATABASE/" "/var/www/laravel/$PROYECTO/.env"
-    sed -i "s/DB_USERNAME=root/DB_USERNAME=$DB_USERNAME/" "/var/www/laravel/$PROYECTO/.env"
-    sed -i "s/DB_PASSWORD=/DB_PASSWORD=$DB_PASSWORD/" "/var/www/laravel/$PROYECTO/.env"
     
+    # === CORRECCIÓN APLICADA: MODIFICACIÓN DEL ARCHIVO .ENV ===
+    # Descomentar las líneas de la base de datos y actualizar los valores
+    sed -i "/^# DB_DATABASE/c\DB_DATABASE=$DB_DATABASE" "/var/www/laravel/$PROYECTO/.env"
+    sed -i "/^# DB_USERNAME/c\DB_USERNAME=$DB_USERNAME" "/var/www/laravel/$PROYECTO/.env"
+    sed -i "/^# DB_PASSWORD/c\DB_PASSWORD=$DB_PASSWORD" "/var/www/laravel/$PROYECTO/.env"
+    # Descomentar y actualizar el puerto de la base de datos
+    sed -i "/^# DB_PORT/c\DB_PORT=3306" "/var/www/laravel/$PROYECTO/.env"
+    # Descomentar y actualizar el host de la base de datos
+    sed -i "/^# DB_HOST/c\DB_HOST=127.0.0.1" "/var/www/laravel/$PROYECTO/.env"
+    # Actualizar APP_URL
+    sed -i "s|^APP_URL=.*|APP_URL=http://$PROYECTO.test|" "/var/www/laravel/$PROYECTO/.env"
+
     # -----------------------------------------------------
     # Asignar permisos correctos
     # -----------------------------------------------------
