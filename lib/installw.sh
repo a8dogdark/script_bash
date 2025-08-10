@@ -16,7 +16,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="2.1" # Se incrementa la versión para reflejar los cambios
+VER="2.2" # Se incrementa la versión para reflejar los cambios
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -263,6 +263,7 @@ fi
         DB_PASSWORD="$NEWUSERPASS"
         DB_DATABASE="$NEWUSER"
     else
+        mysql -u root -p"$PASSROOT" -e "CREATE DATABASE $PROYECTO;" >/dev/null 2>&1
         DB_USERNAME="root"
         DB_PASSWORD="$PASSROOT"
         DB_DATABASE="$PROYECTO"
@@ -362,7 +363,7 @@ fi
     systemctl restart apache2 >/dev/null 2>&1
     echo "127.0.0.1 $PROYECTO.test" >> /etc/hosts
     
-    # === CORRECCIÓN APLICADA: MODIFICACIÓN ROBUSTA DEL ARCHIVO .ENV ===
+    # Modificación del archivo .env
     sed -i "s|^APP_URL=.*|APP_URL=http://$PROYECTO.test|" "$ENV_FILE"
     sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mysql|" "$ENV_FILE"
     sed -i "s|^# DB_HOST=.*|DB_HOST=127.0.0.1|" "$ENV_FILE"
@@ -378,16 +379,16 @@ fi
 
 
     # -----------------------------------------------------
-    # Asignar permisos correctos
+    # Asignar permisos y ejecutar migraciones
     # -----------------------------------------------------
     echo "XXX"
     echo "95"
-    echo "Asignando permisos..."
+    echo "Asignando permisos y ejecutando migraciones..."
     echo "XXX"
-    chown -R www-data:www-data "/var/www/laravel/$PROYECTO"
-    
-    # === CORRECCIÓN APLICADA: PERMISOS 777 SOLICITADOS ===
+    # Se cambian los permisos para que todos los usuarios tengan acceso
     chmod -R 777 "/var/www/laravel/$PROYECTO"
+    # Se ejecutan las migraciones para crear las tablas en la base de datos
+    cd "/var/www/laravel/$PROYECTO" && php artisan migrate --force --no-interaction >/dev/null 2>&1
 
 
     # Paso Final: Fin de la instalación
