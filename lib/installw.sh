@@ -16,7 +16,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="3.2" # Versión actualizada con OBS Studio
+VER="3.5" # Versión actualizada con git y orden de instalación corregido
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -202,91 +202,46 @@ fi
     sleep 1
     
     # -----------------------------------------------------
-    # Instalación de paquetes de utilidades
+    # Instalación de paquetes de utilidades (Detallada)
     # -----------------------------------------------------
     echo "XXX"
     echo "20"
-    echo "Instalando zip, gpg, curl y unzip..."
+    echo "Instalando paquete zip..."
     echo "XXX"
-    apt install -y zip gpg curl unzip >/dev/null 2>&1
+    apt install -y zip >/dev/null 2>&1
     sleep 1
 
-    # -----------------------------------------------------
-    # Instalación de software adicional (Corregido)
-    # -----------------------------------------------------
     echo "XXX"
-    echo "25"
-    echo "Instalando software adicional..."
+    echo "22"
+    echo "Instalando paquete gpg..."
     echo "XXX"
-    
-    # Instalación de Visual Studio Code
-    if [[ " $SOFTWARESUSER " =~ "vscode" ]]; then
-        if ! command -v code &> /dev/null; then
-            echo "XXX"
-            echo "27"
-            echo "Instalando Visual Studio Code..."
-            echo "XXX"
-            wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
-            install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/
-            sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
-            rm -f packages.microsoft.gpg
-            apt update >/dev/null 2>&1
-            apt install -y code >/dev/null 2>&1
-        fi
-    fi
+    apt install -y gpg >/dev/null 2>&1
+    sleep 1
 
-    # Instalación de Brave Browser
-    if [[ " $SOFTWARESUSER " =~ "brave" ]]; then
-        if ! dpkg -s brave-browser >/dev/null 2>&1; then
-            echo "XXX"
-            echo "30"
-            echo "Instalando Brave Browser..."
-            echo "XXX"
-            curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg >/dev/null 2>&1
-            echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" | sudo tee /etc/apt/sources.list.d/brave-browser-release.list >/dev/null 2>&1
-            apt update >/dev/null 2>&1
-            apt install -y brave-browser >/dev/null 2>&1
-        fi
-    fi
-    
-    # Instalación de Google Chrome
-    if [[ " $SOFTWARESUSER " =~ "chrome" ]]; then
-        if ! dpkg -s google-chrome-stable >/dev/null 2>&1; then
-            echo "XXX"
-            echo "33"
-            echo "Instalando Google Chrome..."
-            echo "XXX"
-            wget -O /tmp/google-chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb >/dev/null 2>&1
-            apt install -y /tmp/google-chrome.deb >/dev/null 2>&1
-            rm /tmp/google-chrome.deb
-        fi
-    fi
-    
-    # Instalación de FileZilla
-    if [[ " $SOFTWARESUSER " =~ "filezilla" ]]; then
-        if ! dpkg -s filezilla >/dev/null 2>&1; then
-            echo "XXX"
-            echo "35"
-            echo "Instalando FileZilla..."
-            echo "XXX"
-            apt install -y filezilla >/dev/null 2>&1
-        fi
-    fi
+    echo "XXX"
+    echo "24"
+    echo "Instalando paquete curl..."
+    echo "XXX"
+    apt install -y curl >/dev/null 2>&1
+    sleep 1
 
-    # Instalación de OBS Studio
-    if [[ " $SOFTWARESUSER " =~ "obs" ]]; then
-        if ! dpkg -s obs-studio >/dev/null 2>&1; then
-            echo "XXX"
-            echo "38"
-            echo "Instalando OBS Studio..."
-            echo "XXX"
-            apt install -y obs-studio >/dev/null 2>&1
-        fi
-    fi
+    echo "XXX"
+    echo "26"
+    echo "Instalando paquete unzip..."
+    echo "XXX"
+    apt install -y unzip >/dev/null 2>&1
+    sleep 1
+
+    echo "XXX"
+    echo "28"
+    echo "Instalando paquete git..."
+    echo "XXX"
+    apt install -y git >/dev/null 2>&1
+    sleep 1
     
     # Paso 4: Verificación e instalación de Apache
     echo "XXX"
-    echo "40"
+    echo "30"
     echo "Verificando e instalando Apache..."
     echo "XXX"
     if ! dpkg -s apache2 >/dev/null 2>&1; then
@@ -296,7 +251,7 @@ fi
     
     # Nuevo paso: Habilitar mod_rewrite para URLs dinámicas
     echo "XXX"
-    echo "45"
+    echo "35"
     echo "Habilitando mod_rewrite en Apache..."
     echo "XXX"
     if ! a2enmod rewrite >/dev/null 2>&1; then
@@ -307,7 +262,7 @@ fi
     
     # Paso 5: Verificación e instalación de PHP y extensiones
     echo "XXX"
-    echo "50"
+    echo "40"
     echo "Verificando e instalando PHP y sus extensiones..."
     echo "XXX"
     if [[ "$CURRENT_PHP_VERSION" != "$PHPUSER" ]]; then
@@ -319,7 +274,7 @@ fi
     # Instalación y configuración de la base de datos
     # -----------------------------------------------------
     echo "XXX"
-    echo "60"
+    echo "45"
     echo "Instalando y configurando la base de datos..."
     echo "XXX"
     if ! dpkg -s "$DBSERVER" >/dev/null 2>&1; then
@@ -351,7 +306,7 @@ fi
     # Instalación y configuración de phpmyadmin
     # -----------------------------------------------------
     echo "XXX"
-    echo "65"
+    echo "50"
     echo "Instalando y configurando Phpmyadmin..."
     echo "XXX"
     if ! dpkg -s phpmyadmin >/dev/null 2>&1; then
@@ -369,7 +324,7 @@ fi
     # Crear archivo info.php para verificar la instalación
     # -----------------------------------------------------
     echo "XXX"
-    echo "70"
+    echo "55"
     echo "Creando archivo info.php y configurando permisos..."
     echo "XXX"
     echo "<?php phpinfo(); ?>" > /var/www/html/info.php
@@ -379,7 +334,7 @@ fi
     # Validación y configuración de la versión de PHP
     # -----------------------------------------------------
     echo "XXX"
-    echo "75"
+    echo "60"
     echo "Configurando la versión de PHP en Apache..."
     echo "XXX"
     a2dismod php* >/dev/null 2>&1
@@ -387,6 +342,79 @@ fi
     update-alternatives --set php "/usr/bin/php$PHPUSER" >/dev/null 2>&1
     systemctl restart apache2 >/dev/null 2>&1
 
+    # -----------------------------------------------------
+    # Instalación de software adicional (Corregido)
+    # -----------------------------------------------------
+    echo "XXX"
+    echo "65"
+    echo "Instalando software adicional..."
+    echo "XXX"
+    
+    # Instalación de Visual Studio Code
+    if [[ " $SOFTWARESUSER " =~ "vscode" ]]; then
+        if ! command -v code &> /dev/null; then
+            echo "XXX"
+            echo "67"
+            echo "Instalando Visual Studio Code..."
+            echo "XXX"
+            wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+            install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/
+            sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
+            rm -f packages.microsoft.gpg
+            apt update >/dev/null 2>&1
+            apt install -y code >/dev/null 2>&1
+        fi
+    fi
+
+    # Instalación de Brave Browser
+    if [[ " $SOFTWARESUSER " =~ "brave" ]]; then
+        if ! dpkg -s brave-browser >/dev/null 2>&1; then
+            echo "XXX"
+            echo "69"
+            echo "Instalando Brave Browser..."
+            echo "XXX"
+            curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg >/dev/null 2>&1
+            echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" | sudo tee /etc/apt/sources.list.d/brave-browser-release.list >/dev/null 2>&1
+            apt update >/dev/null 2>&1
+            apt install -y brave-browser >/dev/null 2>&1
+        fi
+    fi
+    
+    # Instalación de Google Chrome
+    if [[ " $SOFTWARESUSER " =~ "chrome" ]]; then
+        if ! dpkg -s google-chrome-stable >/dev/null 2>&1; then
+            echo "XXX"
+            echo "71"
+            echo "Instalando Google Chrome..."
+            echo "XXX"
+            wget -O /tmp/google-chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb >/dev/null 2>&1
+            apt install -y /tmp/google-chrome.deb >/dev/null 2>&1
+            rm /tmp/google-chrome.deb
+        fi
+    fi
+    
+    # Instalación de FileZilla
+    if [[ " $SOFTWARESUSER " =~ "filezilla" ]]; then
+        if ! dpkg -s filezilla >/dev/null 2>&1; then
+            echo "XXX"
+            echo "73"
+            echo "Instalando FileZilla..."
+            echo "XXX"
+            apt install -y filezilla >/dev/null 2>&1
+        fi
+    fi
+
+    # Instalación de OBS Studio
+    if [[ " $SOFTWARESUSER " =~ "obs" ]]; then
+        if ! dpkg -s obs-studio >/dev/null 2>&1; then
+            echo "XXX"
+            echo "75"
+            echo "Instalando OBS Studio..."
+            echo "XXX"
+            apt install -y obs-studio >/dev/null 2>&1
+        fi
+    fi
+    
     # -----------------------------------------------------
     # Creación del proyecto de Laravel
     # -----------------------------------------------------
@@ -457,31 +485,31 @@ fi
     cd "/var/www/laravel/$PROYECTO"
     
     echo "XXX"
-    echo "91"
+    echo "96"
     echo "Instalando dependencias de Node para Vite..."
     echo "XXX"
     npm install --silent >/dev/null 2>&1
     
     echo "XXX"
-    echo "93"
+    echo "97"
     echo "Compilando assets de frontend con Vite..."
     echo "XXX"
     npm run build --silent >/dev/null 2>&1
     
     echo "XXX"
-    echo "95"
+    echo "98"
     echo "Ejecutando migraciones de base de datos..."
     echo "XXX"
     php artisan migrate --force --no-interaction >/dev/null 2>&1
 
     echo "XXX"
-    echo "97"
+    echo "99"
     echo "Creando el enlace simbólico para la carpeta storage..."
     echo "XXX"
     php artisan storage:link >/dev/null 2>&1
     
     echo "XXX"
-    echo "99"
+    echo "100"
     echo "Asignando permisos a la carpeta del proyecto..."
     echo "XXX"
     chmod -R 777 "/var/www/laravel/$PROYECTO"
