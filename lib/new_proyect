@@ -2,8 +2,8 @@
 
 # =========================================================
 # Script Creador de Proyectos Laravel
-# Versión 1.5 - Agregado: Validación y sugerencia de nombre
-# de usuario de base de datos único.
+# Versión 2.1 - Ahora verifica la conexión de root antes de pedir la contraseña.
+# El usuario puede elegir entre usuarios existentes o crear uno nuevo.
 # =========================================================
 
 clear
@@ -17,7 +17,8 @@ PASSROOT=""
 DBUSER=""
 DBPASS=""
 PROYECTO=""
-VER="1.5"
+VER="2.1"
+ROOT_DB_CONNECTED=false
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -68,7 +69,7 @@ else
 fi
 
 # ---------------------------------------------------------
-# Preguntar el nombre del proyecto Laravel y validar
+# Preguntar y validar el nombre del proyecto Laravel
 # ---------------------------------------------------------
 # Encontrar el próximo nombre de proyecto disponible por defecto
 default_name="crud"
@@ -102,17 +103,89 @@ while true; do
 done
 
 # ---------------------------------------------------------
-# Preguntar si se quiere crear un nuevo usuario de base de datos
+# Validar la conexión del usuario root de la base de datos
 # ---------------------------------------------------------
-if (whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Usuario de la Base de Datos" --yesno "Se recomienda crear un usuario de base de datos dedicado para cada proyecto por razones de seguridad.\n\n¿Desea crear un nuevo usuario y contraseña para la base de datos?" 12 70) then
-    USE_NEW_USER="yes"
-    DBUSER=$(whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Nombre de Usuario de la Base de Datos" --inputbox "Por favor, introduce el nombre del nuevo usuario de la base de datos:\n(Si lo dejas en blanco, se usará el nombre del proyecto)" 10 70 "$PROYECTO" 3>&1 1>&2 2>&3)
-    if [ $? -ne 0 ]; then
-        whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Cancelado" --msgbox "Has cancelado la creación del proyecto." 8 40
-        exit 1
-    fi
+if mysql -u root -e "exit" >/dev/null 2>&1; then
+    ROOT_DB_CONNECTED=true
+else
+    while true; do
+        PASSROOT=$(whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Contraseña de Root para la Base de Datos" --passwordbox "Por favor, introduce la contraseña del usuario 'root' de la base de datos.\n\nEsta es necesaria para crear la base de datos y un nuevo usuario con permisos." 10 70 "" 3>&1 1>&2 2>&3)
+        if [ $? -ne 0 ]; then
+            whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Cancelado" --msgbox "Has cancelado la creación del proyecto." 8 40
+            exit 1
+        fi
+        
+        if mysql -u root -p"$PASSROOT" -e "exit" >/dev/null 2>&1; then
+            ROOT_DB_CONNECTED=true
+            break
+        else
+            whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Error de Autenticación" --msgbox "La contraseña de root es incorrecta. Por favor, inténtalo de nuevo." 10 70
+        fi
+    done
+fi
 
-    DBPASS=$(whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Contraseña del Nuevo Usuario" --passwordbox "Por favor, introduce la contraseña para el nuevo usuario de la base de datos:\n(Si la dejas en blanco, se usará '12345' por defecto)" 10 70 "" 3>&1 1>&2 2>&3)
+if ! $ROOT_DB_CONNECTED; then
+    whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Error Crítico" --msgbox "No se pudo conectar como usuario 'root' a la base de datos. Por favor, verifica tu instalación de MySQL/MariaDB y la configuración de la contraseña." 12 70
+    exit 1
+fi
+
+
+# ---------------------------------------------------------
+# Seleccionar o crear un nuevo usuario de base de datos
+# ---------------------------------------------------------
+# Obtener la lista de usuarios de la base de datos
+DB_USERS=$(mysql -u root -p"$PASSROOT" -Bse "SELECT User FROM mysql.user WHERE User NOT IN ('mysql.infoschema', 'mysql.sys', 'mysql.session', 'mysql.user', 'debian-sys-maint');" | tr '\n' ' ')
+DB_USERS_ARRAY=($DB_USERS)
+
+# Agregar la opción de crear un nuevo usuario
+DB_USERS_MENU=("Crear nuevo usuario" " (por defecto) ")
+if [ ${#DB_USERS_ARRAY[@]} -gt 0 ]; then
+    for user in "${DB_USERS_ARRAY[@]}"; do
+        DB_USERS_MENU+=("$user" " (existente) ")
+    done
+fi
+
+DB_SELECTION=$(whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Selección de Usuario de la Base de Datos" --menu "Por favor, elige un usuario de la base de datos para el proyecto o crea uno nuevo.\n\n" 18 70 8 "${DB_USERS_MENU[@]}" 3>&1 1>&2 2>&3)
+
+if [ $? -ne 0 ]; then
+    whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Cancelado" --msgbox "Has cancelado la creación del proyecto." 8 40
+    exit 1
+fi
+
+if [ "$DB_SELECTION" == "Crear nuevo usuario" ]; then
+    # Encontrar el próximo nombre de usuario 'root' disponible
+    default_user="root"
+    i=0
+    unique_root_user=""
+    while [ -z "$unique_root_user" ]; do
+        i=$((i+1))
+        temp_user="${default_user}${i}"
+        if ! mysql -u root -p"$PASSROOT" -e "SELECT User FROM mysql.user WHERE User = '$temp_user';" | grep -q "$temp_user"; then
+            unique_root_user="$temp_user"
+        fi
+    done
+
+    # Si se elige crear nuevo usuario, preguntar por el nombre y la contraseña
+    while true; do
+        DBUSER=$(whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Nombre del Nuevo Usuario de la Base de Datos" --inputbox "Introduce el nombre del nuevo usuario para la base de datos.\n\n(Por defecto se usará '$unique_root_user')" 10 70 "$unique_root_user" 3>&1 1>&2 2>&3)
+        if [ $? -ne 0 ]; then
+            whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Cancelado" --msgbox "Has cancelado la creación del proyecto." 8 40
+            exit 1
+        fi
+        
+        if [ -z "$DBUSER" ]; then
+            DBUSER="$unique_root_user"
+        fi
+
+        if mysql -u root -p"$PASSROOT" -e "SELECT User FROM mysql.user WHERE User = '$DBUSER';" | grep -q "$DBUSER"; then
+            whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Error" --msgbox "El usuario '$DBUSER' ya existe. Por favor, elige un nombre diferente." 10 70
+        else
+            break
+        fi
+    done
+
+    # Pedir la nueva contraseña para el usuario
+    DBPASS=$(whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Contraseña del Nuevo Usuario" --passwordbox "Introduce una contraseña para el nuevo usuario de la base de datos:\n(Si la dejas en blanco, se usará '12345' por defecto)" 10 70 "" 3>&1 1>&2 2>&3)
     if [ $? -ne 0 ]; then
         whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Cancelado" --msgbox "Has cancelado la creación del proyecto." 8 40
         exit 1
@@ -120,64 +193,12 @@ if (whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Usuario d
     if [ -z "$DBPASS" ]; then
         DBPASS="12345"
     fi
-
-    while true; do
-        PASSROOT=$(whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Contraseña de Root para la Base de Datos" --passwordbox "Por favor, introduce la contraseña del usuario 'root' de la base de datos para poder crear el nuevo usuario:\n(Si la dejas en blanco, se usará '12345' por defecto)" 10 70 "" 3>&1 1>&2 2>&3)
-        if [ $? -ne 0 ]; then
-            whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Cancelado" --msgbox "Has cancelado la creación del proyecto." 8 40
-            exit 1
-        fi
-        if [ -z "$PASSROOT" ]; then
-            PASSROOT="12345"
-        fi
-
-        # Validar la contraseña de root
-        if mysql -u root -p"$PASSROOT" -e "exit" >/dev/null 2>&1; then
-            break
-        else
-            whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Error de Autenticación" --msgbox "La contraseña de root es incorrecta. Por favor, inténtalo de nuevo." 10 70
-        fi
-    done
-
-else
-    USE_NEW_USER="no"
     
-    # Encontrar el próximo nombre de usuario disponible por defecto (basado en 'root')
-    default_user="root"
-    i=0
-    unique_user="$default_user"
-    while mysql -u "$unique_user" -e "exit" >/dev/null 2>&1; do
-        i=$((i+1))
-        unique_user="${default_user}${i}"
-    done
-
-    while true; do
-        DBUSER=$(whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Usuario de la Base de Datos" --inputbox "Por favor, introduce el nombre del usuario de la base de datos que ya existe:\n(Si lo dejas en blanco, se usará el nombre sugerido '$unique_user')" 10 70 "$unique_user" 3>&1 1>&2 2>&3)
-        if [ $? -ne 0 ]; then
-            whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Cancelado" --msgbox "Has cancelado la creación del proyecto." 8 40
-            exit 1
-        fi
-        if [ -z "$DBUSER" ]; then
-            DBUSER="$unique_user"
-        fi
-        
-        DBPASS=$(whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Contraseña del Usuario" --passwordbox "Por favor, introduce la contraseña para el usuario '$DBUSER':\n(Si la dejas en blanco, se usará '12345' por defecto)" 10 70 "" 3>&1 1>&2 2>&3)
-        if [ $? -ne 0 ]; then
-            whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Cancelado" --msgbox "Has cancelado la creación del proyecto." 8 40
-            exit 1
-        fi
-        if [ -z "$DBPASS" ]; then
-            DBPASS="12345"
-        fi
-
-        # Validar la contraseña del usuario
-        if mysql -u "$DBUSER" -p"$DBPASS" -e "exit" >/dev/null 2>&1; then
-            break
-        else
-            whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Error de Autenticación" --msgbox "La contraseña para el usuario '$DBUSER' es incorrecta o el usuario no existe. Por favor, inténtalo de nuevo." 10 70
-        fi
-    done
-    PASSROOT="$DBPASS"
+else
+    # Si se elige un usuario existente, usarlo sin pedir contraseña
+    DBUSER="$DB_SELECTION"
+    DBPASS=""
+    whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Usuario Existente Seleccionado" --msgbox "Has seleccionado el usuario '$DBUSER'. Se utilizará este usuario para el nuevo proyecto." 10 70
 fi
 
 
@@ -284,7 +305,13 @@ EOF
     sed -i "s/^#\s*DB_PORT=.*/DB_PORT=3306/" "$PROJECT_PATH/.env"
     sed -i "s/^#\s*DB_DATABASE=.*/DB_DATABASE=$PROYECTO/" "$PROJECT_PATH/.env"
     sed -i "s/^#\s*DB_USERNAME=.*/DB_USERNAME=$DBUSER/" "$PROJECT_PATH/.env"
-    sed -i "s/^#\s*DB_PASSWORD=.*/DB_PASSWORD=$DBPASS/" "$PROJECT_PATH/.env"
+    
+    # Solo agregar la contraseña si se definió una nueva
+    if [ ! -z "$DBPASS" ]; then
+        sed -i "s/^#\s*DB_PASSWORD=.*/DB_PASSWORD=$DBPASS/" "$PROJECT_PATH/.env"
+    else
+        sed -i "s/^DB_PASSWORD=.*/DB_PASSWORD=/" "$PROJECT_PATH/.env"
+    fi
     
     sed -i "s|^APP_URL=.*|APP_URL=http://$PROYECTO.test|" "$PROJECT_PATH/.env"
 
@@ -292,11 +319,12 @@ EOF
 
     mysql -u root -p"$PASSROOT" -e "CREATE DATABASE IF NOT EXISTS $PROYECTO;" >/dev/null 2>&1
     
-    if [ "$USE_NEW_USER" == "yes" ]; then
+    if [ ! -z "$DBPASS" ]; then
+        # Solo crear el usuario si no existe
         mysql -u root -p"$PASSROOT" -e "CREATE USER IF NOT EXISTS '$DBUSER'@'localhost' IDENTIFIED BY '$DBPASS';" >/dev/null 2>&1
-        mysql -u root -p"$PASSROOT" -e "GRANT ALL PRIVILEGES ON $PROYECTO.* TO '$DBUSER'@'localhost';" >/dev/null 2>&1
-        mysql -u root -p"$PASSROOT" -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
     fi
+    mysql -u root -p"$PASSROOT" -e "GRANT ALL PRIVILEGES ON $PROYECTO.* TO '$DBUSER'@'localhost';" >/dev/null 2>&1
+    mysql -u root -p"$PASSROOT" -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
 
     sudo -u "$USER_PROYECTO" php "/var/www/laravel/$PROYECTO/artisan" migrate >/dev/null 2>&1
     sleep 2
@@ -336,6 +364,12 @@ EOF
 # ---------------------------------------------------------
 
 # Mensaje de éxito
-whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Creación completada" --msgbox "El proyecto de Laravel '$PROYECTO' ha sido creado y configurado con éxito.\n\nEl proyecto se encuentra en: /var/www/laravel\n\nAhora puedes acceder a tu proyecto en: http://$PROYECTO.test\n\nUsuario de la DB: $DBUSER\nContraseña de la DB: $DBPASS\n\nSe han ejecutado las migraciones de la base de datos y se ha creado el enlace simbólico de 'storage' con éxito." 19 70
+if [ -z "$DBPASS" ]; then
+    DB_DETAILS="Usuario de la DB: $DBUSER\nContraseña de la DB: (Existente - no se modificó)\n"
+else
+    DB_DETAILS="Usuario de la DB: $DBUSER\nContraseña de la DB: $DBPASS\n"
+fi
+
+whiptail --backtitle "Creador de Proyectos Laravel V$VER" --title "Creación completada" --msgbox "El proyecto de Laravel '$PROYECTO' ha sido creado y configurado con éxito.\n\nEl proyecto se encuentra en: /var/www/laravel\n\nAhora puedes acceder a tu proyecto en: http://$PROYECTO.test\n\n$DB_DETAILS\nSe han ejecutado las migraciones de la base de datos y se ha creado el enlace simbólico de 'storage' con éxito." 19 70
 
 exit 0
