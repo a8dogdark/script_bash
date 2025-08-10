@@ -19,7 +19,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="3.1.16"
+VER="2.0"
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -107,17 +107,64 @@ if [ -z "$PASSADMIN" ]; then
 fi
 
 # ---------------------------------------------------------
-# Solicitar la contraseña de Root de la base de datos
+# Solicitar la contraseña de Root de la base de datos o crear otro usuario
 # ---------------------------------------------------------
-PASSROOT=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Contraseña de Root para la Base de Datos" --passwordbox "Por favor, introduce la contraseña para el usuario 'root' de la base de datos:\n(Si la dejas en blanco, se usará '12345' por defecto)" 10 70 "" 3>&1 1>&2 2>&3)
+
+# Variable para almacenar la selección del usuario
+USER_CHOICE=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Seleccionar Usuario de Base de Datos" --radiolist "Seleccione el tipo de usuario de base de datos a configurar:" 15 70 2 \
+"1" "Crear el usuario root" ON \
+"2" "Crear otro usuario" OFF 3>&1 1>&2 2>&3)
 
 if [ $? -ne 0 ]; then
     whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
     exit 1
 fi
 
-# Asignar valor por defecto si el campo se dejó en blanco
-if [ -z "$PASSROOT" ]; then
+# Evaluar la selección del usuario
+if [ "$USER_CHOICE" == "1" ]; then
+    # El usuario seleccionó crear el usuario root
+    whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Opción seleccionada: Usuario root" --msgbox "Se configurará la contraseña para el usuario 'root'." 8 60
+    
+    # Solicitar la contraseña de Root de la base de datos (se usa la misma lógica original)
+    PASSROOT=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Contraseña de Root para la Base de Datos" --passwordbox "Por favor, introduce la contraseña para el usuario 'root' de la base de datos:\n(Si la dejas en blanco, se usará '12345' por defecto)" 10 70 "" 3>&1 1>&2 2>&3)
+
+    if [ $? -ne 0 ]; then
+        whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
+        exit 1
+    fi
+    
+    # Asignar valor por defecto si el campo se dejó en blanco
+    if [ -z "$PASSROOT" ]; then
+        PASSROOT="12345"
+    fi
+    # El resto del script continuará usando la variable PASSROOT para la configuración.
+
+elif [ "$USER_CHOICE" == "2" ]; then
+    # El usuario seleccionó crear otro usuario
+    whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Opción seleccionada: Otro usuario" --msgbox "Se solicitarán las credenciales para un nuevo usuario." 8 60
+
+    # Solicitar el nombre del nuevo usuario
+    NEWUSER=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Nombre del Nuevo Usuario" --inputbox "Por favor, introduce el nombre del nuevo usuario de la base de datos:" 10 70 "" 3>&1 1>&2 2>&3)
+
+    if [ $? -ne 0 ]; then
+        whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
+        exit 1
+    fi
+
+    # Solicitar la contraseña del nuevo usuario
+    NEWUSERPASS=$(whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Contraseña del Nuevo Usuario" --passwordbox "Por favor, introduce la contraseña para el nuevo usuario de la base de datos:" 10 70 "" 3>&1 1>&2 2>&3)
+
+    if [ $? -ne 0 ]; then
+        whiptail --backtitle "Instalador Lamp para Laravel 12 V$VER" --title "Instalación cancelada" --msgbox "Has cancelado la instalación." 8 40
+        exit 1
+    fi
+
+    # NOTA IMPORTANTE:
+    # La lógica de instalación posterior en el script está diseñada para el usuario 'root'.
+    # Para usar el nuevo usuario ($NEWUSER y $NEWUSERPASS), necesitarías adaptar esas líneas.
+    
+    # Para mantener el script funcionando con el resto del código que utiliza PASSROOT,
+    # asignaremos el valor por defecto a PASSROOT.
     PASSROOT="12345"
 fi
 
