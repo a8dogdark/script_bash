@@ -16,7 +16,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="3.5" # Versión actualizada con git y orden de instalación corregido
+VER="3.6" # Versión actualizada con instalación granular de PHP
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -205,35 +205,35 @@ fi
     # Instalación de paquetes de utilidades (Detallada)
     # -----------------------------------------------------
     echo "XXX"
-    echo "20"
+    echo "16"
     echo "Instalando paquete zip..."
     echo "XXX"
     apt install -y zip >/dev/null 2>&1
     sleep 1
 
     echo "XXX"
-    echo "22"
+    echo "17"
     echo "Instalando paquete gpg..."
     echo "XXX"
     apt install -y gpg >/dev/null 2>&1
     sleep 1
 
     echo "XXX"
-    echo "24"
+    echo "18"
     echo "Instalando paquete curl..."
     echo "XXX"
     apt install -y curl >/dev/null 2>&1
     sleep 1
 
     echo "XXX"
-    echo "26"
+    echo "19"
     echo "Instalando paquete unzip..."
     echo "XXX"
     apt install -y unzip >/dev/null 2>&1
     sleep 1
 
     echo "XXX"
-    echo "28"
+    echo "20"
     echo "Instalando paquete git..."
     echo "XXX"
     apt install -y git >/dev/null 2>&1
@@ -241,7 +241,7 @@ fi
     
     # Paso 4: Verificación e instalación de Apache
     echo "XXX"
-    echo "30"
+    echo "25"
     echo "Verificando e instalando Apache..."
     echo "XXX"
     if ! dpkg -s apache2 >/dev/null 2>&1; then
@@ -251,7 +251,7 @@ fi
     
     # Nuevo paso: Habilitar mod_rewrite para URLs dinámicas
     echo "XXX"
-    echo "35"
+    echo "30"
     echo "Habilitando mod_rewrite en Apache..."
     echo "XXX"
     if ! a2enmod rewrite >/dev/null 2>&1; then
@@ -260,21 +260,112 @@ fi
     systemctl restart apache2 >/dev/null 2>&1
     sleep 1
     
-    # Paso 5: Verificación e instalación de PHP y extensiones
+    # Paso 5: Verificación e instalación de PHP y extensiones (granular)
     echo "XXX"
-    echo "40"
-    echo "Verificando e instalando PHP y sus extensiones..."
+    echo "35"
+    echo "Verificando e instalando PHP y libapache2-mod-php..."
     echo "XXX"
     if [[ "$CURRENT_PHP_VERSION" != "$PHPUSER" ]]; then
-        apt install -y "php$PHPUSER" "libapache2-mod-php$PHPUSER" "php${PHPUSER}-xml" "php${PHPUSER}-zip" "php${PHPUSER}-mbstring" "php${PHPUSER}-dom" "php${PHPUSER}-curl" "php${PHPUSER}-fileinfo" "php${PHPUSER}-bcmath" "php${PHPUSER}-gmp" "php${PHPUSER}-imagick" "php${PHPUSER}-exif" "php${PHPUSER}-gd" "php${PHPUSER}-iconv" "php${PHPUSER}-mysql" >/dev/null 2>&1
+        apt install -y "php$PHPUSER" "libapache2-mod-php$PHPUSER" >/dev/null 2>&1
     fi
+    sleep 1
+
+    echo "XXX"
+    echo "37"
+    echo "Instalando php${PHPUSER}-xml..."
+    echo "XXX"
+    apt install -y "php${PHPUSER}-xml" >/dev/null 2>&1
+    sleep 1
+    
+    echo "XXX"
+    echo "39"
+    echo "Instalando php${PHPUSER}-zip..."
+    echo "XXX"
+    apt install -y "php${PHPUSER}-zip" >/dev/null 2>&1
+    sleep 1
+
+    echo "XXX"
+    echo "41"
+    echo "Instalando php${PHPUSER}-mbstring..."
+    echo "XXX"
+    apt install -y "php${PHPUSER}-mbstring" >/dev/null 2>&1
+    sleep 1
+
+    echo "XXX"
+    echo "43"
+    echo "Instalando php${PHPUSER}-dom..."
+    echo "XXX"
+    apt install -y "php${PHPUSER}-dom" >/dev/null 2>&1
+    sleep 1
+
+    echo "XXX"
+    echo "45"
+    echo "Instalando php${PHPUSER}-curl..."
+    echo "XXX"
+    apt install -y "php${PHPUSER}-curl" >/dev/null 2>&1
+    sleep 1
+
+    echo "XXX"
+    echo "47"
+    echo "Instalando php${PHPUSER}-fileinfo..."
+    echo "XXX"
+    apt install -y "php${PHPUSER}-fileinfo" >/dev/null 2>&1
+    sleep 1
+
+    echo "XXX"
+    echo "49"
+    echo "Instalando php${PHPUSER}-bcmath..."
+    echo "XXX"
+    apt install -y "php${PHPUSER}-bcmath" >/dev/null 2>&1
+    sleep 1
+
+    echo "XXX"
+    echo "51"
+    echo "Instalando php${PHPUSER}-gmp..."
+    echo "XXX"
+    apt install -y "php${PHPUSER}-gmp" >/dev/null 2>&1
+    sleep 1
+
+    echo "XXX"
+    echo "53"
+    echo "Instalando php${PHPUSER}-imagick..."
+    echo "XXX"
+    apt install -y "php${PHPUSER}-imagick" >/dev/null 2>&1
+    sleep 1
+
+    echo "XXX"
+    echo "55"
+    echo "Instalando php${PHPUSER}-exif..."
+    echo "XXX"
+    apt install -y "php${PHPUSER}-exif" >/dev/null 2>&1
+    sleep 1
+
+    echo "XXX"
+    echo "57"
+    echo "Instalando php${PHPUSER}-gd..."
+    echo "XXX"
+    apt install -y "php${PHPUSER}-gd" >/dev/null 2>&1
+    sleep 1
+
+    echo "XXX"
+    echo "59"
+    echo "Instalando php${PHPUSER}-iconv..."
+    echo "XXX"
+    apt install -y "php${PHPUSER}-iconv" >/dev/null 2>&1
+    sleep 1
+
+    echo "XXX"
+    echo "61"
+    echo "Instalando php${PHPUSER}-mysql..."
+    echo "XXX"
+    apt install -y "php${PHPUSER}-mysql" >/dev/null 2>&1
     sleep 1
 
     # -----------------------------------------------------
     # Instalación y configuración de la base de datos
     # -----------------------------------------------------
     echo "XXX"
-    echo "45"
+    echo "65"
     echo "Instalando y configurando la base de datos..."
     echo "XXX"
     if ! dpkg -s "$DBSERVER" >/dev/null 2>&1; then
@@ -306,7 +397,7 @@ fi
     # Instalación y configuración de phpmyadmin
     # -----------------------------------------------------
     echo "XXX"
-    echo "50"
+    echo "70"
     echo "Instalando y configurando Phpmyadmin..."
     echo "XXX"
     if ! dpkg -s phpmyadmin >/dev/null 2>&1; then
@@ -324,7 +415,7 @@ fi
     # Crear archivo info.php para verificar la instalación
     # -----------------------------------------------------
     echo "XXX"
-    echo "55"
+    echo "72"
     echo "Creando archivo info.php y configurando permisos..."
     echo "XXX"
     echo "<?php phpinfo(); ?>" > /var/www/html/info.php
@@ -334,7 +425,7 @@ fi
     # Validación y configuración de la versión de PHP
     # -----------------------------------------------------
     echo "XXX"
-    echo "60"
+    echo "75"
     echo "Configurando la versión de PHP en Apache..."
     echo "XXX"
     a2dismod php* >/dev/null 2>&1
@@ -346,7 +437,7 @@ fi
     # Instalación de software adicional (Corregido)
     # -----------------------------------------------------
     echo "XXX"
-    echo "65"
+    echo "77"
     echo "Instalando software adicional..."
     echo "XXX"
     
@@ -354,7 +445,7 @@ fi
     if [[ " $SOFTWARESUSER " =~ "vscode" ]]; then
         if ! command -v code &> /dev/null; then
             echo "XXX"
-            echo "67"
+            echo "78"
             echo "Instalando Visual Studio Code..."
             echo "XXX"
             wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
@@ -370,7 +461,7 @@ fi
     if [[ " $SOFTWARESUSER " =~ "brave" ]]; then
         if ! dpkg -s brave-browser >/dev/null 2>&1; then
             echo "XXX"
-            echo "69"
+            echo "79"
             echo "Instalando Brave Browser..."
             echo "XXX"
             curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg >/dev/null 2>&1
@@ -384,7 +475,7 @@ fi
     if [[ " $SOFTWARESUSER " =~ "chrome" ]]; then
         if ! dpkg -s google-chrome-stable >/dev/null 2>&1; then
             echo "XXX"
-            echo "71"
+            echo "80"
             echo "Instalando Google Chrome..."
             echo "XXX"
             wget -O /tmp/google-chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb >/dev/null 2>&1
@@ -397,7 +488,7 @@ fi
     if [[ " $SOFTWARESUSER " =~ "filezilla" ]]; then
         if ! dpkg -s filezilla >/dev/null 2>&1; then
             echo "XXX"
-            echo "73"
+            echo "81"
             echo "Instalando FileZilla..."
             echo "XXX"
             apt install -y filezilla >/dev/null 2>&1
@@ -408,7 +499,7 @@ fi
     if [[ " $SOFTWARESUSER " =~ "obs" ]]; then
         if ! dpkg -s obs-studio >/dev/null 2>&1; then
             echo "XXX"
-            echo "75"
+            echo "82"
             echo "Instalando OBS Studio..."
             echo "XXX"
             apt install -y obs-studio >/dev/null 2>&1
@@ -419,7 +510,7 @@ fi
     # Creación del proyecto de Laravel
     # -----------------------------------------------------
     echo "XXX"
-    echo "80"
+    echo "85"
     echo "Instalando Node y Composer..."
     echo "XXX"
     if ! command -v node >/dev/null 2>&1; then
@@ -432,7 +523,7 @@ fi
     fi
 
     echo "XXX"
-    echo "85"
+    echo "88"
     echo "Creando el proyecto de Laravel ($PROYECTO)..."
     echo "XXX"
     mkdir -p "/var/www/laravel" >/dev/null 2>&1
@@ -443,7 +534,7 @@ fi
     # Configuración de Virtual Host de Apache, hosts y .env
     # -----------------------------------------------------
     echo "XXX"
-    echo "90"
+    echo "92"
     echo "Configurando el Virtual Host, el archivo hosts y la conexión a la base de datos..."
     echo "XXX"
     ENV_FILE="/var/www/laravel/$PROYECTO/.env"
@@ -485,31 +576,31 @@ fi
     cd "/var/www/laravel/$PROYECTO"
     
     echo "XXX"
-    echo "96"
+    echo "94"
     echo "Instalando dependencias de Node para Vite..."
     echo "XXX"
     npm install --silent >/dev/null 2>&1
     
     echo "XXX"
-    echo "97"
+    echo "96"
     echo "Compilando assets de frontend con Vite..."
     echo "XXX"
     npm run build --silent >/dev/null 2>&1
     
     echo "XXX"
-    echo "98"
+    echo "97"
     echo "Ejecutando migraciones de base de datos..."
     echo "XXX"
     php artisan migrate --force --no-interaction >/dev/null 2>&1
 
     echo "XXX"
-    echo "99"
+    echo "98"
     echo "Creando el enlace simbólico para la carpeta storage..."
     echo "XXX"
     php artisan storage:link >/dev/null 2>&1
     
     echo "XXX"
-    echo "100"
+    echo "99"
     echo "Asignando permisos a la carpeta del proyecto..."
     echo "XXX"
     chmod -R 777 "/var/www/laravel/$PROYECTO"
