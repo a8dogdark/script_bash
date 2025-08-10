@@ -16,7 +16,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="2.9" # Versión actualizada para corregir el bug de instalación de software
+VER="3.1" # Versión actualizada con correcciones importantes
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -211,62 +211,66 @@ fi
     sleep 1
 
     # -----------------------------------------------------
-    # Instalación de software adicional
+    # Instalación de software adicional (Corregido)
     # -----------------------------------------------------
     echo "XXX"
     echo "25"
     echo "Instalando software adicional..."
     echo "XXX"
-    for software in $SOFTWARESUSER; do
-        case "$software" in
-            "vscode")
-                if ! dpkg -s code >/dev/null 2>&1; then
-                    echo "XXX"
-                    echo "27"
-                    echo "Instalando Visual Studio Code..."
-                    echo "XXX"
-                    wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
-                    install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/
-                    sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
-                    rm -f packages.microsoft.gpg
-                    apt update >/dev/null 2>&1
-                    apt install -y code >/dev/null 2>&1
-                fi
-                ;;
-            "brave")
-                if ! dpkg -s brave-browser >/dev/null 2>&1; then
-                    echo "XXX"
-                    echo "30"
-                    echo "Instalando Brave Browser..."
-                    echo "XXX"
-                    curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg
-                    echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" > /etc/apt/sources.list.d/brave-browser-release.list
-                    apt update >/dev/null 2>&1
-                    apt install -y brave-browser >/dev/null 2>&1
-                fi
-                ;;
-            "chrome")
-                if ! dpkg -s google-chrome-stable >/dev/null 2>&1; then
-                    echo "XXX"
-                    echo "33"
-                    echo "Instalando Google Chrome..."
-                    echo "XXX"
-                    wget -O /tmp/google-chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-                    apt install -y /tmp/google-chrome.deb >/dev/null 2>&1
-                    rm /tmp/google-chrome.deb
-                fi
-                ;;
-            "filezilla")
-                if ! dpkg -s filezilla >/dev/null 2>&1; then
-                    echo "XXX"
-                    echo "35"
-                    echo "Instalando FileZilla..."
-                    echo "XXX"
-                    apt install -y filezilla >/dev/null 2>&1
-                fi
-                ;;
-        esac
-    done
+    
+    # Instalación de Visual Studio Code
+    if [[ " $SOFTWARESUSER " =~ "vscode" ]]; then
+        if ! command -v code &> /dev/null; then
+            echo "XXX"
+            echo "27"
+            echo "Instalando Visual Studio Code..."
+            echo "XXX"
+            wget -qO- https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor > packages.microsoft.gpg
+            install -o root -g root -m 644 packages.microsoft.gpg /etc/apt/trusted.gpg.d/
+            sh -c 'echo "deb [arch=amd64,arm64,armhf signed-by=/etc/apt/trusted.gpg.d/packages.microsoft.gpg] https://packages.microsoft.com/repos/code stable main" > /etc/apt/sources.list.d/vscode.list'
+            rm -f packages.microsoft.gpg
+            apt update >/dev/null 2>&1
+            apt install -y code >/dev/null 2>&1
+        fi
+    fi
+
+    # Instalación de Brave Browser
+    if [[ " $SOFTWARESUSER " =~ "brave" ]]; then
+        if ! dpkg -s brave-browser >/dev/null 2>&1; then
+            echo "XXX"
+            echo "30"
+            echo "Instalando Brave Browser..."
+            echo "XXX"
+            curl -fsSLo /usr/share/keyrings/brave-browser-archive-keyring.gpg https://brave-browser-apt-release.s3.brave.com/brave-browser-archive-keyring.gpg >/dev/null 2>&1
+            echo "deb [signed-by=/usr/share/keyrings/brave-browser-archive-keyring.gpg] https://brave-browser-apt-release.s3.brave.com/ stable main" | sudo tee /etc/apt/sources.list.d/brave-browser-release.list >/dev/null 2>&1
+            apt update >/dev/null 2>&1
+            apt install -y brave-browser >/dev/null 2>&1
+        fi
+    fi
+    
+    # Instalación de Google Chrome
+    if [[ " $SOFTWARESUSER " =~ "chrome" ]]; then
+        if ! dpkg -s google-chrome-stable >/dev/null 2>&1; then
+            echo "XXX"
+            echo "33"
+            echo "Instalando Google Chrome..."
+            echo "XXX"
+            wget -O /tmp/google-chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb >/dev/null 2>&1
+            apt install -y /tmp/google-chrome.deb >/dev/null 2>&1
+            rm /tmp/google-chrome.deb
+        fi
+    fi
+    
+    # Instalación de FileZilla
+    if [[ " $SOFTWARESUSER " =~ "filezilla" ]]; then
+        if ! dpkg -s filezilla >/dev/null 2>&1; then
+            echo "XXX"
+            echo "35"
+            echo "Instalando FileZilla..."
+            echo "XXX"
+            apt install -y filezilla >/dev/null 2>&1
+        fi
+    fi
     
     # Paso 4: Verificación e instalación de Apache
     echo "XXX"
@@ -314,8 +318,7 @@ fi
     mysql -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
     if [ "$USER_CHOICE" == "2" ]; then
         mysql -u root -p"$PASSROOT" -e "CREATE USER '$NEWUSER'@'localhost' IDENTIFIED BY '$NEWUSERPASS';" >/dev/null 2>&1
-        mysql -u root -p"$PASSROOT" -e "CREATE DATABASE $NEWUSER;" >/dev/null 2>&1
-        mysql -u root -p"$PASSROOT" -e "GRANT ALL PRIVILEGES ON $NEWUSER.* TO '$NEWUSER'@'localhost';" >/dev/null 2>&1
+        mysql -u root -p"$PASSROOT" -e "GRANT ALL PRIVILEGES ON *.* TO '$NEWUSER'@'localhost' WITH GRANT OPTION;" >/dev/null 2>&1 # Se dan todos los privilegios al nuevo usuario
         mysql -u root -p"$PASSROOT" -e "FLUSH PRIVILEGES;" >/dev/null 2>&1
         DB_USERNAME="$NEWUSER"
         DB_PASSWORD="$NEWUSERPASS"
