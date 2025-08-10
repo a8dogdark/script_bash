@@ -16,7 +16,7 @@ PASSROOT=""
 PHPUSER=""
 PROYECTO=""
 SOFTWARESUSER=""
-VER="2.2" # Se incrementa la versión para reflejar los cambios
+VER="2.7" # Se incrementa la versión para reflejar los cambios
 
 # ---------------------------------------------------------
 # Validar si se ejecuta como root
@@ -233,7 +233,7 @@ fi
     
     # Paso 5: Verificación e instalación de PHP y extensiones
     echo "XXX"
-    echo "40"
+    echo "45"
     echo "Verificando e instalando PHP y sus extensiones..."
     echo "XXX"
     if [[ "$CURRENT_PHP_VERSION" != "$PHPUSER" ]]; then
@@ -245,7 +245,7 @@ fi
     # Instalación y configuración de la base de datos
     # -----------------------------------------------------
     echo "XXX"
-    echo "50"
+    echo "60"
     echo "Instalando y configurando la base de datos..."
     echo "XXX"
     if ! dpkg -s "$DBSERVER" >/dev/null 2>&1; then
@@ -278,7 +278,7 @@ fi
     # Instalación y configuración de phpmyadmin
     # -----------------------------------------------------
     echo "XXX"
-    echo "60"
+    echo "65"
     echo "Instalando y configurando Phpmyadmin..."
     echo "XXX"
     if ! dpkg -s phpmyadmin >/dev/null 2>&1; then
@@ -379,16 +379,39 @@ fi
 
 
     # -----------------------------------------------------
-    # Asignar permisos y ejecutar migraciones
+    # Pasos finales: Node, migraciones, enlace y permisos
     # -----------------------------------------------------
+    cd "/var/www/laravel/$PROYECTO"
+    
+    echo "XXX"
+    echo "91"
+    echo "Instalando dependencias de Node para Vite..."
+    echo "XXX"
+    npm install --silent >/dev/null 2>&1
+    
+    echo "XXX"
+    echo "93"
+    echo "Compilando assets de frontend con Vite..."
+    echo "XXX"
+    npm run build --silent >/dev/null 2>&1
+    
     echo "XXX"
     echo "95"
-    echo "Asignando permisos y ejecutando migraciones..."
+    echo "Ejecutando migraciones de base de datos..."
     echo "XXX"
-    # Se cambian los permisos para que todos los usuarios tengan acceso
+    php artisan migrate --force --no-interaction >/dev/null 2>&1
+
+    echo "XXX"
+    echo "97"
+    echo "Creando el enlace simbólico para la carpeta storage..."
+    echo "XXX"
+    php artisan storage:link >/dev/null 2>&1
+    
+    echo "XXX"
+    echo "99"
+    echo "Asignando permisos a la carpeta del proyecto..."
+    echo "XXX"
     chmod -R 777 "/var/www/laravel/$PROYECTO"
-    # Se ejecutan las migraciones para crear las tablas en la base de datos
-    cd "/var/www/laravel/$PROYECTO" && php artisan migrate --force --no-interaction >/dev/null 2>&1
 
 
     # Paso Final: Fin de la instalación
