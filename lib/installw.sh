@@ -361,14 +361,12 @@ fi
     echo "127.0.0.1 $PROYECTO.test" >> /etc/hosts
     
     # === CORRECCIÓN APLICADA: MODIFICACIÓN DEL ARCHIVO .ENV ===
-    # Descomentar las líneas de la base de datos y actualizar los valores
-    sed -i "/^# DB_DATABASE/c\DB_DATABASE=$DB_DATABASE" "/var/www/laravel/$PROYECTO/.env"
-    sed -i "/^# DB_USERNAME/c\DB_USERNAME=$DB_USERNAME" "/var/www/laravel/$PROYECTO/.env"
-    sed -i "/^# DB_PASSWORD/c\DB_PASSWORD=$DB_PASSWORD" "/var/www/laravel/$PROYECTO/.env"
-    # Descomentar y actualizar el puerto de la base de datos
-    sed -i "/^# DB_PORT/c\DB_PORT=3306" "/var/www/laravel/$PROYECTO/.env"
-    # Descomentar y actualizar el host de la base de datos
-    sed -i "/^# DB_HOST/c\DB_HOST=127.0.0.1" "/var/www/laravel/$PROYECTO/.env"
+    # Asegurar que DB_CONNECTION sea mysql
+    sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=mysql|" "/var/www/laravel/$PROYECTO/.env"
+    # Actualizar las variables de la base de datos
+    sed -i "s|^DB_DATABASE=.*|DB_DATABASE=$DB_DATABASE|" "/var/www/laravel/$PROYECTO/.env"
+    sed -i "s|^DB_USERNAME=.*|DB_USERNAME=$DB_USERNAME|" "/var/www/laravel/$PROYECTO/.env"
+    sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=$DB_PASSWORD|" "/var/www/laravel/$PROYECTO/.env"
     # Actualizar APP_URL
     sed -i "s|^APP_URL=.*|APP_URL=http://$PROYECTO.test|" "/var/www/laravel/$PROYECTO/.env"
 
